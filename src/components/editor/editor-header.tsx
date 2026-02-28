@@ -11,6 +11,7 @@ import {
   Save,
   ChevronDown,
 } from "lucide-react";
+import WindowControls from "./window-controls";
 
 export default function EditorHeader() {
   const {
@@ -46,14 +47,15 @@ export default function EditorHeader() {
 
   return (
     <header
-      className="flex flex-shrink-0 items-center justify-between h-14 px-6 rounded-2xl"
+      className="flex flex-shrink-0 items-center justify-between h-14 px-4 rounded-2xl"
       style={{
         background: "var(--bg-secondary)",
         border: "1px solid var(--border-subtle)",
-      }}
+        WebkitAppRegion: "drag",
+      } as React.CSSProperties}
     >
       {/* Left section - Logo & Project name */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3" style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}>
         <div className="flex items-center gap-2">
           <div
             className="w-7 h-7 rounded-lg flex items-center justify-center"
@@ -97,7 +99,7 @@ export default function EditorHeader() {
       </div>
 
       {/* Center section - Undo/Redo & Tools */}
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1" style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}>
         <button
           onClick={undo}
           disabled={historyIndex < 0}
@@ -128,8 +130,8 @@ export default function EditorHeader() {
         </button>
       </div>
 
-      {/* Right section - Export & Settings */}
-      <div className="flex items-center gap-2">
+      {/* Right section - Export, Settings & Window Controls */}
+      <div className="flex items-center gap-2" style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}>
         <button
           className="p-2 rounded-lg transition-all hover:bg-white/5"
           title="Settings"
@@ -158,6 +160,13 @@ export default function EditorHeader() {
           <Download size={14} />
           Export
         </button>
+
+        <div
+          className="w-px h-5 mx-1"
+          style={{ background: "var(--border-default)" }}
+        />
+
+        <WindowControls />
       </div>
     </header>
   );
