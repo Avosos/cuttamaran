@@ -682,38 +682,284 @@ const EXPORT_QUALITY = [
   { value: "high", label: "High", desc: "Original — best quality" },
 ];
 
+/** Map quality preset → resolution scale & fps */
+function resolveExportSettings(
+  quality: string,
+  canvasW: number,
+  canvasH: number
+) {
+  switch (quality) {
+    case "low":
+      return { width: 1280, height: Math.round(1280 * (canvasH / canvasW)), fps: 24 };
+    case "medium":
+      return { width: 1920, height: Math.round(1920 * (canvasH / canvasW)), fps: 30 };
+    default: // "high"
+      return { width: canvasW, height: canvasH, fps: 30 };
+  }
+}
+
 function ExportModal({ onClose }: { onClose: () => void }) {
-  const { projectName, canvasSize } = useEditorStore();
+  const { projectName, canvasSize, tracks, duration } = useEditorStore();
   const [format, setFormat] = useState("mp4");
   const [quality, setQuality] = useState("high");
   const [exporting, setExporting] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [statusText, setStatusText] = useState("");
   const [done, setDone] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [closeBtnHovered, setCloseBtnHovered] = useState(false);
   const [exportBtnHovered, setExportBtnHovered] = useState(false);
+  const cancelledRef = useRef(false);
+
+  // Listen for IPC progress / done / error
+  useEffect(() => {
+    const api = window.electronAPI;
+    if (!api) return;
+    const unsubs = [
+      api.onExportProgress((data) => {
+        setProgress(data.percent);
+        setStatusText(`Frame ${data.framesWritten} / ${data.totalFrames}`);
+      }),
+      api.onExportDone((_data) => {
+        setExporting(false);
+        setProgress(100);
+        setDone(true);
+        setStatusText("Export complete!");
+      }),
+      api.onExportError((msg) => {
+        setExporting(false);
+        setErrorMsg(msg);
+        setStatusText("Export failed");
+      }),
+    ];
+    return () => unsubs.forEach((fn) => fn());
+  }, []);
 
   useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => { if (e.key === "Escape" && !exporting) onClose(); };
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !exporting) onClose();
+    };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, [onClose, exporting]);
 
-  const handleExport = () => {
+  // ── Render every frame on an offscreen canvas and push to FFmpeg ──
+  const handleExport = useCallback(async () => {
+    const api = window.electronAPI;
+    if (!api) {
+      setErrorMsg("Export requires the Electron desktop app.");
+      return;
+    }
+
+    // Ask user where to save
+    const result = await api.saveFileDialog({
+      defaultPath: `${projectName}.${format}`,
+      filters: [
+        { name: format.toUpperCase(), extensions: [format] },
+      ],
+    });
+    if (result.canceled || !result.filePath) return;
+
+    cancelledRef.current = false;
     setExporting(true);
     setProgress(0);
-    // Simulate export progress
-    const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setExporting(false);
-          setDone(true);
-          return 100;
+    setDone(false);
+    setErrorMsg(null);
+    setStatusText("Preparing…");
+
+    const { width, height, fps } = resolveExportSettings(
+      quality,
+      canvasSize.width,
+      canvasSize.height
+    );
+    // Ensure even dimensions (required by most codecs)
+    const w = width % 2 === 0 ? width : width + 1;
+    const h = height % 2 === 0 ? height : height + 1;
+    const totalFrames = Math.ceil(duration * fps);
+
+    // Collect audio clips with local file paths
+    // (blob: URLs won't work for FFmpeg, but file:// paths will be
+    //  resolved on the Electron side)
+    const audioClips = tracks.flatMap((track) =>
+      track.clips
+        .filter((c) => c.type === "audio" && c.src && !c.src.startsWith("blob:"))
+        .map((c) => ({
+          src: c.src,
+          startTime: c.startTime,
+          duration: c.duration,
+          trimStart: c.trimStart,
+          volume: track.muted ? 0 : (c.volume ?? 1),
+        }))
+    );
+
+    // Tell main process to spawn FFmpeg
+    const startResult = await api.exportStart({
+      outputPath: result.filePath,
+      fps,
+      width: w,
+      height: h,
+      format,
+      quality,
+      totalFrames,
+      audioClips,
+    });
+    if (!startResult.ok) {
+      setExporting(false);
+      setErrorMsg(startResult.error ?? "Failed to start FFmpeg.");
+      return;
+    }
+
+    // ── Frame-by-frame rendering ────────────────────────
+    const offscreen = document.createElement("canvas");
+    offscreen.width = w;
+    offscreen.height = h;
+    const ctx = offscreen.getContext("2d")!;
+
+    // Pre-load video & image elements that are on the timeline
+    const mediaElements = new Map<string, HTMLVideoElement | HTMLImageElement>();
+    const loadPromises: Promise<void>[] = [];
+    for (const track of tracks) {
+      for (const clip of track.clips) {
+        if (!clip.src || clip.src.length === 0) continue;
+        if (clip.type === "video") {
+          const video = document.createElement("video");
+          video.src = clip.src;
+          video.muted = true;
+          video.preload = "auto";
+          const p = new Promise<void>((res) => {
+            video.addEventListener("loadeddata", () => res(), { once: true });
+            video.addEventListener("error", () => res(), { once: true });
+          });
+          loadPromises.push(p);
+          mediaElements.set(clip.id, video);
+        } else if (clip.type === "image") {
+          const img = new window.Image();
+          img.src = clip.thumbnail || clip.src;
+          const p = new Promise<void>((res) => {
+            img.addEventListener("load", () => res(), { once: true });
+            img.addEventListener("error", () => res(), { once: true });
+          });
+          loadPromises.push(p);
+          mediaElements.set(clip.id, img);
         }
-        return prev + Math.random() * 8 + 2;
+      }
+    }
+    setStatusText("Loading media…");
+    await Promise.all(loadPromises);
+
+    // Helper: seek a video and wait for it to be ready
+    const seekVideo = (video: HTMLVideoElement, time: number) =>
+      new Promise<void>((res) => {
+        if (Math.abs(video.currentTime - time) < 0.01) { res(); return; }
+        video.addEventListener("seeked", () => res(), { once: true });
+        video.currentTime = time;
       });
-    }, 200);
-  };
+
+    setStatusText("Rendering…");
+
+    for (let frame = 0; frame < totalFrames; frame++) {
+      if (cancelledRef.current) break;
+
+      const time = frame / fps;
+
+      // Clear to black
+      ctx.fillStyle = "#000000";
+      ctx.fillRect(0, 0, w, h);
+
+      // Determine active clips at this time
+      for (const track of tracks) {
+        if (!track.visible) continue;
+        for (const clip of track.clips) {
+          const clipEnd = clip.startTime + clip.duration;
+          if (time < clip.startTime || time >= clipEnd) continue;
+
+          const mediaTime = time - clip.startTime + clip.trimStart;
+
+          if (clip.type === "video") {
+            const video = mediaElements.get(clip.id) as HTMLVideoElement | undefined;
+            if (video && video.readyState >= 2) {
+              await seekVideo(video, mediaTime);
+              const vAspect = video.videoWidth / video.videoHeight;
+              const cAspect = w / h;
+              let dw: number, dh: number, dx: number, dy: number;
+              if (vAspect > cAspect) {
+                dw = w; dh = w / vAspect; dx = 0; dy = (h - dh) / 2;
+              } else {
+                dh = h; dw = h * vAspect; dx = (w - dw) / 2; dy = 0;
+              }
+              ctx.globalAlpha = clip.opacity ?? 1;
+              ctx.drawImage(video, dx, dy, dw, dh);
+              ctx.globalAlpha = 1;
+            }
+          } else if (clip.type === "image") {
+            const img = mediaElements.get(clip.id) as HTMLImageElement | undefined;
+            if (img && img.complete && img.naturalWidth > 0) {
+              const iAspect = img.naturalWidth / img.naturalHeight;
+              const cAspect = w / h;
+              let dw: number, dh: number, dx: number, dy: number;
+              if (iAspect > cAspect) {
+                dw = w; dh = w / iAspect; dx = 0; dy = (h - dh) / 2;
+              } else {
+                dh = h; dw = h * iAspect; dx = (w - dw) / 2; dy = 0;
+              }
+              ctx.globalAlpha = clip.opacity ?? 1;
+              ctx.drawImage(img, dx, dy, dw, dh);
+              ctx.globalAlpha = 1;
+            }
+          } else if (clip.type === "text") {
+            const fontSize = clip.fontSize || 48;
+            ctx.font = `bold ${fontSize}px ${clip.fontFamily || "Inter"}, sans-serif`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            if (clip.backgroundColor) {
+              const tm = ctx.measureText(clip.text || "");
+              const pad = 16;
+              ctx.fillStyle = clip.backgroundColor;
+              ctx.beginPath();
+              ctx.roundRect(
+                w / 2 - tm.width / 2 - pad,
+                h / 2 - fontSize / 2 - pad / 2,
+                tm.width + pad * 2,
+                fontSize + pad,
+                8
+              );
+              ctx.fill();
+            }
+            ctx.fillStyle = clip.color || "#ffffff";
+            ctx.fillText(clip.text || "", w / 2, h / 2);
+          }
+        }
+      }
+
+      // Encode the frame as PNG and push to FFmpeg
+      const blob = await new Promise<Blob>((res) =>
+        offscreen.toBlob((b) => res(b!), "image/png")
+      );
+      const arrayBuffer = await blob.arrayBuffer();
+      await api.exportPushFrame(arrayBuffer);
+    }
+
+    if (!cancelledRef.current) {
+      await api.exportFinish();
+    }
+
+    // Cleanup media elements
+    for (const el of mediaElements.values()) {
+      if (el instanceof HTMLVideoElement) {
+        el.pause();
+        el.removeAttribute("src");
+        el.load();
+      }
+    }
+    mediaElements.clear();
+  }, [projectName, format, quality, canvasSize, tracks, duration]);
+
+  const handleCancel = useCallback(async () => {
+    cancelledRef.current = true;
+    await window.electronAPI?.exportCancel();
+    setExporting(false);
+    setStatusText("Cancelled");
+  }, []);
 
   const qualityLabel = EXPORT_QUALITY.find((q) => q.value === quality);
   const formatLabel = EXPORT_FORMATS.find((f) => f.value === format);
@@ -841,14 +1087,14 @@ function ExportModal({ onClose }: { onClose: () => void }) {
           )}
 
           {/* Progress bar */}
-          {(exporting || done) && (
+          {(exporting || done || errorMsg) && (
             <div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>
-                  {done ? "Export complete!" : `Exporting ${formatLabel?.label ?? format.toUpperCase()}…`}
+                <span style={{ fontSize: 12, color: errorMsg ? "#ef4444" : "var(--text-secondary)" }}>
+                  {errorMsg ? "Export failed" : done ? "Export complete!" : `Exporting ${formatLabel?.label ?? format.toUpperCase()}…`}
                 </span>
-                <span style={{ fontSize: 11, fontWeight: 500, color: done ? "var(--success)" : "var(--text-muted)" }}>
-                  {Math.min(Math.round(progress), 100)}%
+                <span style={{ fontSize: 11, fontWeight: 500, color: done ? "var(--success)" : errorMsg ? "#ef4444" : "var(--text-muted)" }}>
+                  {errorMsg ? "!" : `${Math.min(Math.round(progress), 100)}%`}
                 </span>
               </div>
               <div style={{ height: 6, borderRadius: 3, background: "var(--bg-tertiary)", overflow: "hidden" }}>
@@ -857,11 +1103,21 @@ function ExportModal({ onClose }: { onClose: () => void }) {
                     height: "100%",
                     borderRadius: 3,
                     width: `${Math.min(progress, 100)}%`,
-                    background: done ? "var(--success)" : "linear-gradient(90deg, #7c5cfc, #e879f9)",
+                    background: errorMsg ? "#ef4444" : done ? "var(--success)" : "linear-gradient(90deg, #7c5cfc, #e879f9)",
                     transition: "width 0.2s ease-out",
                   }}
                 />
               </div>
+              {statusText && (
+                <p style={{ fontSize: 11, marginTop: 8, color: "var(--text-muted)" }}>
+                  {statusText}
+                </p>
+              )}
+              {errorMsg && (
+                <p style={{ fontSize: 11, marginTop: 4, color: "#ef4444", whiteSpace: "pre-wrap", maxHeight: 80, overflow: "auto" }}>
+                  {errorMsg}
+                </p>
+              )}
               {done && (
                 <p style={{ fontSize: 11, marginTop: 8, color: "var(--text-muted)" }}>
                   {projectName}.{format} • {qualityLabel?.label} quality • {canvasSize.width}×{canvasSize.height}
@@ -899,22 +1155,20 @@ function ExportModal({ onClose }: { onClose: () => void }) {
           ) : (
             <>
               <button
-                onClick={onClose}
-                disabled={exporting}
+                onClick={exporting ? handleCancel : onClose}
                 style={{
                   padding: "8px 16px",
                   fontSize: 13,
                   borderRadius: 8,
                   background: "transparent",
                   border: "none",
-                  cursor: exporting ? "default" : "pointer",
+                  cursor: "pointer",
                   color: "var(--text-secondary)",
-                  opacity: exporting ? 0.3 : 1,
                 }}
-                onMouseEnter={(e) => { if (!exporting) e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
               >
-                Cancel
+                {exporting ? "Cancel" : "Close"}
               </button>
               <button
                 onClick={handleExport}

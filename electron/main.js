@@ -1,6 +1,16 @@
 const { app, BrowserWindow, ipcMain, dialog, shell } = require("electron");
 const path = require("path");
 const url = require("url");
+const { spawn } = require("child_process");
+const fs = require("fs");
+
+// Resolve the bundled ffmpeg binary
+let ffmpegPath;
+try {
+  ffmpegPath = require("ffmpeg-static");
+} catch {
+  ffmpegPath = "ffmpeg"; // fall back to system PATH
+}
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling
 try {
@@ -178,6 +188,200 @@ app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
     app.quit();
   }
+});
+
+// ─── Export Pipeline ──────────────────────────────────────
+
+/** Active export state — only one export at a time */
+let activeExport = null;
+
+/**
+ * Start an FFmpeg export.
+ *
+ * The renderer will push raw PNG frame buffers one-by-one via `export:push-frame`,
+ * then call `export:finish` when all frames have been sent. FFmpeg ingests the
+ * frames as an image-pipe and muxes any audio sources on top.
+ *
+ * @param {object} opts
+ * @param {string} opts.outputPath   — final file path
+ * @param {number} opts.fps          — target frame-rate
+ * @param {number} opts.width        — canvas width
+ * @param {number} opts.height       — canvas height
+ * @param {string} opts.format       — "mp4" | "webm" | "mov" | "gif"
+ * @param {string} opts.quality      — "low" | "medium" | "high"
+ * @param {number} opts.totalFrames  — expected frame count (for progress)
+ * @param {{src:string, startTime:number, duration:number, trimStart:number, volume:number}[]} opts.audioClips
+ */
+ipcMain.handle("export:start", async (_event, opts) => {
+  if (activeExport) {
+    return { ok: false, error: "An export is already in progress." };
+  }
+
+  const {
+    outputPath,
+    fps = 30,
+    width = 1920,
+    height = 1080,
+    format = "mp4",
+    quality = "high",
+    totalFrames = 1,
+    audioClips = [],
+  } = opts;
+
+  // ── Build FFmpeg arguments ────────────────────────────
+  const args = [];
+
+  // Input 0: raw image pipe (PNG frames from the renderer canvas).
+  args.push(
+    "-y",                             // overwrite output
+    "-f", "image2pipe",
+    "-framerate", String(fps),
+    "-i", "pipe:0"                    // stdin
+  );
+
+  // Input 1…N: audio files
+  const validAudioClips = audioClips.filter((a) => a.src && fs.existsSync(a.src));
+  for (const audio of validAudioClips) {
+    args.push("-i", audio.src);
+  }
+
+  // ── Filter: map audio clips onto the timeline ─────────
+  if (validAudioClips.length > 0) {
+    const filterParts = [];
+    const mixLabels = [];
+
+    validAudioClips.forEach((audio, idx) => {
+      const inputIdx = idx + 1; // input 0 is the video pipe
+      const label = `a${idx}`;
+      const delay = Math.round(audio.startTime * 1000);
+      const vol = audio.volume ?? 1;
+      const trimStart = audio.trimStart ?? 0;
+      const trimEnd = trimStart + audio.duration;
+      filterParts.push(
+        `[${inputIdx}:a]atrim=start=${trimStart}:end=${trimEnd},asetpts=PTS-STARTPTS,adelay=${delay}|${delay},volume=${vol}[${label}]`
+      );
+      mixLabels.push(`[${label}]`);
+    });
+
+    filterParts.push(
+      `${mixLabels.join("")}amix=inputs=${validAudioClips.length}:normalize=0[aout]`
+    );
+    args.push("-filter_complex", filterParts.join(";"));
+    args.push("-map", "0:v");
+    args.push("-map", "[aout]");
+  }
+
+  // ── Codec settings per format / quality ───────────────
+  const crf = quality === "high" ? "18" : quality === "medium" ? "23" : "28";
+
+  switch (format) {
+    case "mp4":
+      args.push("-c:v", "libx264", "-preset", "medium", "-crf", crf,
+                "-pix_fmt", "yuv420p", "-movflags", "+faststart");
+      if (validAudioClips.length > 0) args.push("-c:a", "aac", "-b:a", "192k");
+      break;
+    case "webm":
+      args.push("-c:v", "libvpx-vp9", "-crf", crf, "-b:v", "0",
+                "-pix_fmt", "yuv420p");
+      if (validAudioClips.length > 0) args.push("-c:a", "libopus", "-b:a", "128k");
+      break;
+    case "mov":
+      args.push("-c:v", "libx264", "-preset", "medium", "-crf", crf,
+                "-pix_fmt", "yuv420p");
+      if (validAudioClips.length > 0) args.push("-c:a", "aac", "-b:a", "192k");
+      break;
+    case "gif":
+      // Two-pass palette for high-quality GIF
+      args.push(
+        "-vf", `fps=${Math.min(fps, 15)},scale=${width}:${height}:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse`
+      );
+      break;
+    default:
+      args.push("-c:v", "libx264", "-preset", "medium", "-crf", crf,
+                "-pix_fmt", "yuv420p");
+      break;
+  }
+
+  args.push(outputPath);
+
+  // ── Spawn FFmpeg ──────────────────────────────────────
+  return new Promise((resolve) => {
+    let framesWritten = 0;
+
+    const proc = spawn(ffmpegPath, args, {
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+
+    let stderrLog = "";
+    proc.stderr.on("data", (chunk) => {
+      stderrLog += chunk.toString();
+    });
+
+    proc.on("error", (err) => {
+      mainWindow?.webContents.send("export:error", err.message);
+      activeExport = null;
+    });
+
+    proc.on("close", (code) => {
+      activeExport = null;
+      if (code === 0) {
+        mainWindow?.webContents.send("export:progress", { percent: 100, framesWritten, totalFrames });
+        mainWindow?.webContents.send("export:done", { outputPath });
+      } else {
+        mainWindow?.webContents.send("export:error",
+          `FFmpeg exited with code ${code}.\n${stderrLog.slice(-500)}`);
+      }
+    });
+
+    activeExport = { proc, totalFrames, framesWritten: 0 };
+
+    resolve({ ok: true });
+  });
+});
+
+/**
+ * Push a single rendered frame (PNG buffer) into FFmpeg's stdin.
+ * The renderer calls this once per frame after drawing onto an OffscreenCanvas.
+ */
+ipcMain.handle("export:push-frame", async (_event, pngArrayBuffer) => {
+  if (!activeExport) return { ok: false };
+  const buf = Buffer.from(pngArrayBuffer);
+
+  return new Promise((resolve) => {
+    activeExport.proc.stdin.write(buf, () => {
+      activeExport.framesWritten++;
+      const percent = Math.min(
+        99,
+        Math.round((activeExport.framesWritten / activeExport.totalFrames) * 100)
+      );
+      mainWindow?.webContents.send("export:progress", {
+        percent,
+        framesWritten: activeExport.framesWritten,
+        totalFrames: activeExport.totalFrames,
+      });
+      resolve({ ok: true });
+    });
+  });
+});
+
+/**
+ * Renderer signals that all frames have been pushed.
+ * Closes FFmpeg's stdin so it can finalize the file.
+ */
+ipcMain.handle("export:finish", async () => {
+  if (!activeExport) return { ok: false };
+  activeExport.proc.stdin.end();
+  return { ok: true };
+});
+
+/**
+ * Abort a running export.
+ */
+ipcMain.handle("export:cancel", async () => {
+  if (!activeExport) return { ok: false };
+  activeExport.proc.kill("SIGTERM");
+  activeExport = null;
+  return { ok: true };
 });
 
 // Suppress Electron security warning in dev

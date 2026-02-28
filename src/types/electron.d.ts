@@ -19,6 +19,31 @@ export interface ElectronAPI {
     filePaths: string[];
   }>;
   onMaximizedChange: (callback: (isMaximized: boolean) => void) => () => void;
+
+  // Export pipeline
+  exportStart: (opts: {
+    outputPath: string;
+    fps: number;
+    width: number;
+    height: number;
+    format: string;
+    quality: string;
+    totalFrames: number;
+    audioClips: {
+      src: string;
+      startTime: number;
+      duration: number;
+      trimStart: number;
+      volume: number;
+    }[];
+  }) => Promise<{ ok: boolean; error?: string }>;
+  exportPushFrame: (pngBuffer: ArrayBuffer) => Promise<{ ok: boolean }>;
+  exportFinish: () => Promise<{ ok: boolean }>;
+  exportCancel: () => Promise<{ ok: boolean }>;
+  onExportProgress: (callback: (data: { percent: number; framesWritten: number; totalFrames: number }) => void) => () => void;
+  onExportDone: (callback: (data: { outputPath: string }) => void) => () => void;
+  onExportError: (callback: (message: string) => void) => () => void;
+
   platform: string;
 }
 
