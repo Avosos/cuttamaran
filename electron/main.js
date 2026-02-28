@@ -144,6 +144,14 @@ ipcMain.handle("dialog:saveFile", async (_event, options) => {
   return result;
 });
 
+ipcMain.handle("dialog:openFolder", async (_event, options) => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ["openDirectory", "createDirectory"],
+    ...options,
+  });
+  return result;
+});
+
 // Forward maximize/unmaximize events to the renderer
 function setupWindowEvents() {
   mainWindow.on("maximize", () => {

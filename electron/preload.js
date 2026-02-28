@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   // File dialogs
   openFileDialog: (options) => ipcRenderer.invoke("dialog:openFile", options),
   saveFileDialog: (options) => ipcRenderer.invoke("dialog:saveFile", options),
+  openFolderDialog: (options) => ipcRenderer.invoke("dialog:openFolder", options),
 
   // Listen for window state changes
   onMaximizedChange: (callback) => {

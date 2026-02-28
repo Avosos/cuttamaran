@@ -14,6 +14,10 @@ export interface ElectronAPI {
     canceled: boolean;
     filePath: string;
   }>;
+  openFolderDialog: (options?: Record<string, unknown>) => Promise<{
+    canceled: boolean;
+    filePaths: string[];
+  }>;
   onMaximizedChange: (callback: (isMaximized: boolean) => void) => () => void;
   platform: string;
 }

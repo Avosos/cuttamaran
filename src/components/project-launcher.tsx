@@ -102,8 +102,170 @@ function formatDate(ts: number): string {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: d.getFullYear() !== now.getFullYear() ? "numeric" : undefined });
 }
 
+// ─── Settings storage ────────────────────────────────────
+const SETTINGS_KEY = "cuttamaran_settings";
+
+interface AppSettings {
+  projectsPath: string;
+  defaultResolution: string;
+  autoSave: boolean;
+  theme: "dark" | "light";
+  previewQuality: "low" | "medium" | "high";
+}
+
+const DEFAULT_SETTINGS: AppSettings = {
+  projectsPath: "",
+  defaultResolution: "1920x1080",
+  autoSave: true,
+  theme: "dark",
+  previewQuality: "high",
+};
+
+function loadSettings(): AppSettings {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    return raw ? { ...DEFAULT_SETTINGS, ...JSON.parse(raw) } : { ...DEFAULT_SETTINGS };
+  } catch {
+    return { ...DEFAULT_SETTINGS };
+  }
+}
+
+function saveSettingsData(settings: AppSettings) {
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+}
+
+// ─── First-time Setup ────────────────────────────────────
+function FirstTimeSetup({ onComplete }: { onComplete: () => void }) {
+  const [folderPath, setFolderPath] = useState("");
+
+  const handleBrowse = async () => {
+    const result = await window.electronAPI?.openFolderDialog({
+      title: "Choose where to store your projects",
+    });
+    if (result && !result.canceled && result.filePaths[0]) {
+      setFolderPath(result.filePaths[0]);
+    }
+  };
+
+  const handleContinue = () => {
+    if (folderPath) {
+      const settings = loadSettings();
+      settings.projectsPath = folderPath;
+      saveSettingsData(settings);
+    }
+    onComplete();
+  };
+
+  return (
+    <div className="absolute inset-0 z-50 flex items-center justify-center" style={{ padding: 24, background: "rgba(6,6,10,0.92)", backdropFilter: "blur(12px)" }}>
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 420,
+          borderRadius: 16,
+          overflow: "hidden",
+          background: "var(--bg-secondary)",
+          border: "1px solid var(--border-subtle)",
+          boxShadow: "0 24px 80px rgba(0,0,0,0.6)",
+        }}
+      >
+        {/* Header with icon */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 32, paddingBottom: 8, paddingLeft: 40, paddingRight: 40 }}>
+          <div style={{ width: 56, height: 56, borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16, background: "linear-gradient(135deg, #7c5cfc, #e879f9)" }}>
+            <Scissors size={24} className="text-white" />
+          </div>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>Welcome to Cuttamaran</h2>
+          <p style={{ fontSize: 14, marginTop: 6, textAlign: "center", color: "var(--text-muted)" }}>
+            Choose where your projects will be stored.
+          </p>
+        </div>
+
+        {/* Folder picker */}
+        <div style={{ paddingLeft: 40, paddingRight: 40, paddingTop: 24, paddingBottom: 24 }}>
+          <label style={{ fontSize: 11, fontWeight: 500, marginBottom: 8, display: "block", color: "var(--text-muted)" }}>Projects Folder</label>
+          <div style={{ display: "flex", gap: 8 }}>
+            <div
+              style={{
+                flex: 1,
+                padding: "10px 12px",
+                borderRadius: 8,
+                fontSize: 13,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap" as const,
+                background: "var(--bg-tertiary)",
+                border: "1px solid var(--border-default)",
+                color: folderPath ? "var(--text-primary)" : "var(--text-muted)",
+              }}
+            >
+              {folderPath || "No folder selected..."}
+            </div>
+            <button
+              onClick={handleBrowse}
+              style={{
+                padding: "10px 16px",
+                borderRadius: 8,
+                fontSize: 13,
+                fontWeight: 500,
+                flexShrink: 0,
+                background: "var(--bg-tertiary)",
+                color: "var(--text-secondary)",
+                border: "1px solid var(--border-default)",
+                cursor: "pointer",
+              }}
+            >
+              <FolderOpen size={15} />
+            </button>
+          </div>
+          <p style={{ fontSize: 11, marginTop: 8, color: "var(--text-muted)" }}>
+            You can change this later in Settings.
+          </p>
+        </div>
+
+        {/* Footer */}
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, paddingLeft: 40, paddingRight: 40, paddingBottom: 24 }}>
+          <button
+            onClick={handleContinue}
+            style={{
+              fontSize: 13,
+              fontWeight: 500,
+              borderRadius: 8,
+              padding: "10px 24px",
+              whiteSpace: "nowrap" as const,
+              cursor: "pointer",
+              border: folderPath ? "none" : "1px solid var(--border-subtle)",
+              background: folderPath ? "linear-gradient(135deg, #7c5cfc, #6344e0)" : "var(--bg-tertiary)",
+              color: folderPath ? "white" : "var(--text-secondary)",
+              boxShadow: folderPath ? "0 2px 12px rgba(124, 92, 252, 0.3)" : "none",
+            }}
+          >
+            {folderPath ? "Get Started" : "Skip for Now"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Settings Panel ──────────────────────────────────────
 function SettingsPanel({ onClose }: { onClose: () => void }) {
+  const [settings, setSettings] = useState<AppSettings>(loadSettings);
+
+  const updateSetting = <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
+    const updated = { ...settings, [key]: value };
+    setSettings(updated);
+    saveSettingsData(updated);
+  };
+
+  const handleBrowseFolder = async () => {
+    const result = await window.electronAPI?.openFolderDialog({
+      title: "Choose Projects Folder",
+    });
+    if (result && !result.canceled && result.filePaths[0]) {
+      updateSetting("projectsPath", result.filePaths[0]);
+    }
+  };
+
   return (
     <div className="absolute inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(6,6,10,0.85)", backdropFilter: "blur(8px)" }}>
       <div
@@ -119,23 +281,116 @@ function SettingsPanel({ onClose }: { onClose: () => void }) {
         </div>
 
         {/* Body */}
-        <div className="px-6 py-5 space-y-5">
+        <div className="px-6 py-5 space-y-5 max-h-[420px] overflow-y-auto">
+          {/* Storage */}
+          <div>
+            <h3 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>Storage</h3>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between py-2.5 px-3 rounded-lg" style={{ background: "var(--bg-tertiary)" }}>
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <FolderOpen size={15} style={{ color: "var(--text-muted)" }} className="flex-shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <span className="text-sm block" style={{ color: "var(--text-secondary)" }}>Projects Folder</span>
+                    <span className="text-[11px] block truncate" style={{ color: "var(--text-muted)" }}>
+                      {settings.projectsPath || "Not set — click Browse to choose"}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={handleBrowseFolder}
+                  className="text-xs px-3 py-1.5 rounded-md flex-shrink-0 ml-3 transition-colors"
+                  style={{ background: "var(--accent-muted)", color: "var(--accent-hover)" }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(124,92,252,0.2)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "var(--accent-muted)"; }}
+                >
+                  Browse
+                </button>
+              </div>
+            </div>
+          </div>
+
           {/* General */}
           <div>
             <h3 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>General</h3>
-            <div className="space-y-3">
-              <SettingRow icon={<Monitor size={15} />} label="Default Resolution" value="1920 × 1080" />
-              <SettingRow icon={<HardDrive size={15} />} label="Auto-Save" value="Enabled" />
-              <SettingRow icon={<Moon size={15} />} label="Theme" value="Dark" />
+            <div className="space-y-2">
+              {/* Default Resolution */}
+              <div className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-white/[0.03] transition-colors">
+                <div className="flex items-center gap-3">
+                  <Monitor size={15} style={{ color: "var(--text-muted)" }} />
+                  <span className="text-sm" style={{ color: "var(--text-secondary)" }}>Default Resolution</span>
+                </div>
+                <select
+                  value={settings.defaultResolution}
+                  onChange={(e) => updateSetting("defaultResolution", e.target.value)}
+                  className="text-sm rounded-md px-2 py-1 outline-none cursor-pointer"
+                  style={{ background: "var(--bg-tertiary)", color: "var(--text-primary)", border: "1px solid var(--border-subtle)" }}
+                >
+                  {RESOLUTIONS.map((r) => (
+                    <option key={r.value} value={r.value}>{r.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Auto-Save */}
+              <div className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-white/[0.03] transition-colors">
+                <div className="flex items-center gap-3">
+                  <HardDrive size={15} style={{ color: "var(--text-muted)" }} />
+                  <span className="text-sm" style={{ color: "var(--text-secondary)" }}>Auto-Save</span>
+                </div>
+                <button
+                  onClick={() => updateSetting("autoSave", !settings.autoSave)}
+                  className="relative w-9 h-5 rounded-full transition-colors"
+                  style={{ background: settings.autoSave ? "var(--accent)" : "var(--bg-tertiary)", border: "1px solid var(--border-subtle)" }}
+                >
+                  <div
+                    className="absolute top-0.5 w-3.5 h-3.5 rounded-full transition-all"
+                    style={{
+                      background: settings.autoSave ? "white" : "var(--text-muted)",
+                      left: settings.autoSave ? "calc(100% - 18px)" : "2px",
+                    }}
+                  />
+                </button>
+              </div>
+
+              {/* Theme */}
+              <div className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-white/[0.03] transition-colors">
+                <div className="flex items-center gap-3">
+                  <Moon size={15} style={{ color: "var(--text-muted)" }} />
+                  <span className="text-sm" style={{ color: "var(--text-secondary)" }}>Theme</span>
+                </div>
+                <select
+                  value={settings.theme}
+                  onChange={(e) => updateSetting("theme", e.target.value as "dark" | "light")}
+                  className="text-sm rounded-md px-2 py-1 outline-none cursor-pointer"
+                  style={{ background: "var(--bg-tertiary)", color: "var(--text-primary)", border: "1px solid var(--border-subtle)" }}
+                >
+                  <option value="dark">Dark</option>
+                  <option value="light">Light</option>
+                </select>
+              </div>
             </div>
           </div>
 
           {/* Performance */}
           <div>
             <h3 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>Performance</h3>
-            <div className="space-y-3">
-              <SettingRow icon={<Film size={15} />} label="Preview Quality" value="High" />
-              <SettingRow icon={<HardDrive size={15} />} label="Cache Location" value="Default" />
+            <div className="space-y-2">
+              <div className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-white/[0.03] transition-colors">
+                <div className="flex items-center gap-3">
+                  <Film size={15} style={{ color: "var(--text-muted)" }} />
+                  <span className="text-sm" style={{ color: "var(--text-secondary)" }}>Preview Quality</span>
+                </div>
+                <select
+                  value={settings.previewQuality}
+                  onChange={(e) => updateSetting("previewQuality", e.target.value as "low" | "medium" | "high")}
+                  className="text-sm rounded-md px-2 py-1 outline-none cursor-pointer"
+                  style={{ background: "var(--bg-tertiary)", color: "var(--text-primary)", border: "1px solid var(--border-subtle)" }}
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
             </div>
           </div>
 
@@ -153,18 +408,6 @@ function SettingsPanel({ onClose }: { onClose: () => void }) {
           </div>
         </div>
       </div>
-    </div>
-  );
-}
-
-function SettingRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-white/[0.03] transition-colors">
-      <div className="flex items-center gap-3">
-        <span style={{ color: "var(--text-muted)" }}>{icon}</span>
-        <span className="text-sm" style={{ color: "var(--text-secondary)" }}>{label}</span>
-      </div>
-      <span className="text-sm" style={{ color: "var(--text-muted)" }}>{value}</span>
     </div>
   );
 }
@@ -262,11 +505,17 @@ export default function ProjectLauncher({ onOpenProject, onCreateProject }: Proj
   const [projects, setProjects] = useState<ProjectMeta[]>([]);
   const [showSettings, setShowSettings] = useState(false);
   const [showNewProject, setShowNewProject] = useState(false);
+  const [showSetup, setShowSetup] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   useEffect(() => {
     setProjects(loadProjects());
+    // Show setup dialog if no projects folder is configured
+    const settings = loadSettings();
+    if (!settings.projectsPath) {
+      setShowSetup(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -322,7 +571,7 @@ export default function ProjectLauncher({ onOpenProject, onCreateProject }: Proj
       <div className="flex-1 flex overflow-hidden">
         {/* Sidebar */}
         <div
-          className="w-48 flex-shrink-0 flex flex-col pt-4 pr-3 pb-4 pl-4 gap-1"
+          className="w-48 flex-shrink-0 flex flex-col pt-4 pr-3 pb-5 pl-5 gap-1"
           style={{ background: "var(--bg-secondary)", borderRight: "1px solid var(--border-subtle)" }}
         >
           <button
@@ -440,6 +689,7 @@ export default function ProjectLauncher({ onOpenProject, onCreateProject }: Proj
       </div>
 
       {/* Modals */}
+      {showSetup && <FirstTimeSetup onComplete={() => setShowSetup(false)} />}
       {showSettings && <SettingsPanel onClose={() => setShowSettings(false)} />}
       {showNewProject && (
         <NewProjectModal
@@ -462,9 +712,9 @@ function NavItem({ icon, label, active, onClick }: { icon: React.ReactNode; labe
         color: active ? "var(--accent-hover)" : "var(--text-secondary)",
       }}
       onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = "rgba(255,255,255,0.04)"; }}
-      onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}
+      onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = active ? "var(--accent-muted)" : "transparent"; }}
     >
-      {icon}
+      <span className="flex-shrink-0">{icon}</span>
       {label}
     </button>
   );
