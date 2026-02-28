@@ -78,7 +78,6 @@ export default function PropertiesPanel() {
       style={{
         width: "260px",
         background: "var(--bg-secondary)",
-        borderLeft: "1px solid var(--border-subtle)",
       }}
     >
       {/* Header */}

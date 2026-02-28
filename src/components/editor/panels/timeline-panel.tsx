@@ -313,7 +313,6 @@ export default function TimelinePanel() {
       className="flex flex-col h-full select-none"
       style={{
         background: "var(--bg-secondary)",
-        borderTop: "1px solid var(--border-subtle)",
       }}
     >
       {/* Timeline toolbar */}
@@ -736,6 +735,12 @@ function TimelineClipView({
   );
 }
 
+// Deterministic pseudo-random for stable hydration
+function seededRandom(seed: number): number {
+  const x = Math.sin(seed * 9301 + 49297) * 49297;
+  return x - Math.floor(x);
+}
+
 // ─── Audio Waveform Visualization ───────────────────────
 function AudioWaveform({ width }: { width: number }) {
   const bars = Math.max(1, Math.floor(width / 3));
@@ -743,7 +748,7 @@ function AudioWaveform({ width }: { width: number }) {
   return (
     <div className="absolute inset-0 flex items-center gap-px px-1 opacity-40">
       {Array.from({ length: bars }).map((_, i) => {
-        const h = 20 + Math.sin(i * 0.7) * 30 + Math.random() * 20;
+        const h = 20 + Math.sin(i * 0.7) * 30 + seededRandom(i) * 20;
         return (
           <div
             key={i}

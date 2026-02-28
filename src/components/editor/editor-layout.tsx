@@ -83,57 +83,86 @@ export default function EditorLayout() {
 
   return (
     <div
-      className="flex flex-col h-screen"
-      style={{ background: "var(--bg-primary)" }}
+      className="flex flex-col h-screen p-4 gap-4"
+      style={{ background: "#06060a" }}
     >
       <EditorHeader />
 
-      <div ref={containerRef} className="flex-1 flex flex-col min-h-0">
+      <div ref={containerRef} className="flex-1 flex flex-col min-h-0 gap-4">
         {/* Top section (panels + preview) */}
-        <div className="flex-1 flex min-h-0">
+        <div className="flex-1 flex min-h-0 gap-4">
           {/* Left panel - Assets */}
           <div
-            className="flex-shrink-0 overflow-hidden"
-            style={{ width: `${leftWidth}px` }}
+            className="flex-shrink-0 overflow-hidden rounded-2xl"
+            style={{
+              width: `${leftWidth}px`,
+              background: "var(--bg-secondary)",
+              border: "1px solid var(--border-subtle)",
+            }}
           >
             <AssetsPanel />
           </div>
 
           {/* Left resize handle */}
           <div
-            className="flex-shrink-0 w-1 cursor-col-resize relative group"
-            style={{ background: "var(--border-subtle)" }}
+            className="flex-shrink-0 w-1.5 cursor-col-resize relative group flex items-center justify-center"
             onMouseDown={() => setIsDraggingLeft(true)}
           >
             <div
-              className="absolute inset-y-0 -left-1 -right-1 group-hover:bg-[var(--accent)] transition-colors opacity-0 group-hover:opacity-30"
+              className="w-0.5 h-8 rounded-full transition-colors"
+              style={{ background: "var(--border-default)" }}
+            />
+            <div
+              className="absolute inset-y-0 -left-1 -right-1 group-hover:bg-[var(--accent)] transition-colors opacity-0 group-hover:opacity-20 rounded"
             />
           </div>
 
           {/* Center - Preview */}
-          <div className="flex-1 min-w-0">
+          <div
+            className="flex-1 min-w-0 rounded-2xl overflow-hidden"
+            style={{
+              background: "var(--bg-primary)",
+              border: "1px solid var(--border-subtle)",
+            }}
+          >
             <PreviewPanel />
           </div>
 
           {/* Right panel - Properties */}
-          {propertiesPanelOpen && <PropertiesPanel />}
+          {propertiesPanelOpen && (
+            <div
+              className="rounded-2xl overflow-hidden"
+              style={{
+                border: "1px solid var(--border-subtle)",
+              }}
+            >
+              <PropertiesPanel />
+            </div>
+          )}
         </div>
 
         {/* Timeline resize handle */}
         <div
-          className="flex-shrink-0 h-1 cursor-row-resize relative group"
-          style={{ background: "var(--border-subtle)" }}
+          className="flex-shrink-0 h-1.5 cursor-row-resize relative group flex justify-center items-center"
           onMouseDown={() => setIsDraggingTimeline(true)}
         >
           <div
-            className="absolute inset-x-0 -top-1 -bottom-1 group-hover:bg-[var(--accent)] transition-colors opacity-0 group-hover:opacity-30"
+            className="h-0.5 w-12 rounded-full transition-colors"
+            style={{ background: "var(--border-default)" }}
+          />
+          <div
+            className="absolute inset-x-0 -top-1 -bottom-1 group-hover:bg-[var(--accent)] transition-colors opacity-0 group-hover:opacity-20 rounded"
           />
         </div>
 
         {/* Timeline panel */}
         <div
-          className="flex-shrink-0"
-          style={{ height: `${timelineHeight}px` }}
+          className="flex-shrink-0 rounded-2xl overflow-hidden"
+          style={{
+            height: `${timelineHeight}px`,
+            background: "var(--bg-secondary)",
+            border: "1px solid var(--border-subtle)",
+          }}
         >
           <TimelinePanel />
         </div>
@@ -159,10 +188,10 @@ function StatusBar() {
 
   return (
     <div
-      className="flex items-center justify-between px-3 h-6 text-[10px] flex-shrink-0"
+      className="flex items-center justify-between px-4 h-6 text-[10px] flex-shrink-0 rounded-lg"
       style={{
         background: "var(--bg-tertiary)",
-        borderTop: "1px solid var(--border-subtle)",
+        border: "1px solid var(--border-subtle)",
         color: "var(--text-muted)",
       }}
     >

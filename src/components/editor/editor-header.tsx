@@ -46,10 +46,10 @@ export default function EditorHeader() {
 
   return (
     <header
-      className="flex items-center justify-between h-12 px-4"
+      className="flex flex-shrink-0 items-center justify-between h-14 px-6 rounded-2xl"
       style={{
         background: "var(--bg-secondary)",
-        borderBottom: "1px solid var(--border-subtle)",
+        border: "1px solid var(--border-subtle)",
       }}
     >
       {/* Left section - Logo & Project name */}

@@ -184,14 +184,13 @@ export default function AssetsPanel() {
 
   return (
     <div
-      className="flex h-full"
-      style={{ background: "var(--bg-secondary)" }}
+      className="flex h-full overflow-hidden"
     >
       {/* Tab sidebar */}
       <div
         className="flex flex-col items-center py-2 gap-1 w-14"
         style={{
-          background: "var(--bg-primary)",
+          background: "rgba(0,0,0,0.2)",
           borderRight: "1px solid var(--border-subtle)",
         }}
       >
