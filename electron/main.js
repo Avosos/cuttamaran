@@ -15,6 +15,14 @@ const isDev = process.env.NODE_ENV === "development" || !app.isPackaged;
 
 let mainWindow = null;
 
+// Determine icon path based on platform
+function getIconPath() {
+  if (process.platform === "win32") {
+    return path.join(__dirname, "../public/icon.ico");
+  }
+  return path.join(__dirname, "../public/icon.png");
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1440,
@@ -31,7 +39,7 @@ function createWindow() {
       nodeIntegration: false,
       webSecurity: true,
     },
-    icon: path.join(__dirname, "../public/icon.png"),
+    icon: getIconPath(),
   });
 
   // Graceful show after ready
