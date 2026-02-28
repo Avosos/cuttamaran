@@ -30,7 +30,7 @@
         "nsis",
         "portable"
       ],
-      "icon": "public/icon.png"
+      "icon": "public/icon.ico"
     },
     "mac": {
       "target": [
