@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/icon.svg" width="80" height="80" alt="Cuttamaran" />
+  <img src="https://raw.githubusercontent.com/avosos/cuttamaran/main/assets/icon.svg" width="80" height="80" alt="Cuttamaran" />
 </p>
 
 <h1 align="center">Cuttamaran</h1>
