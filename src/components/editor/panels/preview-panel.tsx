@@ -12,6 +12,7 @@ import {
   Monitor,
 } from "lucide-react";
 import { formatTime } from "@/lib/utils";
+import { useMediaManager } from "@/hooks/use-media-manager";
 
 export default function PreviewPanel() {
   const {
@@ -30,6 +31,7 @@ export default function PreviewPanel() {
   const animationRef = useRef<number>(0);
   const lastTimeRef = useRef<number>(0);
   const [volume, setVolume] = useState(80);
+  const { getVideoElement, getImageElement } = useMediaManager(volume / 100);
 
   // Get active clips at current time
   const getActiveClips = useCallback(() => {
@@ -139,55 +141,93 @@ export default function PreviewPanel() {
 
         ctx.shadowColor = "transparent";
         ctx.shadowBlur = 0;
-      } else if (clip.type === "image" && clip.thumbnail) {
-        // Draw image placeholder
-        const img = new window.Image();
-        img.src = clip.thumbnail;
-        try {
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        } catch {
-          // Image not loaded yet
+      } else if (clip.type === "image") {
+        // Draw decoded image (cached by media manager)
+        const imgEl = getImageElement(clip.id);
+        if (imgEl && imgEl.complete && imgEl.naturalWidth > 0) {
+          const imgAspect = imgEl.naturalWidth / imgEl.naturalHeight;
+          const cAspect = canvas.width / canvas.height;
+          let dw: number, dh: number, dx: number, dy: number;
+          if (imgAspect > cAspect) {
+            dw = canvas.width;
+            dh = canvas.width / imgAspect;
+            dx = 0;
+            dy = (canvas.height - dh) / 2;
+          } else {
+            dh = canvas.height;
+            dw = canvas.height * imgAspect;
+            dx = (canvas.width - dw) / 2;
+            dy = 0;
+          }
+          ctx.globalAlpha = clip.opacity ?? 1;
+          ctx.drawImage(imgEl, dx, dy, dw, dh);
+          ctx.globalAlpha = 1;
+        } else if (clip.thumbnail) {
+          // Fallback while image loads
+          const img = new window.Image();
+          img.src = clip.thumbnail;
+          try {
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          } catch {
+            /* not loaded yet */
+          }
         }
       } else if (clip.type === "video") {
-        // Draw video frame placeholder with gradient
-        const progress =
-          (currentTime - clip.startTime) / clip.duration;
-        const hue = 240 + progress * 60;
-        const grad = ctx.createLinearGradient(
-          0,
-          0,
-          canvas.width,
-          canvas.height
-        );
-        grad.addColorStop(0, `hsl(${hue}, 50%, 15%)`);
-        grad.addColorStop(1, `hsl(${hue + 30}, 40%, 10%)`);
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        const videoEl = getVideoElement(clip.id);
+        if (videoEl && videoEl.readyState >= 2) {
+          // ── draw the actual decoded video frame ──
+          const vAspect = videoEl.videoWidth / videoEl.videoHeight;
+          const cAspect = canvas.width / canvas.height;
+          let dw: number, dh: number, dx: number, dy: number;
+          if (vAspect > cAspect) {
+            dw = canvas.width;
+            dh = canvas.width / vAspect;
+            dx = 0;
+            dy = (canvas.height - dh) / 2;
+          } else {
+            dh = canvas.height;
+            dw = canvas.height * vAspect;
+            dx = (canvas.width - dw) / 2;
+            dy = 0;
+          }
+          ctx.globalAlpha = clip.opacity ?? 1;
+          ctx.drawImage(videoEl, dx, dy, dw, dh);
+          ctx.globalAlpha = 1;
+        } else {
+          // Placeholder – no source or still loading
+          ctx.fillStyle = "#0f0f1a";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Animated bars
-        ctx.fillStyle = `hsl(${hue}, 60%, 25%)`;
-        const barW = canvas.width / 20;
-        for (let i = 0; i < 20; i++) {
-          const barH =
-            canvas.height *
-            (0.2 +
-              0.3 * Math.sin((progress * Math.PI * 4 + i * 0.5) % Math.PI));
-          ctx.fillRect(
-            i * barW + 2,
-            canvas.height - barH,
-            barW - 4,
-            barH
-          );
+          const cx = canvas.width / 2;
+          const cy = canvas.height / 2;
+
+          // Film-frame icon
+          ctx.strokeStyle = "rgba(124, 92, 252, 0.3)";
+          ctx.lineWidth = 2;
+          ctx.strokeRect(cx - 32, cy - 24, 64, 48);
+          ctx.fillStyle = "rgba(124, 92, 252, 0.25)";
+          ctx.beginPath();
+          ctx.moveTo(cx - 10, cy - 14);
+          ctx.lineTo(cx - 10, cy + 14);
+          ctx.lineTo(cx + 14, cy);
+          ctx.closePath();
+          ctx.fill();
+
+          // Clip name
+          ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
+          ctx.font = "13px Inter, sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText(clip.name, cx, cy + 50);
+
+          if (clip.src) {
+            ctx.fillStyle = "rgba(255, 255, 255, 0.2)";
+            ctx.font = "11px Inter, sans-serif";
+            ctx.fillText("Loading\u2026", cx, cy + 68);
+          }
         }
-
-        // File name
-        ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
-        ctx.font = "13px Inter, sans-serif";
-        ctx.textAlign = "center";
-        ctx.fillText(clip.name, canvas.width / 2, 30);
       }
     }
-  }, [getActiveClips, currentTime, canvasSize]);
+  }, [getActiveClips, currentTime, canvasSize, getVideoElement, getImageElement]);
 
   // Playback animation loop
   useEffect(() => {
