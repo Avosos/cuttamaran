@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Scissors,
   Plus,
@@ -13,11 +13,89 @@ import {
   Moon,
   HardDrive,
   ChevronRight,
+  ChevronDown,
   Film,
   Minus,
   Square,
   Copy,
 } from "lucide-react";
+
+// ─── Custom Dropdown ─────────────────────────────────────
+function CustomDropdown({ value, options, onChange }: { value: string; options: { label: string; value: string }[]; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  const selected = options.find((o) => o.value === value);
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button
+        onClick={() => setOpen(!open)}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          padding: "5px 10px",
+          borderRadius: 6,
+          fontSize: 13,
+          border: "1px solid var(--border-subtle)",
+          cursor: "pointer",
+          background: "var(--bg-tertiary)",
+          color: "var(--text-primary)",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {selected?.label ?? value}
+        <ChevronDown size={12} style={{ color: "var(--text-muted)", transition: "transform 0.15s", transform: open ? "rotate(180deg)" : "rotate(0)" }} />
+      </button>
+      {open && (
+        <div
+          style={{
+            position: "absolute",
+            top: "calc(100% + 4px)",
+            right: 0,
+            minWidth: "100%",
+            borderRadius: 8,
+            padding: 4,
+            background: "var(--bg-tertiary)",
+            border: "1px solid var(--border-subtle)",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+            zIndex: 100,
+          }}
+        >
+          {options.map((opt) => (
+            <div
+              key={opt.value}
+              onClick={() => { onChange(opt.value); setOpen(false); }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "var(--accent-muted)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = opt.value === value ? "rgba(255,255,255,0.06)" : "transparent"; }}
+              style={{
+                padding: "6px 10px",
+                borderRadius: 5,
+                fontSize: 13,
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+                background: opt.value === value ? "rgba(255,255,255,0.06)" : "transparent",
+                color: opt.value === value ? "var(--accent-hover)" : "var(--text-secondary)",
+              }}
+            >
+              {opt.label}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ─── Types ──────────────────────────────────────────────
 export interface ProjectMeta {
@@ -267,142 +345,184 @@ function SettingsPanel({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(6,6,10,0.85)", backdropFilter: "blur(8px)" }}>
+    <div style={{ position: "absolute", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(6,6,10,0.85)", backdropFilter: "blur(8px)" }}>
       <div
-        className="w-[520px] rounded-2xl overflow-hidden animate-fade-in"
-        style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-subtle)", boxShadow: "0 24px 80px rgba(0,0,0,0.6)" }}
+        style={{
+          width: 520,
+          borderRadius: 16,
+          overflow: "hidden",
+          background: "var(--bg-secondary)",
+          border: "1px solid var(--border-subtle)",
+          boxShadow: "0 24px 80px rgba(0,0,0,0.6)",
+        }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
-          <h2 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>Settings</h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/5 transition-colors">
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px", borderBottom: "1px solid var(--border-subtle)" }}>
+          <h2 style={{ fontSize: 16, fontWeight: 600, margin: 0, color: "var(--text-primary)" }}>Settings</h2>
+          <button
+            onClick={onClose}
+            style={{ padding: 6, borderRadius: 8, background: "transparent", border: "none", cursor: "pointer" }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+          >
             <X size={16} style={{ color: "var(--text-muted)" }} />
           </button>
         </div>
 
         {/* Body */}
-        <div className="px-6 py-5 space-y-5 max-h-[420px] overflow-y-auto">
+        <div style={{ padding: "20px 24px", maxHeight: 420, overflowY: "auto", display: "flex", flexDirection: "column", gap: 20 }}>
           {/* Storage */}
           <div>
-            <h3 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>Storage</h3>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between py-2.5 px-3 rounded-lg" style={{ background: "var(--bg-tertiary)" }}>
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <FolderOpen size={15} style={{ color: "var(--text-muted)" }} className="flex-shrink-0" />
-                  <div className="min-w-0 flex-1">
-                    <span className="text-sm block" style={{ color: "var(--text-secondary)" }}>Projects Folder</span>
-                    <span className="text-[11px] block truncate" style={{ color: "var(--text-muted)" }}>
-                      {settings.projectsPath || "Not set — click Browse to choose"}
-                    </span>
-                  </div>
+            <h3 style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 12, color: "var(--text-muted)" }}>Storage</h3>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "10px 12px",
+                borderRadius: 8,
+                background: "var(--bg-tertiary)",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, flex: 1 }}>
+                <FolderOpen size={15} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <span style={{ fontSize: 13, display: "block", color: "var(--text-secondary)" }}>Projects Folder</span>
+                  <span style={{ fontSize: 11, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--text-muted)" }}>
+                    {settings.projectsPath || "Not set — click Browse to choose"}
+                  </span>
                 </div>
-                <button
-                  onClick={handleBrowseFolder}
-                  className="text-xs px-3 py-1.5 rounded-md flex-shrink-0 ml-3 transition-colors"
-                  style={{ background: "var(--accent-muted)", color: "var(--accent-hover)" }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(124,92,252,0.2)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = "var(--accent-muted)"; }}
-                >
-                  Browse
-                </button>
               </div>
+              <button
+                onClick={handleBrowseFolder}
+                style={{
+                  fontSize: 12,
+                  padding: "6px 12px",
+                  borderRadius: 6,
+                  flexShrink: 0,
+                  marginLeft: 12,
+                  border: "none",
+                  cursor: "pointer",
+                  background: "var(--accent-muted)",
+                  color: "var(--accent-hover)",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(124,92,252,0.2)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "var(--accent-muted)"; }}
+              >
+                Browse
+              </button>
             </div>
           </div>
 
           {/* General */}
           <div>
-            <h3 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>General</h3>
-            <div className="space-y-2">
+            <h3 style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 12, color: "var(--text-muted)" }}>General</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               {/* Default Resolution */}
-              <div className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-white/[0.03] transition-colors">
-                <div className="flex items-center gap-3">
+              <div
+                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", borderRadius: 8 }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <Monitor size={15} style={{ color: "var(--text-muted)" }} />
-                  <span className="text-sm" style={{ color: "var(--text-secondary)" }}>Default Resolution</span>
+                  <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>Default Resolution</span>
                 </div>
-                <select
+                <CustomDropdown
                   value={settings.defaultResolution}
-                  onChange={(e) => updateSetting("defaultResolution", e.target.value)}
-                  className="text-sm rounded-md px-2 py-1 outline-none cursor-pointer"
-                  style={{ background: "var(--bg-tertiary)", color: "var(--text-primary)", border: "1px solid var(--border-subtle)" }}
-                >
-                  {RESOLUTIONS.map((r) => (
-                    <option key={r.value} value={r.value}>{r.label}</option>
-                  ))}
-                </select>
+                  options={RESOLUTIONS.map((r) => ({ label: r.label, value: r.value }))}
+                  onChange={(v) => updateSetting("defaultResolution", v)}
+                />
               </div>
 
               {/* Auto-Save */}
-              <div className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-white/[0.03] transition-colors">
-                <div className="flex items-center gap-3">
+              <div
+                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", borderRadius: 8 }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <HardDrive size={15} style={{ color: "var(--text-muted)" }} />
-                  <span className="text-sm" style={{ color: "var(--text-secondary)" }}>Auto-Save</span>
+                  <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>Auto-Save</span>
                 </div>
                 <button
                   onClick={() => updateSetting("autoSave", !settings.autoSave)}
-                  className="relative w-9 h-5 rounded-full transition-colors"
-                  style={{ background: settings.autoSave ? "var(--accent)" : "var(--bg-tertiary)", border: "1px solid var(--border-subtle)" }}
+                  style={{
+                    position: "relative",
+                    width: 36,
+                    height: 20,
+                    borderRadius: 10,
+                    border: "1px solid var(--border-subtle)",
+                    cursor: "pointer",
+                    transition: "background 0.2s",
+                    background: settings.autoSave ? "var(--accent)" : "var(--bg-tertiary)",
+                  }}
                 >
                   <div
-                    className="absolute top-0.5 w-3.5 h-3.5 rounded-full transition-all"
                     style={{
+                      position: "absolute",
+                      top: 2,
+                      width: 14,
+                      height: 14,
+                      borderRadius: 7,
+                      transition: "left 0.2s, background 0.2s",
                       background: settings.autoSave ? "white" : "var(--text-muted)",
-                      left: settings.autoSave ? "calc(100% - 18px)" : "2px",
+                      left: settings.autoSave ? "calc(100% - 18px)" : 2,
                     }}
                   />
                 </button>
               </div>
 
               {/* Theme */}
-              <div className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-white/[0.03] transition-colors">
-                <div className="flex items-center gap-3">
+              <div
+                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", borderRadius: 8 }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <Moon size={15} style={{ color: "var(--text-muted)" }} />
-                  <span className="text-sm" style={{ color: "var(--text-secondary)" }}>Theme</span>
+                  <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>Theme</span>
                 </div>
-                <select
+                <CustomDropdown
                   value={settings.theme}
-                  onChange={(e) => updateSetting("theme", e.target.value as "dark" | "light")}
-                  className="text-sm rounded-md px-2 py-1 outline-none cursor-pointer"
-                  style={{ background: "var(--bg-tertiary)", color: "var(--text-primary)", border: "1px solid var(--border-subtle)" }}
-                >
-                  <option value="dark">Dark</option>
-                  <option value="light">Light</option>
-                </select>
+                  options={[{ label: "Dark", value: "dark" }, { label: "Light", value: "light" }]}
+                  onChange={(v) => updateSetting("theme", v as "dark" | "light")}
+                />
               </div>
             </div>
           </div>
 
           {/* Performance */}
           <div>
-            <h3 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>Performance</h3>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-white/[0.03] transition-colors">
-                <div className="flex items-center gap-3">
+            <h3 style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 12, color: "var(--text-muted)" }}>Performance</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <div
+                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", borderRadius: 8 }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <Film size={15} style={{ color: "var(--text-muted)" }} />
-                  <span className="text-sm" style={{ color: "var(--text-secondary)" }}>Preview Quality</span>
+                  <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>Preview Quality</span>
                 </div>
-                <select
+                <CustomDropdown
                   value={settings.previewQuality}
-                  onChange={(e) => updateSetting("previewQuality", e.target.value as "low" | "medium" | "high")}
-                  className="text-sm rounded-md px-2 py-1 outline-none cursor-pointer"
-                  style={{ background: "var(--bg-tertiary)", color: "var(--text-primary)", border: "1px solid var(--border-subtle)" }}
-                >
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                </select>
+                  options={[{ label: "Low", value: "low" }, { label: "Medium", value: "medium" }, { label: "High", value: "high" }]}
+                  onChange={(v) => updateSetting("previewQuality", v as "low" | "medium" | "high")}
+                />
               </div>
             </div>
           </div>
 
           {/* About */}
-          <div className="pt-2" style={{ borderTop: "1px solid var(--border-subtle)" }}>
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg, #7c5cfc, #e879f9)" }}>
+          <div style={{ paddingTop: 8, borderTop: "1px solid var(--border-subtle)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg, #7c5cfc, #e879f9)" }}>
                 <Scissors size={14} className="text-white" />
               </div>
               <div>
-                <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>Cuttamaran v0.1.0</p>
-                <p className="text-xs" style={{ color: "var(--text-muted)" }}>Open-source desktop video editor</p>
+                <p style={{ fontSize: 13, fontWeight: 500, margin: 0, color: "var(--text-primary)" }}>Cuttamaran v0.1.0</p>
+                <p style={{ fontSize: 12, margin: 0, color: "var(--text-muted)" }}>Open-source desktop video editor</p>
               </div>
             </div>
           </div>
@@ -418,35 +538,51 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
   const [resolution, setResolution] = useState("1920x1080");
 
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(6,6,10,0.85)", backdropFilter: "blur(8px)" }}>
+    <div style={{ position: "absolute", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(6,6,10,0.85)", backdropFilter: "blur(8px)" }}>
       <div
-        className="w-[440px] rounded-2xl overflow-hidden animate-fade-in"
-        style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-subtle)", boxShadow: "0 24px 80px rgba(0,0,0,0.6)" }}
+        style={{
+          width: 440,
+          borderRadius: 16,
+          overflow: "hidden",
+          background: "var(--bg-secondary)",
+          border: "1px solid var(--border-subtle)",
+          boxShadow: "0 24px 80px rgba(0,0,0,0.6)",
+        }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
-          <h2 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>New Project</h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/5 transition-colors">
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px", borderBottom: "1px solid var(--border-subtle)" }}>
+          <h2 style={{ fontSize: 16, fontWeight: 600, margin: 0, color: "var(--text-primary)" }}>New Project</h2>
+          <button
+            onClick={onClose}
+            style={{ padding: 6, borderRadius: 8, background: "transparent", border: "none", cursor: "pointer" }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+          >
             <X size={16} style={{ color: "var(--text-muted)" }} />
           </button>
         </div>
 
         {/* Body */}
-        <div className="px-6 py-5 space-y-4">
+        <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
           {/* Project name */}
           <div>
-            <label className="text-xs font-medium mb-1.5 block" style={{ color: "var(--text-muted)" }}>Project Name</label>
+            <label style={{ fontSize: 11, fontWeight: 500, marginBottom: 6, display: "block", color: "var(--text-muted)" }}>Project Name</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="My Awesome Video"
               autoFocus
-              className="w-full px-3 py-2.5 rounded-lg text-sm outline-none transition-colors"
               style={{
+                width: "100%",
+                padding: "10px 12px",
+                borderRadius: 8,
+                fontSize: 13,
+                outline: "none",
                 background: "var(--bg-tertiary)",
                 border: "1px solid var(--border-default)",
                 color: "var(--text-primary)",
+                boxSizing: "border-box",
               }}
               onFocus={(e) => { e.currentTarget.style.borderColor = "var(--accent)"; }}
               onBlur={(e) => { e.currentTarget.style.borderColor = "var(--border-default)"; }}
@@ -456,20 +592,27 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
 
           {/* Resolution */}
           <div>
-            <label className="text-xs font-medium mb-1.5 block" style={{ color: "var(--text-muted)" }}>Resolution</label>
-            <div className="grid grid-cols-2 gap-2">
+            <label style={{ fontSize: 11, fontWeight: 500, marginBottom: 6, display: "block", color: "var(--text-muted)" }}>Resolution</label>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
               {RESOLUTIONS.map((r) => (
                 <button
                   key={r.value}
                   onClick={() => setResolution(r.value)}
-                  className="flex flex-col items-start px-3 py-2.5 rounded-lg text-left transition-all"
                   style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "flex-start",
+                    padding: "10px 12px",
+                    borderRadius: 8,
+                    textAlign: "left",
+                    cursor: "pointer",
+                    transition: "border-color 0.15s, background 0.15s",
                     background: resolution === r.value ? "var(--accent-muted)" : "var(--bg-tertiary)",
                     border: `1px solid ${resolution === r.value ? "var(--accent)" : "var(--border-subtle)"}`,
                   }}
                 >
-                  <span className="text-xs font-medium" style={{ color: resolution === r.value ? "var(--accent-hover)" : "var(--text-secondary)" }}>{r.label}</span>
-                  <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>{r.desc}</span>
+                  <span style={{ fontSize: 12, fontWeight: 500, color: resolution === r.value ? "var(--accent-hover)" : "var(--text-secondary)" }}>{r.label}</span>
+                  <span style={{ fontSize: 10, color: "var(--text-muted)" }}>{r.desc}</span>
                 </button>
               ))}
             </div>
@@ -477,16 +620,27 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-2 px-6 py-4" style={{ borderTop: "1px solid var(--border-subtle)" }}>
-          <button onClick={onClose} className="px-4 py-2 text-sm rounded-lg transition-colors hover:bg-white/5" style={{ color: "var(--text-secondary)" }}>
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, padding: "16px 24px", borderTop: "1px solid var(--border-subtle)" }}>
+          <button
+            onClick={onClose}
+            style={{ padding: "8px 16px", fontSize: 13, borderRadius: 8, background: "transparent", border: "none", cursor: "pointer", color: "var(--text-secondary)" }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+          >
             Cancel
           </button>
           <button
             onClick={() => name.trim() && onCreate(name.trim(), resolution)}
             disabled={!name.trim()}
-            className="text-sm font-medium rounded-lg transition-all disabled:opacity-40 whitespace-nowrap"
             style={{
               padding: "8px 20px",
+              fontSize: 13,
+              fontWeight: 500,
+              borderRadius: 8,
+              border: "none",
+              cursor: name.trim() ? "pointer" : "default",
+              whiteSpace: "nowrap",
+              opacity: name.trim() ? 1 : 0.4,
               background: "linear-gradient(135deg, #7c5cfc, #6344e0)",
               color: "white",
               boxShadow: "0 2px 12px rgba(124, 92, 252, 0.3)",
@@ -538,29 +692,47 @@ export default function ProjectLauncher({ onOpenProject, onCreateProject }: Proj
   const recentProjects = projects.sort((a, b) => b.updatedAt - a.updatedAt);
 
   return (
-    <div className="flex flex-col h-screen select-none" style={{ background: "#06060a" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100vh", userSelect: "none", background: "#06060a" }}>
       {/* Title bar */}
       <div
-        className="flex items-center justify-between h-10 flex-shrink-0"
-        style={{ paddingLeft: 20, paddingRight: 0, WebkitAppRegion: "drag", background: "var(--bg-secondary)", borderBottom: "1px solid var(--border-subtle)" } as React.CSSProperties}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          height: 40,
+          flexShrink: 0,
+          paddingLeft: 20,
+          paddingRight: 0,
+          background: "var(--bg-secondary)",
+          borderBottom: "1px solid var(--border-subtle)",
+          WebkitAppRegion: "drag",
+        } as React.CSSProperties}
       >
-        <div className="flex items-center gap-2" style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}>
-          <div className="w-5 h-5 rounded flex items-center justify-center" style={{ background: "linear-gradient(135deg, #7c5cfc, #e879f9)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, WebkitAppRegion: "no-drag" } as React.CSSProperties}>
+          <div style={{ width: 20, height: 20, borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg, #7c5cfc, #e879f9)" }}>
             <Scissors size={10} className="text-white" />
           </div>
-          <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>Cuttamaran</span>
+          <span style={{ fontSize: 12, fontWeight: 500, color: "var(--text-muted)" }}>Cuttamaran</span>
         </div>
 
-        {/* Window controls */}
         {typeof window !== "undefined" && window.electronAPI && (
-          <div className="flex items-center" style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}>
-            <button onClick={() => window.electronAPI?.minimize()} className="flex items-center justify-center w-11 h-10 hover:bg-white/10 transition-colors">
+          <div style={{ display: "flex", alignItems: "center", WebkitAppRegion: "no-drag" } as React.CSSProperties}>
+            <button onClick={() => window.electronAPI?.minimize()} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 44, height: 40, background: "transparent", border: "none", cursor: "pointer" }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.1)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+            >
               <Minus size={13} style={{ color: "var(--text-secondary)" }} />
             </button>
-            <button onClick={() => window.electronAPI?.maximize()} className="flex items-center justify-center w-11 h-10 hover:bg-white/10 transition-colors">
+            <button onClick={() => window.electronAPI?.maximize()} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 44, height: 40, background: "transparent", border: "none", cursor: "pointer" }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.1)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+            >
               {isMaximized ? <Copy size={11} className="rotate-180" style={{ color: "var(--text-secondary)" }} /> : <Square size={11} style={{ color: "var(--text-secondary)" }} />}
             </button>
-            <button onClick={() => window.electronAPI?.close()} className="flex items-center justify-center w-11 h-10 hover:bg-red-500/90 transition-colors">
+            <button onClick={() => window.electronAPI?.close()} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 44, height: 40, background: "transparent", border: "none", cursor: "pointer" }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.9)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+            >
               <X size={13} style={{ color: "var(--text-secondary)" }} />
             </button>
           </div>
@@ -568,41 +740,63 @@ export default function ProjectLauncher({ onOpenProject, onCreateProject }: Proj
       </div>
 
       {/* Content */}
-      <div className="flex-1 flex overflow-hidden">
+      <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
         {/* Sidebar */}
         <div
-          className="w-48 flex-shrink-0 flex flex-col pt-4 pr-3 pb-5 pl-5 gap-1"
-          style={{ background: "var(--bg-secondary)", borderRight: "1px solid var(--border-subtle)" }}
+          style={{
+            width: 200,
+            flexShrink: 0,
+            display: "flex",
+            flexDirection: "column",
+            paddingTop: 16,
+            paddingRight: 12,
+            paddingBottom: 20,
+            paddingLeft: 20,
+            gap: 2,
+            background: "var(--bg-secondary)",
+            borderRight: "1px solid var(--border-subtle)",
+          }}
         >
           <button
             onClick={() => setShowNewProject(true)}
-            className="flex items-center gap-2.5 w-full px-4 py-2.5 rounded-xl text-sm font-medium transition-all mb-3 whitespace-nowrap"
             style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              width: "100%",
+              padding: "10px 16px",
+              borderRadius: 12,
+              fontSize: 13,
+              fontWeight: 500,
+              border: "none",
+              cursor: "pointer",
+              marginBottom: 12,
+              whiteSpace: "nowrap",
               background: "linear-gradient(135deg, #7c5cfc, #6344e0)",
               color: "white",
               boxShadow: "0 2px 16px rgba(124, 92, 252, 0.3)",
             }}
           >
-            <Plus size={15} className="flex-shrink-0" />
+            <Plus size={15} style={{ flexShrink: 0 }} />
             New Project
           </button>
 
           <NavItem icon={<Clock size={16} />} label="Recent" active />
           <NavItem icon={<FolderOpen size={16} />} label="All Projects" />
 
-          <div className="flex-1" />
+          <div style={{ flex: 1 }} />
 
           <NavItem icon={<Settings size={16} />} label="Settings" onClick={() => setShowSettings(true)} />
         </div>
 
         {/* Main area */}
-        <div className="flex-1 flex flex-col overflow-hidden p-6">
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", padding: 28 }}>
           {/* Hero section */}
-          <div className="mb-4">
-            <h1 className="text-xl font-bold tracking-tight mb-1" style={{ color: "var(--text-primary)" }}>
+          <div style={{ marginBottom: 20 }}>
+            <h1 style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.01em", marginBottom: 4, color: "var(--text-primary)" }}>
               Welcome back
             </h1>
-            <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+            <p style={{ fontSize: 13, margin: 0, color: "var(--text-muted)" }}>
               {recentProjects.length > 0
                 ? `You have ${recentProjects.length} project${recentProjects.length === 1 ? "" : "s"}. Pick up where you left off.`
                 : "Create your first project to get started."}
@@ -611,47 +805,64 @@ export default function ProjectLauncher({ onOpenProject, onCreateProject }: Proj
 
           {/* Project list */}
           {recentProjects.length > 0 ? (
-            <div className="flex-1 overflow-y-auto -mx-2">
-              <div className="flex flex-col gap-0.5">
+            <div style={{ flex: 1, overflowY: "auto", marginLeft: -8, marginRight: -8 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                 {recentProjects.map((project) => (
                   <div
                     key={project.id}
                     onClick={() => onOpenProject(project)}
                     onMouseEnter={() => setHoveredId(project.id)}
                     onMouseLeave={() => setHoveredId(null)}
-                    className="group flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all"
                     style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 14,
+                      padding: "10px 14px",
+                      borderRadius: 10,
+                      cursor: "pointer",
+                      transition: "background 0.15s",
                       background: hoveredId === project.id ? "rgba(255,255,255,0.05)" : "transparent",
                     }}
                   >
                     {/* Project icon */}
                     <div
-                      className="w-9 h-9 rounded-lg flex-shrink-0 flex items-center justify-center"
-                      style={{ background: seededGradient(project.id), opacity: 0.85 }}
+                      style={{
+                        width: 38,
+                        height: 38,
+                        borderRadius: 10,
+                        flexShrink: 0,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        background: seededGradient(project.id),
+                        opacity: 0.85,
+                      }}
                     >
                       <Film size={15} style={{ color: "rgba(255,255,255,0.6)" }} />
                     </div>
 
                     {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{project.name}</h3>
-                      <p className="text-[11px] truncate" style={{ color: "var(--text-muted)" }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <h3 style={{ fontSize: 13, fontWeight: 500, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--text-primary)" }}>{project.name}</h3>
+                      <p style={{ fontSize: 11, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--text-muted)" }}>
                         {project.resolution} · {project.trackCount} tracks · {project.clipCount} clips
                       </p>
                     </div>
 
                     {/* Time + actions */}
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>{formatDate(project.updatedAt)}</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                      <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{formatDate(project.updatedAt)}</span>
                       {hoveredId === project.id && (
                         <button
                           onClick={(e) => { e.stopPropagation(); handleDelete(project.id); }}
-                          className="p-1 rounded-md transition-colors hover:bg-white/10"
+                          style={{ padding: 4, borderRadius: 6, background: "transparent", border: "none", cursor: "pointer" }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.1)"; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
                         >
                           <Trash2 size={13} style={{ color: "var(--error)" }} />
                         </button>
                       )}
-                      <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "var(--accent)" }} />
+                      <ChevronRight size={14} style={{ color: "var(--accent)", opacity: hoveredId === project.id ? 1 : 0, transition: "opacity 0.15s" }} />
                     </div>
                   </div>
                 ))}
@@ -659,28 +870,45 @@ export default function ProjectLauncher({ onOpenProject, onCreateProject }: Proj
             </div>
           ) : (
             /* Empty state */
-            <div className="flex-1 flex flex-col items-center justify-center">
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
               <div
-                className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
-                style={{ background: "var(--bg-tertiary)", border: "1px solid var(--border-subtle)" }}
+                style={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: 16,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginBottom: 16,
+                  background: "var(--bg-tertiary)",
+                  border: "1px solid var(--border-subtle)",
+                }}
               >
                 <Film size={28} style={{ color: "var(--text-muted)" }} />
               </div>
-              <h2 className="text-base font-semibold mb-1.5" style={{ color: "var(--text-primary)" }}>No projects yet</h2>
-              <p className="text-sm mb-5 text-center max-w-xs" style={{ color: "var(--text-muted)" }}>
+              <h2 style={{ fontSize: 15, fontWeight: 600, marginBottom: 6, color: "var(--text-primary)" }}>No projects yet</h2>
+              <p style={{ fontSize: 13, marginBottom: 20, textAlign: "center", maxWidth: 280, color: "var(--text-muted)" }}>
                 Create your first project and start editing amazing videos.
               </p>
               <button
                 onClick={() => setShowNewProject(true)}
-                className="flex items-center gap-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap"
                 style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
                   padding: "10px 24px",
+                  borderRadius: 12,
+                  fontSize: 13,
+                  fontWeight: 500,
+                  border: "none",
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
                   background: "linear-gradient(135deg, #7c5cfc, #6344e0)",
                   color: "white",
                   boxShadow: "0 2px 16px rgba(124, 92, 252, 0.3)",
                 }}
               >
-                <Plus size={15} className="flex-shrink-0" />
+                <Plus size={15} style={{ flexShrink: 0 }} />
                 Create Project
               </button>
             </div>
@@ -706,15 +934,24 @@ function NavItem({ icon, label, active, onClick }: { icon: React.ReactNode; labe
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm transition-colors"
       style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        width: "100%",
+        padding: "8px 12px",
+        borderRadius: 8,
+        fontSize: 13,
+        border: "none",
+        cursor: "pointer",
+        transition: "background 0.15s",
         background: active ? "var(--accent-muted)" : "transparent",
         color: active ? "var(--accent-hover)" : "var(--text-secondary)",
       }}
       onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = "rgba(255,255,255,0.04)"; }}
-      onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = active ? "var(--accent-muted)" : "transparent"; }}
+      onMouseLeave={(e) => { e.currentTarget.style.background = active ? "var(--accent-muted)" : "transparent"; }}
     >
-      <span className="flex-shrink-0">{icon}</span>
+      <span style={{ flexShrink: 0, display: "flex" }}>{icon}</span>
       {label}
     </button>
   );

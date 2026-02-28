@@ -5,6 +5,7 @@ import { Minus, Square, X, Copy } from "lucide-react";
 
 export default function WindowControls() {
   const [isMaximized, setIsMaximized] = useState(false);
+  const [hoveredBtn, setHoveredBtn] = useState<string | null>(null);
 
   useEffect(() => {
     const api = window.electronAPI;
@@ -19,37 +20,63 @@ export default function WindowControls() {
   const handleMaximize = () => window.electronAPI?.maximize();
   const handleClose = () => window.electronAPI?.close();
 
-  // If not in Electron, don't render window controls
   if (typeof window === "undefined" || !window.electronAPI) {
     return null;
   }
 
+  const btnBase: React.CSSProperties = {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: 48,
+    height: 44,
+    border: "none",
+    background: "transparent",
+    cursor: "pointer",
+    transition: "background 0.15s",
+  };
+
   return (
-    <div className="flex items-center gap-0 ml-2" style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}>
+    <div style={{ display: "flex", alignItems: "center", gap: 0, marginLeft: 8, WebkitAppRegion: "no-drag" } as React.CSSProperties}>
       <button
         onClick={handleMinimize}
-        className="group flex items-center justify-center w-12 h-11 transition-colors hover:bg-white/10"
+        onMouseEnter={() => setHoveredBtn("min")}
+        onMouseLeave={() => setHoveredBtn(null)}
+        style={{
+          ...btnBase,
+          background: hoveredBtn === "min" ? "rgba(255,255,255,0.1)" : "transparent",
+        }}
         title="Minimize"
       >
-        <Minus size={14} className="text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]" />
+        <Minus size={14} style={{ color: hoveredBtn === "min" ? "var(--text-primary)" : "var(--text-secondary)" }} />
       </button>
       <button
         onClick={handleMaximize}
-        className="group flex items-center justify-center w-12 h-11 transition-colors hover:bg-white/10"
+        onMouseEnter={() => setHoveredBtn("max")}
+        onMouseLeave={() => setHoveredBtn(null)}
+        style={{
+          ...btnBase,
+          background: hoveredBtn === "max" ? "rgba(255,255,255,0.1)" : "transparent",
+        }}
         title={isMaximized ? "Restore" : "Maximize"}
       >
         {isMaximized ? (
-          <Copy size={12} className="text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] rotate-180" />
+          <Copy size={12} style={{ color: hoveredBtn === "max" ? "var(--text-primary)" : "var(--text-secondary)", transform: "rotate(180deg)" }} />
         ) : (
-          <Square size={12} className="text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]" />
+          <Square size={12} style={{ color: hoveredBtn === "max" ? "var(--text-primary)" : "var(--text-secondary)" }} />
         )}
       </button>
       <button
         onClick={handleClose}
-        className="group flex items-center justify-center w-12 h-11 transition-colors hover:bg-red-500/90"
+        onMouseEnter={() => setHoveredBtn("close")}
+        onMouseLeave={() => setHoveredBtn(null)}
+        style={{
+          ...btnBase,
+          background: hoveredBtn === "close" ? "rgba(239,68,68,0.9)" : "transparent",
+        }}
         title="Close"
       >
-        <X size={14} className="text-[var(--text-secondary)] group-hover:text-white" />
+        <X size={14} style={{ color: hoveredBtn === "close" ? "#ffffff" : "var(--text-secondary)" }} />
       </button>
     </div>
   );

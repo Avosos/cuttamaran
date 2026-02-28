@@ -52,7 +52,6 @@ function createWindow() {
     // In development, load from Next.js dev server
     const devUrl = process.env.ELECTRON_DEV_URL || "http://localhost:3000";
     mainWindow.loadURL(devUrl);
-    mainWindow.webContents.openDevTools({ mode: "detach" });
   } else {
     // In production, load the exported static files
     const indexPath = path.join(__dirname, "../out/index.html");

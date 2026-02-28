@@ -259,17 +259,18 @@ export default function PreviewPanel() {
 
   return (
     <div
-      className="flex flex-col h-full"
-      style={{ background: "var(--bg-primary)" }}
+      style={{ display: "flex", flexDirection: "column", height: "100%", background: "var(--bg-primary)" }}
     >
       {/* Preview area */}
       <div
         ref={containerRef}
-        className="flex-1 flex items-center justify-center p-4 min-h-0"
+        style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: 16, minHeight: 0 }}
       >
         <div
-          className="relative rounded-xl overflow-hidden shadow-2xl"
           style={{
+            position: "relative",
+            borderRadius: 12,
+            overflow: "hidden",
             aspectRatio: `${aspectRatio}`,
             maxWidth: "100%",
             maxHeight: "100%",
@@ -283,14 +284,19 @@ export default function PreviewPanel() {
             ref={canvasRef}
             width={canvasSize.width}
             height={canvasSize.height}
-            className="w-full h-full"
-            style={{ background: "#000" }}
+            style={{ width: "100%", height: "100%", background: "#000" }}
           />
 
           {/* Resolution badge */}
           <div
-            className="absolute top-3 right-3 px-2 py-0.5 rounded-md text-[10px] font-medium"
             style={{
+              position: "absolute",
+              top: 12,
+              right: 12,
+              padding: "2px 8px",
+              borderRadius: 6,
+              fontSize: 10,
+              fontWeight: 500,
               background: "rgba(0, 0, 0, 0.6)",
               backdropFilter: "blur(8px)",
               color: "var(--text-muted)",
@@ -304,32 +310,51 @@ export default function PreviewPanel() {
 
       {/* Transport controls */}
       <div
-        className="px-4 py-3"
         style={{
+          padding: "12px 16px",
           borderTop: "1px solid var(--border-subtle)",
           background: "var(--bg-secondary)",
         }}
       >
         {/* Progress bar */}
         <div
-          className="relative w-full h-1 rounded-full mb-3 cursor-pointer group"
-          style={{ background: "var(--bg-surface)" }}
+          style={{ position: "relative", width: "100%", height: 4, borderRadius: 9999, marginBottom: 12, cursor: "pointer", background: "var(--bg-surface)" }}
           onClick={(e) => {
             const rect = e.currentTarget.getBoundingClientRect();
             const ratio = (e.clientX - rect.left) / rect.width;
             setCurrentTime(ratio * duration);
           }}
+          onMouseEnter={(e) => {
+            const thumb = e.currentTarget.querySelector("[data-thumb]") as HTMLElement;
+            if (thumb) thumb.style.opacity = "1";
+          }}
+          onMouseLeave={(e) => {
+            const thumb = e.currentTarget.querySelector("[data-thumb]") as HTMLElement;
+            if (thumb) thumb.style.opacity = "0";
+          }}
         >
           <div
-            className="absolute top-0 left-0 h-full rounded-full transition-all"
             style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              height: "100%",
+              borderRadius: 9999,
+              transition: "width 0.05s",
               width: `${(currentTime / duration) * 100}%`,
               background: "linear-gradient(90deg, var(--accent), #a78bfa)",
             }}
           />
           <div
-            className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+            data-thumb=""
             style={{
+              position: "absolute",
+              top: "50%",
+              width: 12,
+              height: 12,
+              borderRadius: "50%",
+              opacity: 0,
+              transition: "opacity 0.15s",
               left: `${(currentTime / duration) * 100}%`,
               transform: "translate(-50%, -50%)",
               background: "white",
@@ -338,11 +363,10 @@ export default function PreviewPanel() {
           />
         </div>
 
-        <div className="flex items-center justify-between">
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           {/* Time display */}
           <div
-            className="font-mono text-xs tabular-nums"
-            style={{ color: "var(--text-secondary)" }}
+            style={{ fontFamily: "monospace", fontSize: 12, fontVariantNumeric: "tabular-nums", color: "var(--text-secondary)" }}
           >
             <span style={{ color: "var(--text-primary)" }}>
               {formatTime(currentTime)}
@@ -352,10 +376,19 @@ export default function PreviewPanel() {
           </div>
 
           {/* Playback controls */}
-          <div className="flex items-center gap-1">
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
             <button
               onClick={() => setCurrentTime(0)}
-              className="p-2 rounded-lg transition-all hover:bg-white/5"
+              style={{
+                padding: 8,
+                borderRadius: 8,
+                border: "none",
+                background: "transparent",
+                cursor: "pointer",
+                transition: "background 0.15s",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
               title="Go to start"
             >
               <SkipBack
@@ -366,8 +399,12 @@ export default function PreviewPanel() {
 
             <button
               onClick={togglePlayback}
-              className="p-2.5 rounded-xl transition-all"
               style={{
+                padding: 10,
+                borderRadius: 12,
+                border: "none",
+                cursor: "pointer",
+                transition: "all 0.15s",
                 background: isPlaying
                   ? "var(--bg-hover)"
                   : "linear-gradient(135deg, #7c5cfc, #6344e0)",
@@ -378,19 +415,27 @@ export default function PreviewPanel() {
               title={isPlaying ? "Pause (Space)" : "Play (Space)"}
             >
               {isPlaying ? (
-                <Pause size={18} className="text-white" />
+                <Pause size={18} style={{ color: "#ffffff" }} />
               ) : (
                 <Play
                   size={18}
-                  className="text-white"
-                  style={{ marginLeft: "2px" }}
+                  style={{ color: "#ffffff", marginLeft: 2 }}
                 />
               )}
             </button>
 
             <button
               onClick={() => setCurrentTime(duration)}
-              className="p-2 rounded-lg transition-all hover:bg-white/5"
+              style={{
+                padding: 8,
+                borderRadius: 8,
+                border: "none",
+                background: "transparent",
+                cursor: "pointer",
+                transition: "background 0.15s",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
               title="Go to end"
             >
               <SkipForward
@@ -401,7 +446,7 @@ export default function PreviewPanel() {
           </div>
 
           {/* Volume & Fullscreen */}
-          <div className="flex items-center gap-2">
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <Volume2 size={14} style={{ color: "var(--text-muted)" }} />
             <input
               type="range"
@@ -409,10 +454,20 @@ export default function PreviewPanel() {
               max="100"
               value={volume}
               onChange={(e) => setVolume(Number(e.target.value))}
-              className="w-16"
+              style={{ width: 64 }}
             />
             <button
-              className="p-1.5 rounded-lg transition-all hover:bg-white/5 ml-1"
+              style={{
+                padding: 6,
+                borderRadius: 8,
+                border: "none",
+                background: "transparent",
+                cursor: "pointer",
+                marginLeft: 4,
+                transition: "background 0.15s",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
               title="Fullscreen"
             >
               <Maximize

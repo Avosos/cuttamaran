@@ -73,11 +73,11 @@ export default function TimelinePanel() {
       marks.push(
         <div
           key={`mark-${t}`}
-          className="absolute top-0"
           style={{
-            left: `${x}px`,
-            height: isMajor ? "14px" : "6px",
-            width: "1px",
+            position: "absolute",
+            left: x,
+            height: isMajor ? 14 : 6,
+            width: 1,
             background: isMajor
               ? "rgba(255,255,255,0.25)"
               : "rgba(255,255,255,0.08)",
@@ -87,10 +87,12 @@ export default function TimelinePanel() {
         >
           {isMajor && (
             <span
-              className="absolute text-[9px] select-none"
               style={{
-                bottom: "16px",
-                left: "3px",
+                position: "absolute",
+                fontSize: 9,
+                userSelect: "none",
+                bottom: 16,
+                left: 3,
                 color: "var(--text-muted)",
                 whiteSpace: "nowrap",
               }}
@@ -310,24 +312,40 @@ export default function TimelinePanel() {
   return (
     <div
       ref={timelineRef}
-      className="flex flex-col h-full select-none"
       style={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        userSelect: "none",
         background: "var(--bg-secondary)",
       }}
     >
       {/* Timeline toolbar */}
       <div
-        className="flex items-center justify-between px-3 h-9 flex-shrink-0"
         style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "0 12px",
+          height: 36,
+          flexShrink: 0,
           background: "var(--bg-tertiary)",
           borderBottom: "1px solid var(--border-subtle)",
         }}
       >
-        <div className="flex items-center gap-1">
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
           <button
             onClick={toggleSnapping}
-            className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] transition-all"
             style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "4px 8px",
+              borderRadius: 6,
+              fontSize: 11,
+              border: "none",
+              cursor: "pointer",
+              transition: "all 0.15s",
               background: snapping
                 ? "var(--accent-muted)"
                 : "transparent",
@@ -342,8 +360,7 @@ export default function TimelinePanel() {
           </button>
 
           <div
-            className="w-px h-4 mx-1"
-            style={{ background: "var(--border-default)" }}
+            style={{ width: 1, height: 16, margin: "0 4px", background: "var(--border-default)" }}
           />
 
           <button
@@ -356,7 +373,17 @@ export default function TimelinePanel() {
               }
             }}
             disabled={!selectedClipId}
-            className="p-1.5 rounded-md transition-all hover:bg-white/5 disabled:opacity-30"
+            style={{
+              padding: 6,
+              borderRadius: 6,
+              border: "none",
+              background: "transparent",
+              cursor: selectedClipId ? "pointer" : "default",
+              opacity: selectedClipId ? 1 : 0.3,
+              transition: "all 0.15s",
+            }}
+            onMouseEnter={(e) => { if (selectedClipId) e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
             title="Delete clip"
           >
             <Trash2
@@ -367,7 +394,17 @@ export default function TimelinePanel() {
 
           <button
             disabled={!selectedClipId}
-            className="p-1.5 rounded-md transition-all hover:bg-white/5 disabled:opacity-30"
+            style={{
+              padding: 6,
+              borderRadius: 6,
+              border: "none",
+              background: "transparent",
+              cursor: selectedClipId ? "pointer" : "default",
+              opacity: selectedClipId ? 1 : 0.3,
+              transition: "all 0.15s",
+            }}
+            onMouseEnter={(e) => { if (selectedClipId) e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
             title="Split clip"
           >
             <Scissors
@@ -377,10 +414,12 @@ export default function TimelinePanel() {
           </button>
         </div>
 
-        <div className="flex items-center gap-1.5">
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <button
             onClick={() => setZoom(zoom - 0.2)}
-            className="p-1 rounded transition-all hover:bg-white/5"
+            style={{ padding: 4, borderRadius: 4, border: "none", background: "transparent", cursor: "pointer", transition: "all 0.15s" }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
           >
             <ZoomOut
               size={13}
@@ -388,23 +427,23 @@ export default function TimelinePanel() {
             />
           </button>
           <div
-            className="flex items-center gap-1 px-2 py-0.5 rounded"
-            style={{ background: "var(--bg-surface)" }}
+            style={{ display: "flex", alignItems: "center", gap: 4, padding: "2px 8px", borderRadius: 4, background: "var(--bg-surface)" }}
           >
             <ChevronsLeftRight
               size={10}
               style={{ color: "var(--text-muted)" }}
             />
             <span
-              className="text-[10px] font-mono"
-              style={{ color: "var(--text-secondary)" }}
+              style={{ fontSize: 10, fontFamily: "monospace", color: "var(--text-secondary)" }}
             >
               {(zoom * 100).toFixed(0)}%
             </span>
           </div>
           <button
             onClick={() => setZoom(zoom + 0.2)}
-            className="p-1 rounded transition-all hover:bg-white/5"
+            style={{ padding: 4, borderRadius: 4, border: "none", background: "transparent", cursor: "pointer", transition: "all 0.15s" }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
           >
             <ZoomIn
               size={13}
@@ -413,19 +452,45 @@ export default function TimelinePanel() {
           </button>
         </div>
 
-        <div className="flex items-center gap-1">
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
           <button
             onClick={() => addTrack("video")}
-            className="flex items-center gap-1 px-2 py-1 rounded-md text-[11px] transition-all hover:bg-white/5"
-            style={{ color: "var(--text-muted)" }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              padding: "4px 8px",
+              borderRadius: 6,
+              fontSize: 11,
+              border: "none",
+              background: "transparent",
+              cursor: "pointer",
+              color: "var(--text-muted)",
+              transition: "background 0.15s",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
           >
             <Plus size={12} />
             Video
           </button>
           <button
             onClick={() => addTrack("audio")}
-            className="flex items-center gap-1 px-2 py-1 rounded-md text-[11px] transition-all hover:bg-white/5"
-            style={{ color: "var(--text-muted)" }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              padding: "4px 8px",
+              borderRadius: 6,
+              fontSize: 11,
+              border: "none",
+              background: "transparent",
+              cursor: "pointer",
+              color: "var(--text-muted)",
+              transition: "background 0.15s",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
           >
             <Plus size={12} />
             Audio
@@ -434,12 +499,13 @@ export default function TimelinePanel() {
       </div>
 
       {/* Timeline content */}
-      <div className="flex flex-1 min-h-0 overflow-hidden">
+      <div style={{ display: "flex", flex: 1, minHeight: 0, overflow: "hidden" }}>
         {/* Track headers */}
         <div
-          className="flex-shrink-0 overflow-y-auto"
           style={{
-            width: `${TRACK_HEADER_WIDTH}px`,
+            flexShrink: 0,
+            overflowY: "auto",
+            width: TRACK_HEADER_WIDTH,
             borderRight: "1px solid var(--border-subtle)",
             background: "var(--bg-tertiary)",
           }}
@@ -461,7 +527,7 @@ export default function TimelinePanel() {
         {/* Scrollable timeline area */}
         <div
           ref={scrollRef}
-          className="flex-1 overflow-auto relative"
+          style={{ flex: 1, overflow: "auto", position: "relative" }}
           onClick={(e) => {
             if (e.target === e.currentTarget) {
               setSelectedClipId(null);
@@ -470,10 +536,13 @@ export default function TimelinePanel() {
         >
           {/* Ruler */}
           <div
-            className="sticky top-0 z-20 cursor-pointer"
             style={{
-              height: `${RULER_HEIGHT}px`,
-              width: `${Math.max(timelineWidth, 2000)}px`,
+              position: "sticky",
+              top: 0,
+              zIndex: 20,
+              cursor: "pointer",
+              height: RULER_HEIGHT,
+              width: Math.max(timelineWidth, 2000),
               background: "var(--bg-tertiary)",
               borderBottom: "1px solid var(--border-subtle)",
             }}
@@ -488,18 +557,18 @@ export default function TimelinePanel() {
 
           {/* Track lanes */}
           <div
-            className="relative"
             style={{
-              width: `${Math.max(timelineWidth, 2000)}px`,
+              position: "relative",
+              width: Math.max(timelineWidth, 2000),
               minHeight: "100%",
             }}
           >
             {tracks.map((track) => (
               <div
                 key={track.id}
-                className="relative"
                 style={{
-                  height: `${track.height}px`,
+                  position: "relative",
+                  height: track.height,
                   borderBottom: "1px solid var(--border-subtle)",
                   opacity: track.visible ? 1 : 0.4,
                 }}
@@ -511,8 +580,9 @@ export default function TimelinePanel() {
               >
                 {/* Track background pattern */}
                 <div
-                  className="absolute inset-0"
                   style={{
+                    position: "absolute",
+                    inset: 0,
                     background:
                       track.type === "video"
                         ? "rgba(124, 92, 252, 0.02)"
@@ -564,15 +634,21 @@ function TrackHeader({ track }: { track: Track }) {
 
   return (
     <div
-      className="flex items-center gap-1.5 px-2"
       style={{
-        height: `${track.height}px`,
+        display: "flex",
+        alignItems: "center",
+        gap: 6,
+        padding: "0 8px",
+        height: track.height,
         borderBottom: "1px solid var(--border-subtle)",
       }}
     >
       <div
-        className="w-1 h-5 rounded-full flex-shrink-0"
         style={{
+          width: 4,
+          height: 20,
+          borderRadius: 9999,
+          flexShrink: 0,
           background:
             track.type === "video"
               ? "var(--clip-video)"
@@ -581,8 +657,13 @@ function TrackHeader({ track }: { track: Track }) {
       />
 
       <span
-        className="text-[11px] font-medium flex-1 truncate"
         style={{
+          fontSize: 11,
+          fontWeight: 500,
+          flex: 1,
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
           color: track.visible
             ? "var(--text-secondary)"
             : "var(--text-muted)",
@@ -591,10 +672,12 @@ function TrackHeader({ track }: { track: Track }) {
         {track.name}
       </span>
 
-      <div className="flex items-center gap-0.5">
+      <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
         <button
           onClick={() => toggleTrackVisibility(track.id)}
-          className="p-1 rounded transition-all hover:bg-white/5"
+          style={{ padding: 4, borderRadius: 4, border: "none", background: "transparent", cursor: "pointer", transition: "background 0.15s" }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
           title={track.visible ? "Hide track" : "Show track"}
         >
           {track.visible ? (
@@ -608,7 +691,9 @@ function TrackHeader({ track }: { track: Track }) {
         </button>
         <button
           onClick={() => toggleTrackMute(track.id)}
-          className="p-1 rounded transition-all hover:bg-white/5"
+          style={{ padding: 4, borderRadius: 4, border: "none", background: "transparent", cursor: "pointer", transition: "background 0.15s" }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
           title={track.muted ? "Unmute" : "Mute"}
         >
           {track.muted ? (
@@ -625,7 +710,9 @@ function TrackHeader({ track }: { track: Track }) {
         </button>
         <button
           onClick={() => toggleTrackLock(track.id)}
-          className="p-1 rounded transition-all hover:bg-white/5"
+          style={{ padding: 4, borderRadius: 4, border: "none", background: "transparent", cursor: "pointer", transition: "background 0.15s" }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
           title={track.locked ? "Unlock" : "Lock"}
         >
           {track.locked ? (
@@ -667,23 +754,25 @@ function TimelineClipView({
 
   return (
     <div
-      className={`timeline-clip absolute top-1 rounded-md overflow-hidden ${
-        isSelected ? "selected" : ""
-      }`}
+      className={`timeline-clip${isSelected ? " selected" : ""}`}
       style={{
-        left: `${left}px`,
-        width: `${Math.max(width, 4)}px`,
-        height: `${trackHeight - 8}px`,
+        position: "absolute",
+        top: 4,
+        left,
+        width: Math.max(width, 4),
+        height: trackHeight - 8,
+        borderRadius: 6,
+        overflow: "hidden",
         background: getClipGradient(clip.type),
         opacity: clip.opacity ?? 1,
       }}
       onMouseDown={onMouseDown}
     >
       {/* Waveform / thumbnail */}
-      <div className="absolute inset-0 overflow-hidden">
+      <div style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
         {clip.type === "audio" && <AudioWaveform width={width} />}
         {clip.type === "video" && clip.thumbnail && (
-          <div className="absolute inset-0 flex">
+          <div style={{ position: "absolute", inset: 0, display: "flex" }}>
             {Array.from({
               length: Math.max(1, Math.ceil(width / 80)),
             }).map((_, i) => (
@@ -691,9 +780,11 @@ function TimelineClipView({
                 key={i}
                 src={clip.thumbnail}
                 alt=""
-                className="h-full flex-shrink-0 object-cover"
                 style={{
-                  width: "80px",
+                  height: "100%",
+                  flexShrink: 0,
+                  objectFit: "cover",
+                  width: 80,
                   opacity: 0.4,
                 }}
               />
@@ -703,30 +794,74 @@ function TimelineClipView({
       </div>
 
       {/* Clip label */}
-      <div className="relative z-10 flex items-center gap-1 px-2 py-1 h-full">
-        <span className="text-white/80 flex-shrink-0">
+      <div
+        style={{
+          position: "relative",
+          zIndex: 10,
+          display: "flex",
+          alignItems: "center",
+          gap: 4,
+          padding: "4px 8px",
+          height: "100%",
+        }}
+      >
+        <span style={{ color: "rgba(255,255,255,0.8)", flexShrink: 0 }}>
           {getClipIcon(clip.type)}
         </span>
-        <span className="text-[10px] text-white/90 font-medium truncate">
+        <span
+          style={{
+            fontSize: 10,
+            color: "rgba(255,255,255,0.9)",
+            fontWeight: 500,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
           {clip.name}
         </span>
       </div>
 
       {/* Resize handles */}
       <div
-        className="absolute left-0 top-0 bottom-0 w-1.5 cursor-ew-resize hover:bg-white/30 transition-colors z-20"
+        style={{
+          position: "absolute",
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: 6,
+          cursor: "ew-resize",
+          zIndex: 20,
+          transition: "background 0.15s",
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.3)"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
         onMouseDown={(e) => onResizeStart(e, "left")}
       />
       <div
-        className="absolute right-0 top-0 bottom-0 w-1.5 cursor-ew-resize hover:bg-white/30 transition-colors z-20"
+        style={{
+          position: "absolute",
+          right: 0,
+          top: 0,
+          bottom: 0,
+          width: 6,
+          cursor: "ew-resize",
+          zIndex: 20,
+          transition: "background 0.15s",
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.3)"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
         onMouseDown={(e) => onResizeStart(e, "right")}
       />
 
       {/* Selection border */}
       {isSelected && (
         <div
-          className="absolute inset-0 rounded-md pointer-events-none"
           style={{
+            position: "absolute",
+            inset: 0,
+            borderRadius: 6,
+            pointerEvents: "none",
             border: "2px solid rgba(255,255,255,0.6)",
           }}
         />
@@ -746,15 +881,26 @@ function AudioWaveform({ width }: { width: number }) {
   const bars = Math.max(1, Math.floor(width / 3));
 
   return (
-    <div className="absolute inset-0 flex items-center gap-px px-1 opacity-40">
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        display: "flex",
+        alignItems: "center",
+        gap: 1,
+        padding: "0 4px",
+        opacity: 0.4,
+      }}
+    >
       {Array.from({ length: bars }).map((_, i) => {
         const h = 20 + Math.sin(i * 0.7) * 30 + seededRandom(i) * 20;
         return (
           <div
             key={i}
-            className="flex-shrink-0 rounded-full"
             style={{
-              width: "2px",
+              flexShrink: 0,
+              borderRadius: 9999,
+              width: 2,
               height: `${h}%`,
               background: "rgba(255,255,255,0.6)",
             }}

@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef } from "react";
-import { useEditorStore } from "@/stores/editor-store";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useEditorStore, CANVAS_PRESETS } from "@/stores/editor-store";
 import {
   Undo2,
   Redo2,
@@ -10,6 +10,13 @@ import {
   Scissors,
   Save,
   ChevronDown,
+  X,
+  Monitor,
+  Moon,
+  HardDrive,
+  Film,
+  FolderOpen,
+  Check,
 } from "lucide-react";
 import WindowControls from "./window-controls";
 
@@ -22,9 +29,21 @@ export default function EditorHeader() {
     historyIndex,
     history,
     canvasSize,
+    setCanvasSize,
   } = useEditorStore();
 
   const inputRef = useRef<HTMLInputElement>(null);
+  const [hoveredBtn, setHoveredBtn] = useState<string | null>(null);
+  const [inputFocused, setInputFocused] = useState(false);
+  const [inputHovered, setInputHovered] = useState(false);
+  const [exportHovered, setExportHovered] = useState(false);
+
+  // Dropdown / modal state
+  const [resDropdownOpen, setResDropdownOpen] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showExport, setShowExport] = useState(false);
+  const [saveFlash, setSaveFlash] = useState(false);
+  const resRef = useRef<HTMLDivElement>(null);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -36,6 +55,11 @@ export default function EditorHeader() {
           undo();
         }
       }
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+        e.preventDefault();
+        setSaveFlash(true);
+        setTimeout(() => setSaveFlash(false), 1500);
+      }
     },
     [undo, redo]
   );
@@ -45,67 +69,186 @@ export default function EditorHeader() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 
+  // Close resolution dropdown on click outside
+  useEffect(() => {
+    if (!resDropdownOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (resRef.current && !resRef.current.contains(e.target as Node)) {
+        setResDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [resDropdownOpen]);
+
+  // Save flash
+  const handleSave = useCallback(() => {
+    setSaveFlash(true);
+    setTimeout(() => setSaveFlash(false), 1500);
+  }, []);
+
+  const iconBtnStyle = (id: string, disabled?: boolean): React.CSSProperties => ({
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 8,
+    borderRadius: 8,
+    border: "none",
+    background: hoveredBtn === id && !disabled ? "rgba(255,255,255,0.05)" : "transparent",
+    cursor: disabled ? "default" : "pointer",
+    opacity: disabled ? 0.3 : 1,
+    transition: "all 0.15s",
+  });
+
   return (
     <header
-      className="flex flex-shrink-0 items-center justify-between h-11 pr-0"
       style={{
+        display: "flex",
+        flexShrink: 0,
+        alignItems: "center",
+        justifyContent: "space-between",
+        height: 44,
+        paddingLeft: 20,
+        paddingRight: 0,
         background: "var(--bg-secondary)",
         borderBottom: "1px solid var(--border-subtle)",
-        paddingLeft: 20,
         WebkitAppRegion: "drag",
       } as React.CSSProperties}
     >
       {/* Left section - Logo & Project name */}
-      <div className="flex items-center gap-3" style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}>
-        <div className="flex items-center gap-2">
+      <div style={{ display: "flex", alignItems: "center", gap: 12, WebkitAppRegion: "no-drag" } as React.CSSProperties}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <div
-            className="w-7 h-7 rounded-lg flex items-center justify-center"
             style={{
+              width: 28,
+              height: 28,
+              borderRadius: 8,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
               background: "linear-gradient(135deg, #7c5cfc, #e879f9)",
             }}
           >
-            <Scissors size={14} className="text-white" />
+            <Scissors size={14} style={{ color: "#ffffff" }} />
           </div>
           <span
-            className="text-sm font-semibold tracking-tight gradient-text"
+            style={{
+              fontSize: 14,
+              fontWeight: 600,
+              letterSpacing: "-0.02em",
+              background: "linear-gradient(135deg, #7c5cfc, #e879f9)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+            } as React.CSSProperties}
           >
             Cuttamaran
           </span>
         </div>
 
-        <div
-          className="w-px h-5"
-          style={{ background: "var(--border-default)" }}
-        />
+        <div style={{ width: 1, height: 20, background: "var(--border-default)" }} />
 
         <input
           ref={inputRef}
           type="text"
           value={projectName}
           onChange={(e) => setProjectName(e.target.value)}
-          className="text-sm bg-transparent border-none outline-none px-2 py-1 rounded-md hover:bg-white/5 focus:bg-white/5 transition-colors"
-          style={{ color: "var(--text-secondary)", width: "180px" }}
+          onFocus={() => setInputFocused(true)}
+          onBlur={() => setInputFocused(false)}
+          onMouseEnter={() => setInputHovered(true)}
+          onMouseLeave={() => setInputHovered(false)}
+          style={{
+            fontSize: 14,
+            background: inputFocused || inputHovered ? "rgba(255,255,255,0.05)" : "transparent",
+            border: "none",
+            outline: "none",
+            padding: "4px 8px",
+            borderRadius: 6,
+            color: "var(--text-secondary)",
+            width: 180,
+            transition: "background 0.15s",
+          }}
         />
 
-        <button
-          className="flex items-center gap-1 text-[11px] px-2 py-0.5 rounded transition-colors"
-          style={{
-            color: "var(--text-muted)",
-            background: "var(--bg-tertiary)",
-            border: "1px solid var(--border-subtle)",
-          }}
-        >
-          {canvasSize.width}×{canvasSize.height}
-          <ChevronDown size={12} />
-        </button>
+        <div ref={resRef} style={{ position: "relative" }}>
+          <button
+            onClick={() => setResDropdownOpen((v) => !v)}
+            onMouseEnter={() => setHoveredBtn("res")}
+            onMouseLeave={() => setHoveredBtn(null)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              fontSize: 11,
+              padding: "2px 8px",
+              borderRadius: 4,
+              color: "var(--text-muted)",
+              background: resDropdownOpen ? "var(--bg-hover)" : hoveredBtn === "res" ? "var(--bg-hover)" : "var(--bg-tertiary)",
+              border: "1px solid var(--border-subtle)",
+              cursor: "pointer",
+              transition: "background 0.15s",
+            }}
+          >
+            {canvasSize.width}×{canvasSize.height}
+            <ChevronDown size={12} style={{ transform: resDropdownOpen ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.15s" }} />
+          </button>
+
+          {resDropdownOpen && (
+            <div
+              style={{
+                position: "absolute",
+                top: "calc(100% + 6px)",
+                right: 0,
+                width: 200,
+                borderRadius: 10,
+                padding: 4,
+                background: "var(--bg-secondary)",
+                border: "1px solid var(--border-subtle)",
+                boxShadow: "0 12px 40px rgba(0,0,0,0.5)",
+                zIndex: 100,
+              }}
+            >
+              {CANVAS_PRESETS.map((preset) => {
+                const active = canvasSize.width === preset.width && canvasSize.height === preset.height;
+                return (
+                  <button
+                    key={preset.name}
+                    onClick={() => { setCanvasSize(preset); setResDropdownOpen(false); }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      width: "100%",
+                      padding: "7px 10px",
+                      borderRadius: 6,
+                      border: "none",
+                      cursor: "pointer",
+                      fontSize: 12,
+                      color: active ? "var(--accent-hover)" : "var(--text-secondary)",
+                      background: active ? "var(--accent-muted)" : "transparent",
+                      transition: "background 0.12s",
+                    }}
+                    onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
+                    onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}
+                  >
+                    <span>{preset.name}</span>
+                    <span style={{ fontSize: 10, color: "var(--text-muted)" }}>{preset.width}×{preset.height}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Center section - Undo/Redo & Tools */}
-      <div className="flex items-center gap-1" style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}>
+      <div style={{ display: "flex", alignItems: "center", gap: 4, WebkitAppRegion: "no-drag" } as React.CSSProperties}>
         <button
           onClick={undo}
           disabled={historyIndex < 0}
-          className="p-2 rounded-lg transition-all hover:bg-white/5 disabled:opacity-30"
+          onMouseEnter={() => setHoveredBtn("undo")}
+          onMouseLeave={() => setHoveredBtn(null)}
+          style={iconBtnStyle("undo", historyIndex < 0)}
           title="Undo (Ctrl+Z)"
         >
           <Undo2 size={16} style={{ color: "var(--text-secondary)" }} />
@@ -113,64 +256,694 @@ export default function EditorHeader() {
         <button
           onClick={redo}
           disabled={historyIndex >= history.length - 1}
-          className="p-2 rounded-lg transition-all hover:bg-white/5 disabled:opacity-30"
+          onMouseEnter={() => setHoveredBtn("redo")}
+          onMouseLeave={() => setHoveredBtn(null)}
+          style={iconBtnStyle("redo", historyIndex >= history.length - 1)}
           title="Redo (Ctrl+Shift+Z)"
         >
           <Redo2 size={16} style={{ color: "var(--text-secondary)" }} />
         </button>
 
-        <div
-          className="w-px h-5 mx-2"
-          style={{ background: "var(--border-default)" }}
-        />
+        <div style={{ width: 1, height: 20, margin: "0 8px", background: "var(--border-default)" }} />
 
-        <button
-          className="p-2 rounded-lg transition-all hover:bg-white/5"
-          title="Auto Save: On"
-        >
-          <Save size={16} style={{ color: "var(--success)" }} />
-        </button>
+        <div style={{ position: "relative" }}>
+          <button
+            onClick={handleSave}
+            onMouseEnter={() => setHoveredBtn("save")}
+            onMouseLeave={() => setHoveredBtn(null)}
+            style={iconBtnStyle("save")}
+            title="Save Project (Ctrl+S)"
+          >
+            {saveFlash ? (
+              <Check size={16} style={{ color: "var(--success)" }} />
+            ) : (
+              <Save size={16} style={{ color: "var(--success)" }} />
+            )}
+          </button>
+          {saveFlash && (
+            <span
+              style={{
+                position: "absolute",
+                top: "calc(100% + 4px)",
+                left: "50%",
+                transform: "translateX(-50%)",
+                fontSize: 10,
+                fontWeight: 500,
+                color: "var(--success)",
+                background: "var(--bg-secondary)",
+                border: "1px solid var(--border-subtle)",
+                borderRadius: 6,
+                padding: "3px 8px",
+                whiteSpace: "nowrap",
+                zIndex: 100,
+                pointerEvents: "none",
+              }}
+            >
+              Saved!
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Right section - Export, Settings & Window Controls */}
-      <div className="flex items-center gap-2" style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, WebkitAppRegion: "no-drag" } as React.CSSProperties}>
         <button
-          className="p-2 rounded-lg transition-all hover:bg-white/5"
+          onClick={() => setShowSettings(true)}
+          onMouseEnter={() => setHoveredBtn("settings")}
+          onMouseLeave={() => setHoveredBtn(null)}
+          style={iconBtnStyle("settings")}
           title="Settings"
         >
           <Settings size={16} style={{ color: "var(--text-secondary)" }} />
         </button>
 
         <button
-          className="flex items-center gap-2 rounded-lg text-sm font-medium transition-all"
+          onClick={() => setShowExport(true)}
+          onMouseEnter={() => setExportHovered(true)}
+          onMouseLeave={() => setExportHovered(false)}
           style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            borderRadius: 8,
+            fontSize: 14,
+            fontWeight: 500,
             padding: "6px 16px",
             background: "linear-gradient(135deg, #7c5cfc, #6344e0)",
-            color: "white",
-            boxShadow: "0 2px 12px rgba(124, 92, 252, 0.3)",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.boxShadow =
-              "0 4px 20px rgba(124, 92, 252, 0.5)";
-            e.currentTarget.style.transform = "translateY(-1px)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.boxShadow =
-              "0 2px 12px rgba(124, 92, 252, 0.3)";
-            e.currentTarget.style.transform = "translateY(0)";
+            color: "#ffffff",
+            border: "none",
+            cursor: "pointer",
+            boxShadow: exportHovered
+              ? "0 4px 20px rgba(124, 92, 252, 0.5)"
+              : "0 2px 12px rgba(124, 92, 252, 0.3)",
+            transform: exportHovered ? "translateY(-1px)" : "translateY(0)",
+            transition: "all 0.15s",
           }}
         >
           <Download size={14} />
           Export
         </button>
 
-        <div
-          className="w-px h-5 mx-1"
-          style={{ background: "var(--border-default)" }}
-        />
+        <div style={{ width: 1, height: 20, margin: "0 4px", background: "var(--border-default)" }} />
 
         <WindowControls />
       </div>
+
+      {/* Settings Modal */}
+      {showSettings && <EditorSettingsModal onClose={() => setShowSettings(false)} />}
+
+      {/* Export Modal */}
+      {showExport && <ExportModal onClose={() => setShowExport(false)} />}
     </header>
+  );
+}
+
+// ─── Settings Modal (Editor) ────────────────────────────
+const SETTINGS_KEY = "cuttamaran_settings";
+interface AppSettings {
+  projectsPath: string;
+  defaultResolution: string;
+  autoSave: boolean;
+  theme: "dark" | "light";
+  previewQuality: "low" | "medium" | "high";
+}
+const DEFAULT_SETTINGS: AppSettings = {
+  projectsPath: "",
+  defaultResolution: "1920x1080",
+  autoSave: true,
+  theme: "dark",
+  previewQuality: "medium",
+};
+function loadSettings(): AppSettings {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    return raw ? { ...DEFAULT_SETTINGS, ...JSON.parse(raw) } : { ...DEFAULT_SETTINGS };
+  } catch {
+    return { ...DEFAULT_SETTINGS };
+  }
+}
+function saveSettingsData(settings: AppSettings) {
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+}
+
+function EditorSettingsModal({ onClose }: { onClose: () => void }) {
+  const [settings, setSettings] = useState<AppSettings>(loadSettings);
+  const [hoveredRow, setHoveredRow] = useState<string | null>(null);
+  const [closeBtnHovered, setCloseBtnHovered] = useState(false);
+
+  const updateSetting = <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
+    const updated = { ...settings, [key]: value };
+    setSettings(updated);
+    saveSettingsData(updated);
+  };
+
+  const handleBrowseFolder = async () => {
+    const result = await (window as Window & { electronAPI?: { openFolderDialog?: (opts: { title: string }) => Promise<{ canceled: boolean; filePaths: string[] }> } }).electronAPI?.openFolderDialog({
+      title: "Choose Projects Folder",
+    });
+    if (result && !result.canceled && result.filePaths[0]) {
+      updateSetting("projectsPath", result.filePaths[0]);
+    }
+  };
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [onClose]);
+
+  const rowStyle = (id: string): React.CSSProperties => ({
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: "8px 12px",
+    borderRadius: 8,
+    background: hoveredRow === id ? "rgba(255,255,255,0.03)" : "transparent",
+    transition: "background 0.12s",
+  });
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 200,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "rgba(6,6,10,0.85)",
+        backdropFilter: "blur(8px)",
+        WebkitAppRegion: "no-drag",
+      } as React.CSSProperties}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        style={{
+          width: 520,
+          borderRadius: 16,
+          overflow: "hidden",
+          background: "var(--bg-secondary)",
+          border: "1px solid var(--border-subtle)",
+          boxShadow: "0 24px 80px rgba(0,0,0,0.6)",
+        }}
+      >
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px", borderBottom: "1px solid var(--border-subtle)" }}>
+          <h2 style={{ fontSize: 16, fontWeight: 600, margin: 0, color: "var(--text-primary)" }}>Settings</h2>
+          <button
+            onClick={onClose}
+            onMouseEnter={() => setCloseBtnHovered(true)}
+            onMouseLeave={() => setCloseBtnHovered(false)}
+            style={{ padding: 6, borderRadius: 8, background: closeBtnHovered ? "rgba(255,255,255,0.05)" : "transparent", border: "none", cursor: "pointer", transition: "background 0.12s" }}
+          >
+            <X size={16} style={{ color: "var(--text-muted)" }} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div style={{ padding: "20px 24px", maxHeight: 420, overflowY: "auto", display: "flex", flexDirection: "column", gap: 20 }}>
+          {/* Storage */}
+          <div>
+            <h3 style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 12, color: "var(--text-muted)" }}>Storage</h3>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", borderRadius: 8, background: "var(--bg-tertiary)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, flex: 1 }}>
+                <FolderOpen size={15} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <span style={{ fontSize: 13, display: "block", color: "var(--text-secondary)" }}>Projects Folder</span>
+                  <span style={{ fontSize: 11, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--text-muted)" }}>
+                    {settings.projectsPath || "Not set — click Browse to choose"}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={handleBrowseFolder}
+                style={{ fontSize: 12, padding: "6px 12px", borderRadius: 6, flexShrink: 0, marginLeft: 12, border: "none", cursor: "pointer", background: "var(--accent-muted)", color: "var(--accent-hover)" }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(124,92,252,0.2)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "var(--accent-muted)"; }}
+              >
+                Browse
+              </button>
+            </div>
+          </div>
+
+          {/* General */}
+          <div>
+            <h3 style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 12, color: "var(--text-muted)" }}>General</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              {/* Auto-Save */}
+              <div
+                style={rowStyle("autosave")}
+                onMouseEnter={() => setHoveredRow("autosave")}
+                onMouseLeave={() => setHoveredRow(null)}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <HardDrive size={15} style={{ color: "var(--text-muted)" }} />
+                  <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>Auto-Save</span>
+                </div>
+                <button
+                  onClick={() => updateSetting("autoSave", !settings.autoSave)}
+                  style={{
+                    position: "relative",
+                    width: 36,
+                    height: 20,
+                    borderRadius: 10,
+                    border: "1px solid var(--border-subtle)",
+                    cursor: "pointer",
+                    transition: "background 0.2s",
+                    background: settings.autoSave ? "var(--accent)" : "var(--bg-tertiary)",
+                  }}
+                >
+                  <div style={{
+                    position: "absolute",
+                    top: 2,
+                    width: 14,
+                    height: 14,
+                    borderRadius: 7,
+                    transition: "left 0.2s, background 0.2s",
+                    background: settings.autoSave ? "white" : "var(--text-muted)",
+                    left: settings.autoSave ? "calc(100% - 18px)" : 2,
+                  }} />
+                </button>
+              </div>
+
+              {/* Theme */}
+              <div
+                style={rowStyle("theme")}
+                onMouseEnter={() => setHoveredRow("theme")}
+                onMouseLeave={() => setHoveredRow(null)}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <Moon size={15} style={{ color: "var(--text-muted)" }} />
+                  <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>Theme</span>
+                </div>
+                <SettingsDropdown
+                  value={settings.theme}
+                  options={[{ label: "Dark", value: "dark" }, { label: "Light", value: "light" }]}
+                  onChange={(v) => updateSetting("theme", v as "dark" | "light")}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Performance */}
+          <div>
+            <h3 style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 12, color: "var(--text-muted)" }}>Performance</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <div
+                style={rowStyle("quality")}
+                onMouseEnter={() => setHoveredRow("quality")}
+                onMouseLeave={() => setHoveredRow(null)}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <Film size={15} style={{ color: "var(--text-muted)" }} />
+                  <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>Preview Quality</span>
+                </div>
+                <SettingsDropdown
+                  value={settings.previewQuality}
+                  options={[{ label: "Low", value: "low" }, { label: "Medium", value: "medium" }, { label: "High", value: "high" }]}
+                  onChange={(v) => updateSetting("previewQuality", v as "low" | "medium" | "high")}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* About */}
+          <div style={{ paddingTop: 8, borderTop: "1px solid var(--border-subtle)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg, #7c5cfc, #e879f9)" }}>
+                <Scissors size={14} style={{ color: "#ffffff" }} />
+              </div>
+              <div>
+                <p style={{ fontSize: 13, fontWeight: 500, margin: 0, color: "var(--text-primary)" }}>Cuttamaran v0.1.0</p>
+                <p style={{ fontSize: 12, margin: 0, color: "var(--text-muted)" }}>Open-source desktop video editor</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Settings Dropdown (mini) ───────────────────────────
+function SettingsDropdown({ value, options, onChange }: { value: string; options: { label: string; value: string }[]; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const [hovered, setHovered] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  const selected = options.find((o) => o.value === value);
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          fontSize: 12,
+          padding: "4px 10px",
+          borderRadius: 6,
+          border: "1px solid var(--border-subtle)",
+          background: "var(--bg-tertiary)",
+          color: "var(--text-secondary)",
+          cursor: "pointer",
+          minWidth: 90,
+          justifyContent: "space-between",
+        }}
+      >
+        {selected?.label ?? value}
+        <ChevronDown size={11} style={{ color: "var(--text-muted)", transform: open ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.15s" }} />
+      </button>
+      {open && (
+        <div
+          style={{
+            position: "absolute",
+            top: "calc(100% + 4px)",
+            right: 0,
+            minWidth: "100%",
+            borderRadius: 8,
+            padding: 3,
+            background: "var(--bg-secondary)",
+            border: "1px solid var(--border-subtle)",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+            zIndex: 300,
+          }}
+        >
+          {options.map((o) => (
+            <button
+              key={o.value}
+              onClick={() => { onChange(o.value); setOpen(false); }}
+              onMouseEnter={() => setHovered(o.value)}
+              onMouseLeave={() => setHovered(null)}
+              style={{
+                display: "block",
+                width: "100%",
+                padding: "6px 10px",
+                borderRadius: 5,
+                border: "none",
+                fontSize: 12,
+                textAlign: "left",
+                cursor: "pointer",
+                color: o.value === value ? "var(--accent-hover)" : "var(--text-secondary)",
+                background: o.value === value ? "var(--accent-muted)" : hovered === o.value ? "rgba(255,255,255,0.05)" : "transparent",
+                transition: "background 0.1s",
+              }}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Export Modal ────────────────────────────────────────
+const EXPORT_FORMATS = [
+  { value: "mp4", label: "MP4", desc: "H.264 — best compatibility" },
+  { value: "webm", label: "WebM", desc: "VP9 — smaller file size" },
+  { value: "mov", label: "MOV", desc: "ProRes — editing & Apple" },
+  { value: "gif", label: "GIF", desc: "Animated — social media" },
+];
+
+const EXPORT_QUALITY = [
+  { value: "low", label: "Draft", desc: "720p — fast render" },
+  { value: "medium", label: "Standard", desc: "1080p — balanced" },
+  { value: "high", label: "High", desc: "Original — best quality" },
+];
+
+function ExportModal({ onClose }: { onClose: () => void }) {
+  const { projectName, canvasSize } = useEditorStore();
+  const [format, setFormat] = useState("mp4");
+  const [quality, setQuality] = useState("high");
+  const [exporting, setExporting] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [done, setDone] = useState(false);
+  const [closeBtnHovered, setCloseBtnHovered] = useState(false);
+  const [exportBtnHovered, setExportBtnHovered] = useState(false);
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => { if (e.key === "Escape" && !exporting) onClose(); };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [onClose, exporting]);
+
+  const handleExport = () => {
+    setExporting(true);
+    setProgress(0);
+    // Simulate export progress
+    const interval = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          setExporting(false);
+          setDone(true);
+          return 100;
+        }
+        return prev + Math.random() * 8 + 2;
+      });
+    }, 200);
+  };
+
+  const qualityLabel = EXPORT_QUALITY.find((q) => q.value === quality);
+  const formatLabel = EXPORT_FORMATS.find((f) => f.value === format);
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 200,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "rgba(6,6,10,0.85)",
+        backdropFilter: "blur(8px)",
+        WebkitAppRegion: "no-drag",
+      } as React.CSSProperties}
+      onClick={(e) => { if (e.target === e.currentTarget && !exporting) onClose(); }}
+    >
+      <div
+        style={{
+          width: 480,
+          borderRadius: 16,
+          overflow: "hidden",
+          background: "var(--bg-secondary)",
+          border: "1px solid var(--border-subtle)",
+          boxShadow: "0 24px 80px rgba(0,0,0,0.6)",
+        }}
+      >
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px", borderBottom: "1px solid var(--border-subtle)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <Download size={18} style={{ color: "var(--accent)" }} />
+            <h2 style={{ fontSize: 16, fontWeight: 600, margin: 0, color: "var(--text-primary)" }}>Export Project</h2>
+          </div>
+          <button
+            onClick={onClose}
+            onMouseEnter={() => setCloseBtnHovered(true)}
+            onMouseLeave={() => setCloseBtnHovered(false)}
+            style={{ padding: 6, borderRadius: 8, background: closeBtnHovered ? "rgba(255,255,255,0.05)" : "transparent", border: "none", cursor: "pointer", transition: "background 0.12s", opacity: exporting ? 0.3 : 1, pointerEvents: exporting ? "none" : "auto" }}
+          >
+            <X size={16} style={{ color: "var(--text-muted)" }} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 20 }}>
+          {/* Project info */}
+          <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 8, background: "var(--bg-tertiary)" }}>
+            <div style={{ width: 36, height: 36, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg, #7c5cfc, #e879f9)" }}>
+              <Film size={16} style={{ color: "#ffffff" }} />
+            </div>
+            <div>
+              <span style={{ fontSize: 13, fontWeight: 500, display: "block", color: "var(--text-primary)" }}>{projectName}</span>
+              <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{canvasSize.width}×{canvasSize.height} • {canvasSize.name}</span>
+            </div>
+          </div>
+
+          {!done && (
+            <>
+              {/* Format */}
+              <div>
+                <h3 style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10, color: "var(--text-muted)" }}>Format</h3>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                  {EXPORT_FORMATS.map((f) => {
+                    const active = format === f.value;
+                    return (
+                      <button
+                        key={f.value}
+                        onClick={() => !exporting && setFormat(f.value)}
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "flex-start",
+                          padding: "10px 12px",
+                          borderRadius: 8,
+                          textAlign: "left",
+                          cursor: exporting ? "default" : "pointer",
+                          border: `1px solid ${active ? "var(--accent)" : "var(--border-subtle)"}`,
+                          background: active ? "var(--accent-muted)" : "var(--bg-tertiary)",
+                          opacity: exporting ? 0.5 : 1,
+                          transition: "border-color 0.15s, background 0.15s",
+                        }}
+                      >
+                        <span style={{ fontSize: 12, fontWeight: 500, color: active ? "var(--accent-hover)" : "var(--text-secondary)" }}>{f.label}</span>
+                        <span style={{ fontSize: 10, color: "var(--text-muted)" }}>{f.desc}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Quality */}
+              <div>
+                <h3 style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10, color: "var(--text-muted)" }}>Quality</h3>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+                  {EXPORT_QUALITY.map((q) => {
+                    const active = quality === q.value;
+                    return (
+                      <button
+                        key={q.value}
+                        onClick={() => !exporting && setQuality(q.value)}
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "flex-start",
+                          padding: "10px 12px",
+                          borderRadius: 8,
+                          textAlign: "left",
+                          cursor: exporting ? "default" : "pointer",
+                          border: `1px solid ${active ? "var(--accent)" : "var(--border-subtle)"}`,
+                          background: active ? "var(--accent-muted)" : "var(--bg-tertiary)",
+                          opacity: exporting ? 0.5 : 1,
+                          transition: "border-color 0.15s, background 0.15s",
+                        }}
+                      >
+                        <span style={{ fontSize: 12, fontWeight: 500, color: active ? "var(--accent-hover)" : "var(--text-secondary)" }}>{q.label}</span>
+                        <span style={{ fontSize: 10, color: "var(--text-muted)" }}>{q.desc}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Progress bar */}
+          {(exporting || done) && (
+            <div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>
+                  {done ? "Export complete!" : `Exporting ${formatLabel?.label ?? format.toUpperCase()}…`}
+                </span>
+                <span style={{ fontSize: 11, fontWeight: 500, color: done ? "var(--success)" : "var(--text-muted)" }}>
+                  {Math.min(Math.round(progress), 100)}%
+                </span>
+              </div>
+              <div style={{ height: 6, borderRadius: 3, background: "var(--bg-tertiary)", overflow: "hidden" }}>
+                <div
+                  style={{
+                    height: "100%",
+                    borderRadius: 3,
+                    width: `${Math.min(progress, 100)}%`,
+                    background: done ? "var(--success)" : "linear-gradient(90deg, #7c5cfc, #e879f9)",
+                    transition: "width 0.2s ease-out",
+                  }}
+                />
+              </div>
+              {done && (
+                <p style={{ fontSize: 11, marginTop: 8, color: "var(--text-muted)" }}>
+                  {projectName}.{format} • {qualityLabel?.label} quality • {canvasSize.width}×{canvasSize.height}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, padding: "16px 24px", borderTop: "1px solid var(--border-subtle)" }}>
+          {done ? (
+            <button
+              onClick={onClose}
+              onMouseEnter={() => setExportBtnHovered(true)}
+              onMouseLeave={() => setExportBtnHovered(false)}
+              style={{
+                padding: "8px 20px",
+                fontSize: 13,
+                fontWeight: 500,
+                borderRadius: 8,
+                border: "none",
+                cursor: "pointer",
+                background: "var(--success)",
+                color: "#ffffff",
+                boxShadow: exportBtnHovered ? "0 4px 16px rgba(34,197,94,0.4)" : "0 2px 8px rgba(34,197,94,0.2)",
+                transition: "box-shadow 0.15s",
+              }}
+            >
+              <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <Check size={14} />
+                Done
+              </span>
+            </button>
+          ) : (
+            <>
+              <button
+                onClick={onClose}
+                disabled={exporting}
+                style={{
+                  padding: "8px 16px",
+                  fontSize: 13,
+                  borderRadius: 8,
+                  background: "transparent",
+                  border: "none",
+                  cursor: exporting ? "default" : "pointer",
+                  color: "var(--text-secondary)",
+                  opacity: exporting ? 0.3 : 1,
+                }}
+                onMouseEnter={(e) => { if (!exporting) e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleExport}
+                disabled={exporting}
+                onMouseEnter={() => !exporting && setExportBtnHovered(true)}
+                onMouseLeave={() => setExportBtnHovered(false)}
+                style={{
+                  padding: "8px 20px",
+                  fontSize: 13,
+                  fontWeight: 500,
+                  borderRadius: 8,
+                  border: "none",
+                  cursor: exporting ? "default" : "pointer",
+                  background: "linear-gradient(135deg, #7c5cfc, #6344e0)",
+                  color: "#ffffff",
+                  opacity: exporting ? 0.6 : 1,
+                  boxShadow: exportBtnHovered && !exporting ? "0 4px 20px rgba(124, 92, 252, 0.5)" : "0 2px 12px rgba(124, 92, 252, 0.3)",
+                  transition: "all 0.15s",
+                }}
+              >
+                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <Download size={14} />
+                  {exporting ? "Exporting…" : "Export"}
+                </span>
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }

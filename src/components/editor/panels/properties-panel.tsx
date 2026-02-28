@@ -74,23 +74,33 @@ export default function PropertiesPanel() {
 
   return (
     <div
-      className="h-full flex flex-col animate-slide-in"
       style={{
-        width: "260px",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        width: 260,
         background: "var(--bg-secondary)",
       }}
     >
       {/* Header */}
       <div
-        className="flex items-center justify-between px-3 py-2.5"
         style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "10px 12px",
           borderBottom: "1px solid var(--border-subtle)",
         }}
       >
-        <div className="flex items-center gap-2">
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <div
-            className="w-6 h-6 rounded-md flex items-center justify-center"
             style={{
+              width: 24,
+              height: 24,
+              borderRadius: 6,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
               background: `${getTypeColor()}20`,
               color: getTypeColor(),
             }}
@@ -99,14 +109,12 @@ export default function PropertiesPanel() {
           </div>
           <div>
             <p
-              className="text-xs font-medium truncate"
-              style={{ color: "var(--text-primary)", maxWidth: "150px" }}
+              style={{ fontSize: 12, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--text-primary)", maxWidth: 150, margin: 0 }}
             >
               {selectedClip.name}
             </p>
             <p
-              className="text-[10px] capitalize"
-              style={{ color: "var(--text-muted)" }}
+              style={{ fontSize: 10, textTransform: "capitalize", color: "var(--text-muted)", margin: 0 }}
             >
               {selectedClip.type} clip
             </p>
@@ -114,14 +122,23 @@ export default function PropertiesPanel() {
         </div>
         <button
           onClick={() => setPropertiesPanelOpen(false)}
-          className="p-1 rounded-md transition-all hover:bg-white/5"
+          style={{
+            padding: 4,
+            borderRadius: 6,
+            border: "none",
+            background: "transparent",
+            cursor: "pointer",
+            transition: "background 0.15s",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
         >
           <X size={14} style={{ color: "var(--text-muted)" }} />
         </button>
       </div>
 
       {/* Properties */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-4">
+      <div style={{ flex: 1, overflowY: "auto", padding: 12, display: "flex", flexDirection: "column", gap: 16 }}>
         {/* Timing */}
         <PropertySection icon={<Clock size={13} />} title="Timing">
           <PropertyRow label="Start">
@@ -149,8 +166,7 @@ export default function PropertiesPanel() {
           {selectedClip.trimStart > 0 && (
             <PropertyRow label="Trim Start">
               <span
-                className="text-[11px]"
-                style={{ color: "var(--text-secondary)" }}
+                style={{ fontSize: 11, color: "var(--text-secondary)" }}
               >
                 {formatDuration(selectedClip.trimStart)}
               </span>
@@ -161,7 +177,7 @@ export default function PropertiesPanel() {
         {/* Appearance */}
         <PropertySection icon={<Eye size={13} />} title="Appearance">
           <PropertyRow label="Opacity">
-            <div className="flex items-center gap-2">
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <input
                 type="range"
                 min="0"
@@ -171,11 +187,10 @@ export default function PropertiesPanel() {
                 onChange={(e) =>
                   handleUpdate({ opacity: parseFloat(e.target.value) })
                 }
-                className="w-16"
+                style={{ width: 64 }}
               />
               <span
-                className="text-[10px] font-mono w-8 text-right"
-                style={{ color: "var(--text-secondary)" }}
+                style={{ fontSize: 10, fontFamily: "monospace", width: 32, textAlign: "right", color: "var(--text-secondary)" }}
               >
                 {Math.round((selectedClip.opacity ?? 1) * 100)}%
               </span>
@@ -188,7 +203,7 @@ export default function PropertiesPanel() {
           selectedClip.type === "audio") && (
           <PropertySection icon={<Volume2 size={13} />} title="Audio">
             <PropertyRow label="Volume">
-              <div className="flex items-center gap-2">
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <input
                   type="range"
                   min="0"
@@ -200,11 +215,10 @@ export default function PropertiesPanel() {
                       volume: parseFloat(e.target.value),
                     })
                   }
-                  className="w-16"
+                  style={{ width: 64 }}
                 />
                 <span
-                  className="text-[10px] font-mono w-8 text-right"
-                  style={{ color: "var(--text-secondary)" }}
+                  style={{ fontSize: 10, fontFamily: "monospace", width: 32, textAlign: "right", color: "var(--text-secondary)" }}
                 >
                   {Math.round((selectedClip.volume ?? 1) * 100)}%
                 </span>
@@ -223,8 +237,13 @@ export default function PropertiesPanel() {
                 onChange={(e) =>
                   handleUpdate({ text: e.target.value })
                 }
-                className="w-full px-2 py-1 rounded text-xs bg-transparent outline-none"
                 style={{
+                  width: "100%",
+                  padding: "4px 8px",
+                  borderRadius: 4,
+                  fontSize: 12,
+                  background: "transparent",
+                  outline: "none",
                   border: "1px solid var(--border-default)",
                   color: "var(--text-primary)",
                 }}
@@ -243,19 +262,17 @@ export default function PropertiesPanel() {
               />
             </PropertyRow>
             <PropertyRow label="Color">
-              <div className="flex items-center gap-2">
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <input
                   type="color"
                   value={selectedClip.color || "#ffffff"}
                   onChange={(e) =>
                     handleUpdate({ color: e.target.value })
                   }
-                  className="w-6 h-6 rounded cursor-pointer border-0"
-                  style={{ background: "transparent" }}
+                  style={{ width: 24, height: 24, borderRadius: 4, cursor: "pointer", border: "none", background: "transparent" }}
                 />
                 <span
-                  className="text-[10px] font-mono"
-                  style={{ color: "var(--text-secondary)" }}
+                  style={{ fontSize: 10, fontFamily: "monospace", color: "var(--text-secondary)" }}
                 >
                   {selectedClip.color || "#ffffff"}
                 </span>
@@ -267,8 +284,13 @@ export default function PropertiesPanel() {
                 onChange={(e) =>
                   handleUpdate({ fontFamily: e.target.value })
                 }
-                className="w-full px-2 py-1 rounded text-xs outline-none cursor-pointer"
                 style={{
+                  width: "100%",
+                  padding: "4px 8px",
+                  borderRadius: 4,
+                  fontSize: 12,
+                  outline: "none",
+                  cursor: "pointer",
                   background: "var(--bg-tertiary)",
                   border: "1px solid var(--border-default)",
                   color: "var(--text-primary)",
@@ -302,17 +324,20 @@ function PropertySection({
   return (
     <div>
       <div
-        className="flex items-center gap-1.5 mb-2"
-        style={{ color: "var(--text-muted)" }}
+        style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, color: "var(--text-muted)" }}
       >
         {icon}
-        <span className="text-[10px] font-semibold uppercase tracking-wider">
+        <span style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
           {title}
         </span>
       </div>
       <div
-        className="space-y-2 rounded-lg p-2.5"
         style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 8,
+          borderRadius: 8,
+          padding: 10,
           background: "var(--bg-tertiary)",
           border: "1px solid var(--border-subtle)",
         }}
@@ -332,10 +357,9 @@ function PropertyRow({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-between">
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
       <span
-        className="text-[11px]"
-        style={{ color: "var(--text-muted)" }}
+        style={{ fontSize: 11, color: "var(--text-muted)" }}
       >
         {label}
       </span>
@@ -357,21 +381,26 @@ function PropertyInput({
   suffix?: string;
 }) {
   return (
-    <div className="flex items-center gap-1">
+    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
       <input
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-16 px-1.5 py-0.5 rounded text-[11px] text-right bg-transparent outline-none"
         style={{
+          width: 64,
+          padding: "2px 6px",
+          borderRadius: 4,
+          fontSize: 11,
+          textAlign: "right",
+          background: "transparent",
+          outline: "none",
           border: "1px solid var(--border-default)",
           color: "var(--text-primary)",
         }}
       />
       {suffix && (
         <span
-          className="text-[10px]"
-          style={{ color: "var(--text-muted)" }}
+          style={{ fontSize: 10, color: "var(--text-muted)" }}
         >
           {suffix}
         </span>

@@ -184,12 +184,17 @@ export default function AssetsPanel() {
 
   return (
     <div
-      className="flex h-full overflow-hidden"
+      style={{ display: "flex", height: "100%", overflow: "hidden" }}
     >
       {/* Tab sidebar */}
       <div
-        className="flex flex-col items-center py-2 gap-1 w-14"
         style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          padding: "8px 0",
+          gap: 4,
+          width: 56,
           background: "rgba(0,0,0,0.2)",
           borderRight: "1px solid var(--border-subtle)",
         }}
@@ -198,8 +203,18 @@ export default function AssetsPanel() {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className="flex flex-col items-center gap-0.5 p-2 rounded-lg transition-all w-11"
+            className=""
             style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 2,
+              padding: 8,
+              borderRadius: 8,
+              width: 44,
+              border: "none",
+              cursor: "pointer",
+              transition: "all 0.15s",
               color:
                 activeTab === tab.id
                   ? "var(--accent)"
@@ -221,18 +236,22 @@ export default function AssetsPanel() {
             }}
           >
             {tab.icon}
-            <span className="text-[9px] font-medium">{tab.label}</span>
+            <span style={{ fontSize: 9, fontWeight: 500 }}>{tab.label}</span>
           </button>
         ))}
       </div>
 
       {/* Panel content */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
         {/* Search */}
-        <div className="p-3 pb-2">
+        <div style={{ padding: "12px 12px 8px 12px" }}>
           <div
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg"
             style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "6px 12px",
+              borderRadius: 8,
               background: "var(--bg-tertiary)",
               border: "1px solid var(--border-subtle)",
             }}
@@ -243,20 +262,31 @@ export default function AssetsPanel() {
               placeholder="Search assets..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 bg-transparent border-none outline-none text-xs"
-              style={{ color: "var(--text-primary)" }}
+              style={{
+                flex: 1,
+                background: "transparent",
+                border: "none",
+                outline: "none",
+                fontSize: 12,
+                color: "var(--text-primary)",
+              }}
             />
           </div>
         </div>
 
         {/* Content area */}
-        <div className="flex-1 overflow-y-auto px-3 pb-3">
+        <div style={{ flex: 1, overflowY: "auto", padding: "0 12px 12px 12px" }}>
           {activeTab === "assets" && (
-            <div className="space-y-3 animate-fade-in">
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {/* Upload area */}
               <div
-                className="relative rounded-xl p-4 text-center transition-all cursor-pointer"
                 style={{
+                  position: "relative",
+                  borderRadius: 12,
+                  padding: 16,
+                  textAlign: "center",
+                  cursor: "pointer",
+                  transition: "all 0.15s",
                   border: isDragging
                     ? "2px dashed var(--accent)"
                     : "2px dashed var(--border-default)",
@@ -278,11 +308,17 @@ export default function AssetsPanel() {
                   multiple
                   accept="video/*,audio/*,image/*"
                   onChange={handleFileSelect}
-                  className="hidden"
+                  style={{ display: "none" }}
                 />
                 <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2"
                   style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: "50%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    margin: "0 auto 8px auto",
                     background: "var(--accent-muted)",
                     color: "var(--accent)",
                   }}
@@ -290,14 +326,12 @@ export default function AssetsPanel() {
                   <Upload size={18} />
                 </div>
                 <p
-                  className="text-xs font-medium"
-                  style={{ color: "var(--text-secondary)" }}
+                  style={{ fontSize: 12, fontWeight: 500, color: "var(--text-secondary)", margin: 0 }}
                 >
                   Drop media here
                 </p>
                 <p
-                  className="text-[10px] mt-0.5"
-                  style={{ color: "var(--text-muted)" }}
+                  style={{ fontSize: 10, marginTop: 2, color: "var(--text-muted)", margin: "2px 0 0 0" }}
                 >
                   or click to browse
                 </p>
@@ -305,11 +339,10 @@ export default function AssetsPanel() {
 
               {/* Media list */}
               {filteredMedia.length > 0 && (
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <span
-                      className="text-[10px] font-semibold uppercase tracking-wider"
-                      style={{ color: "var(--text-muted)" }}
+                      style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}
                     >
                       Media ({filteredMedia.length})
                     </span>
@@ -318,26 +351,47 @@ export default function AssetsPanel() {
                   {filteredMedia.map((media) => (
                     <div
                       key={media.id}
-                      className="flex items-center gap-2.5 p-2 rounded-lg transition-all cursor-pointer group"
-                      style={{ background: "var(--bg-tertiary)" }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                        padding: 8,
+                        borderRadius: 8,
+                        cursor: "pointer",
+                        background: "var(--bg-tertiary)",
+                        transition: "background 0.15s",
+                      }}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.background = "var(--bg-hover)";
+                        const actions = e.currentTarget.querySelector("[data-actions]") as HTMLElement;
+                        if (actions) actions.style.opacity = "1";
                       }}
                       onMouseLeave={(e) => {
                         e.currentTarget.style.background = "var(--bg-tertiary)";
+                        const actions = e.currentTarget.querySelector("[data-actions]") as HTMLElement;
+                        if (actions) actions.style.opacity = "0";
                       }}
                       onClick={() => addToTimeline(media)}
                     >
                       {/* Thumbnail */}
                       <div
-                        className="w-12 h-8 rounded-md overflow-hidden flex items-center justify-center flex-shrink-0"
-                        style={{ background: "var(--bg-surface)" }}
+                        style={{
+                          width: 48,
+                          height: 32,
+                          borderRadius: 6,
+                          overflow: "hidden",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0,
+                          background: "var(--bg-surface)",
+                        }}
                       >
                         {media.thumbnail ? (
                           <img
                             src={media.thumbnail}
                             alt=""
-                            className="w-full h-full object-cover"
+                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
                           />
                         ) : (
                           <span style={{ color: "var(--text-muted)" }}>
@@ -347,16 +401,14 @@ export default function AssetsPanel() {
                       </div>
 
                       {/* Info */}
-                      <div className="flex-1 min-w-0">
+                      <div style={{ flex: 1, minWidth: 0 }}>
                         <p
-                          className="text-xs font-medium truncate"
-                          style={{ color: "var(--text-primary)" }}
+                          style={{ fontSize: 12, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--text-primary)", margin: 0 }}
                         >
                           {media.name}
                         </p>
                         <p
-                          className="text-[10px]"
-                          style={{ color: "var(--text-muted)" }}
+                          style={{ fontSize: 10, color: "var(--text-muted)", margin: 0 }}
                         >
                           {formatDuration(media.duration)}
                           {media.fileSize
@@ -366,9 +418,11 @@ export default function AssetsPanel() {
                       </div>
 
                       {/* Actions */}
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div data-actions="" style={{ display: "flex", alignItems: "center", gap: 4, opacity: 0, transition: "opacity 0.15s" }}>
                         <button
-                          className="p-1 rounded hover:bg-white/10 transition-colors"
+                          style={{ padding: 4, borderRadius: 4, border: "none", background: "transparent", cursor: "pointer" }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.1)"; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
                           onClick={(e) => {
                             e.stopPropagation();
                             addToTimeline(media);
@@ -381,7 +435,9 @@ export default function AssetsPanel() {
                           />
                         </button>
                         <button
-                          className="p-1 rounded hover:bg-white/10 transition-colors"
+                          style={{ padding: 4, borderRadius: 4, border: "none", background: "transparent", cursor: "pointer" }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.1)"; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
                           onClick={(e) => {
                             e.stopPropagation();
                             removeMediaFile(media.id);
@@ -400,15 +456,13 @@ export default function AssetsPanel() {
               )}
 
               {filteredMedia.length === 0 && mediaFiles.length === 0 && (
-                <div className="text-center py-6">
+                <div style={{ textAlign: "center", padding: "24px 0" }}>
                   <Film
                     size={32}
-                    className="mx-auto mb-2"
-                    style={{ color: "var(--text-muted)", opacity: 0.5 }}
+                    style={{ color: "var(--text-muted)", opacity: 0.5, margin: "0 auto 8px auto", display: "block" }}
                   />
                   <p
-                    className="text-xs"
-                    style={{ color: "var(--text-muted)" }}
+                    style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}
                   >
                     No media files yet
                   </p>
@@ -503,10 +557,9 @@ function TextPanel() {
   };
 
   return (
-    <div className="space-y-2 animate-fade-in">
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       <p
-        className="text-[10px] font-semibold uppercase tracking-wider mb-2"
-        style={{ color: "var(--text-muted)" }}
+        style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8, color: "var(--text-muted)" }}
       >
         Text Presets
       </p>
@@ -514,10 +567,15 @@ function TextPanel() {
         <button
           key={preset.label}
           onClick={() => addTextClip(preset)}
-          className="w-full p-3 rounded-lg text-left transition-all"
           style={{
+            width: "100%",
+            padding: 12,
+            borderRadius: 8,
+            textAlign: "left",
             background: "var(--bg-tertiary)",
             border: "1px solid var(--border-subtle)",
+            cursor: "pointer",
+            transition: "all 0.15s",
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.background = "var(--bg-hover)";
@@ -529,8 +587,11 @@ function TextPanel() {
           }}
         >
           <span
-            className="block truncate"
             style={{
+              display: "block",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
               fontSize: Math.min(preset.fontSize / 4, 18) + "px",
               fontFamily: preset.fontFamily,
               color: preset.color,
@@ -539,8 +600,7 @@ function TextPanel() {
             {preset.text}
           </span>
           <span
-            className="text-[10px] mt-1 block"
-            style={{ color: "var(--text-muted)" }}
+            style={{ fontSize: 10, marginTop: 4, display: "block", color: "var(--text-muted)" }}
           >
             {preset.label} · {preset.fontSize}px
           </span>
@@ -552,16 +612,15 @@ function TextPanel() {
 
 function AudioPanel() {
   return (
-    <div className="text-center py-8 animate-fade-in">
+    <div style={{ textAlign: "center", padding: "32px 0" }}>
       <Music
         size={32}
-        className="mx-auto mb-2"
-        style={{ color: "var(--text-muted)", opacity: 0.5 }}
+        style={{ color: "var(--text-muted)", opacity: 0.5, margin: "0 auto 8px auto", display: "block" }}
       />
-      <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+      <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>
         Import audio files from Assets
       </p>
-      <p className="text-[10px] mt-1" style={{ color: "var(--text-muted)" }}>
+      <p style={{ fontSize: 10, marginTop: 4, color: "var(--text-muted)" }}>
         Supports MP3, WAV, AAC, OGG
       </p>
     </div>
@@ -581,21 +640,24 @@ function EffectsPanel() {
   ];
 
   return (
-    <div className="space-y-2 animate-fade-in">
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       <p
-        className="text-[10px] font-semibold uppercase tracking-wider mb-2"
-        style={{ color: "var(--text-muted)" }}
+        style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8, color: "var(--text-muted)" }}
       >
         Effects & Transitions
       </p>
-      <div className="grid grid-cols-2 gap-1.5">
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
         {effects.map((effect) => (
           <button
             key={effect.name}
-            className="p-3 rounded-lg text-center transition-all"
             style={{
+              padding: 12,
+              borderRadius: 8,
+              textAlign: "center",
               background: "var(--bg-tertiary)",
               border: "1px solid var(--border-subtle)",
+              cursor: "pointer",
+              transition: "all 0.15s",
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.background = "var(--bg-hover)";
@@ -606,10 +668,9 @@ function EffectsPanel() {
               e.currentTarget.style.borderColor = "var(--border-subtle)";
             }}
           >
-            <span className="text-lg block">{effect.icon}</span>
+            <span style={{ fontSize: 18, display: "block" }}>{effect.icon}</span>
             <span
-              className="text-[10px] block mt-1"
-              style={{ color: "var(--text-secondary)" }}
+              style={{ fontSize: 10, display: "block", marginTop: 4, color: "var(--text-secondary)" }}
             >
               {effect.name}
             </span>
@@ -622,13 +683,12 @@ function EffectsPanel() {
 
 function StickersPanel() {
   return (
-    <div className="text-center py-8 animate-fade-in">
+    <div style={{ textAlign: "center", padding: "32px 0" }}>
       <Sticker
         size={32}
-        className="mx-auto mb-2"
-        style={{ color: "var(--text-muted)", opacity: 0.5 }}
+        style={{ color: "var(--text-muted)", opacity: 0.5, margin: "0 auto 8px auto", display: "block" }}
       />
-      <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+      <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>
         Stickers coming soon
       </p>
     </div>

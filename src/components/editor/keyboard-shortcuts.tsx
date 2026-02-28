@@ -26,6 +26,8 @@ const SHORTCUTS = [
 
 export default function KeyboardShortcuts() {
   const [isOpen, setIsOpen] = useState(false);
+  const [btnHovered, setBtnHovered] = useState(false);
+  const [closeBtnHovered, setCloseBtnHovered] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -46,9 +48,22 @@ export default function KeyboardShortcuts() {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-10 right-4 p-2 rounded-lg transition-all hover:bg-white/5 z-50"
+        onMouseEnter={() => setBtnHovered(true)}
+        onMouseLeave={() => setBtnHovered(false)}
+        style={{
+          position: "fixed",
+          bottom: 40,
+          right: 16,
+          padding: 8,
+          borderRadius: 8,
+          border: "none",
+          background: btnHovered ? "rgba(255,255,255,0.05)" : "transparent",
+          cursor: "pointer",
+          zIndex: 50,
+          color: "var(--text-muted)",
+          transition: "background 0.15s",
+        }}
         title="Keyboard shortcuts (?)"
-        style={{ color: "var(--text-muted)" }}
       >
         <Keyboard size={16} />
       </button>
@@ -56,63 +71,91 @@ export default function KeyboardShortcuts() {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center" }}>
       {/* Backdrop */}
       <div
-        className="absolute inset-0"
-        style={{ background: "rgba(0, 0, 0, 0.6)", backdropFilter: "blur(4px)" }}
+        style={{ position: "absolute", inset: 0, background: "rgba(0, 0, 0, 0.6)", backdropFilter: "blur(4px)" }}
         onClick={() => setIsOpen(false)}
       />
 
       {/* Modal */}
       <div
-        className="relative rounded-2xl p-6 max-w-lg w-full mx-4 animate-fade-in"
         style={{
+          position: "relative",
+          borderRadius: 16,
+          padding: 24,
+          maxWidth: 512,
+          width: "100%",
+          margin: "0 16px",
           background: "var(--bg-elevated)",
           border: "1px solid var(--border-default)",
           boxShadow: "0 25px 80px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255,255,255,0.05)",
         }}
       >
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-2">
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <Keyboard size={18} style={{ color: "var(--accent)" }} />
-            <h2 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+            <h2 style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", margin: 0 }}>
               Keyboard Shortcuts
             </h2>
           </div>
           <button
             onClick={() => setIsOpen(false)}
-            className="p-1 rounded-md hover:bg-white/5 transition-colors"
+            onMouseEnter={() => setCloseBtnHovered(true)}
+            onMouseLeave={() => setCloseBtnHovered(false)}
+            style={{
+              padding: 4,
+              borderRadius: 6,
+              border: "none",
+              background: closeBtnHovered ? "rgba(255,255,255,0.05)" : "transparent",
+              cursor: "pointer",
+              transition: "background 0.15s",
+            }}
           >
             <X size={16} style={{ color: "var(--text-muted)" }} />
           </button>
         </div>
 
-        <div className="space-y-4">
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           {SHORTCUTS.map((section) => (
             <div key={section.category}>
               <h3
-                className="text-[10px] font-semibold uppercase tracking-wider mb-2"
-                style={{ color: "var(--text-muted)" }}
+                style={{
+                  fontSize: 10,
+                  fontWeight: 600,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                  marginBottom: 8,
+                  color: "var(--text-muted)",
+                }}
               >
                 {section.category}
               </h3>
-              <div className="space-y-1">
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                 {section.items.map((item) => (
                   <div
                     key={item.desc}
-                    className="flex items-center justify-between py-1.5 px-2 rounded-md"
-                    style={{ background: "var(--bg-tertiary)" }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "6px 8px",
+                      borderRadius: 6,
+                      background: "var(--bg-tertiary)",
+                    }}
                   >
-                    <span className="text-xs" style={{ color: "var(--text-secondary)" }}>
+                    <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>
                       {item.desc}
                     </span>
-                    <div className="flex items-center gap-1">
+                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                       {item.keys.map((key) => (
                         <kbd
                           key={key}
-                          className="px-1.5 py-0.5 rounded text-[10px] font-mono"
                           style={{
+                            padding: "2px 6px",
+                            borderRadius: 4,
+                            fontSize: 10,
+                            fontFamily: "monospace",
                             background: "var(--bg-surface)",
                             border: "1px solid var(--border-default)",
                             color: "var(--text-primary)",
@@ -131,10 +174,9 @@ export default function KeyboardShortcuts() {
         </div>
 
         <p
-          className="text-center text-[10px] mt-4"
-          style={{ color: "var(--text-muted)" }}
+          style={{ textAlign: "center", fontSize: 10, marginTop: 16, color: "var(--text-muted)" }}
         >
-          Press <kbd className="px-1 py-0.5 rounded text-[9px] font-mono" style={{ background: "var(--bg-surface)", border: "1px solid var(--border-default)" }}>?</kbd> to toggle this dialog
+          Press <kbd style={{ padding: "2px 4px", borderRadius: 4, fontSize: 9, fontFamily: "monospace", background: "var(--bg-surface)", border: "1px solid var(--border-default)" }}>?</kbd> to toggle this dialog
         </p>
       </div>
     </div>

@@ -83,20 +83,21 @@ export default function EditorLayout() {
 
   return (
     <div
-      className="flex flex-col h-screen"
-      style={{ background: "#06060a" }}
+      style={{ display: "flex", flexDirection: "column", height: "100vh", background: "#06060a" }}
     >
-      {/* Top title bar - flush with window edges for proper drag */}
+      {/* Top title bar */}
       <EditorHeader />
 
-      <div ref={containerRef} className="flex-1 flex flex-col min-h-0 gap-3 px-3 pb-3">
+      <div ref={containerRef} style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, gap: 12, padding: "0 12px 12px 12px" }}>
         {/* Top section (panels + preview) */}
-        <div className="flex-1 flex min-h-0 gap-4">
+        <div style={{ flex: 1, display: "flex", minHeight: 0, gap: 16 }}>
           {/* Left panel - Assets */}
           <div
-            className="flex-shrink-0 overflow-hidden rounded-2xl"
             style={{
-              width: `${leftWidth}px`,
+              flexShrink: 0,
+              overflow: "hidden",
+              borderRadius: 16,
+              width: leftWidth,
               background: "var(--bg-secondary)",
               border: "1px solid var(--border-subtle)",
             }}
@@ -106,22 +107,38 @@ export default function EditorLayout() {
 
           {/* Left resize handle */}
           <div
-            className="flex-shrink-0 w-1.5 cursor-col-resize relative group flex items-center justify-center"
+            style={{
+              flexShrink: 0,
+              width: 6,
+              cursor: "col-resize",
+              position: "relative",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
             onMouseDown={() => setIsDraggingLeft(true)}
+            onMouseEnter={(e) => {
+              const indicator = e.currentTarget.querySelector("[data-indicator]") as HTMLElement;
+              if (indicator) indicator.style.background = "var(--accent)";
+            }}
+            onMouseLeave={(e) => {
+              const indicator = e.currentTarget.querySelector("[data-indicator]") as HTMLElement;
+              if (indicator) indicator.style.background = "var(--border-default)";
+            }}
           >
             <div
-              className="w-0.5 h-8 rounded-full transition-colors"
-              style={{ background: "var(--border-default)" }}
-            />
-            <div
-              className="absolute inset-y-0 -left-1 -right-1 group-hover:bg-[var(--accent)] transition-colors opacity-0 group-hover:opacity-20 rounded"
+              data-indicator=""
+              style={{ width: 2, height: 32, borderRadius: 9999, background: "var(--border-default)", transition: "background 0.15s" }}
             />
           </div>
 
           {/* Center - Preview */}
           <div
-            className="flex-1 min-w-0 rounded-2xl overflow-hidden"
             style={{
+              flex: 1,
+              minWidth: 0,
+              borderRadius: 16,
+              overflow: "hidden",
               background: "var(--bg-primary)",
               border: "1px solid var(--border-subtle)",
             }}
@@ -132,8 +149,9 @@ export default function EditorLayout() {
           {/* Right panel - Properties */}
           {propertiesPanelOpen && (
             <div
-              className="rounded-2xl overflow-hidden"
               style={{
+                borderRadius: 16,
+                overflow: "hidden",
                 border: "1px solid var(--border-subtle)",
               }}
             >
@@ -144,23 +162,38 @@ export default function EditorLayout() {
 
         {/* Timeline resize handle */}
         <div
-          className="flex-shrink-0 h-1.5 cursor-row-resize relative group flex justify-center items-center"
+          style={{
+            flexShrink: 0,
+            height: 6,
+            cursor: "row-resize",
+            position: "relative",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
           onMouseDown={() => setIsDraggingTimeline(true)}
+          onMouseEnter={(e) => {
+            const indicator = e.currentTarget.querySelector("[data-indicator]") as HTMLElement;
+            if (indicator) indicator.style.background = "var(--accent)";
+          }}
+          onMouseLeave={(e) => {
+            const indicator = e.currentTarget.querySelector("[data-indicator]") as HTMLElement;
+            if (indicator) indicator.style.background = "var(--border-default)";
+          }}
         >
           <div
-            className="h-0.5 w-12 rounded-full transition-colors"
-            style={{ background: "var(--border-default)" }}
-          />
-          <div
-            className="absolute inset-x-0 -top-1 -bottom-1 group-hover:bg-[var(--accent)] transition-colors opacity-0 group-hover:opacity-20 rounded"
+            data-indicator=""
+            style={{ height: 2, width: 48, borderRadius: 9999, background: "var(--border-default)", transition: "background 0.15s" }}
           />
         </div>
 
         {/* Timeline panel */}
         <div
-          className="flex-shrink-0 rounded-2xl overflow-hidden"
           style={{
-            height: `${timelineHeight}px`,
+            flexShrink: 0,
+            borderRadius: 16,
+            overflow: "hidden",
+            height: timelineHeight,
             background: "var(--bg-secondary)",
             border: "1px solid var(--border-subtle)",
           }}
@@ -189,14 +222,21 @@ function StatusBar() {
 
   return (
     <div
-      className="flex items-center justify-between px-4 h-6 text-[10px] flex-shrink-0 rounded-lg"
       style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        padding: "0 16px",
+        height: 24,
+        fontSize: 10,
+        flexShrink: 0,
+        borderRadius: 8,
         background: "var(--bg-tertiary)",
         border: "1px solid var(--border-subtle)",
         color: "var(--text-muted)",
       }}
     >
-      <div className="flex items-center gap-3">
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <span>
           {tracks.length} tracks · {totalClips} clips
         </span>
@@ -204,10 +244,10 @@ function StatusBar() {
           {canvasSize.width}×{canvasSize.height}
         </span>
       </div>
-      <div className="flex items-center gap-3">
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <span>Snap: {snapping ? "On" : "Off"}</span>
         <span>Zoom: {(zoom * 100).toFixed(0)}%</span>
-        <span className="font-mono">{currentTime.toFixed(2)}s</span>
+        <span style={{ fontFamily: "monospace" }}>{currentTime.toFixed(2)}s</span>
       </div>
     </div>
   );
