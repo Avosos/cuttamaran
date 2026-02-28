@@ -3,8 +3,12 @@ const path = require("path");
 const url = require("url");
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling
-if (require("electron-squirrel-startup") === true) {
-  app.quit();
+try {
+  if (require("electron-squirrel-startup")) {
+    app.quit();
+  }
+} catch (_) {
+  // electron-squirrel-startup not available (dev mode), ignore
 }
 
 const isDev = process.env.NODE_ENV === "development" || !app.isPackaged;
