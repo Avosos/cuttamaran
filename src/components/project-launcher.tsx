@@ -322,7 +322,7 @@ export default function ProjectLauncher({ onOpenProject, onCreateProject }: Proj
       <div className="flex-1 flex overflow-hidden">
         {/* Sidebar */}
         <div
-          className="w-56 flex-shrink-0 flex flex-col pt-4 pr-4 pb-4 pl-5 gap-1"
+          className="w-48 flex-shrink-0 flex flex-col pt-4 pr-3 pb-4 pl-4 gap-1"
           style={{ background: "var(--bg-secondary)", borderRight: "1px solid var(--border-subtle)" }}
         >
           <button
@@ -347,10 +347,10 @@ export default function ProjectLauncher({ onOpenProject, onCreateProject }: Proj
         </div>
 
         {/* Main area */}
-        <div className="flex-1 flex flex-col overflow-hidden p-8">
+        <div className="flex-1 flex flex-col overflow-hidden p-6">
           {/* Hero section */}
-          <div className="mb-8">
-            <h1 className="text-2xl font-bold tracking-tight mb-1" style={{ color: "var(--text-primary)" }}>
+          <div className="mb-4">
+            <h1 className="text-xl font-bold tracking-tight mb-1" style={{ color: "var(--text-primary)" }}>
               Welcome back
             </h1>
             <p className="text-sm" style={{ color: "var(--text-muted)" }}>
@@ -360,83 +360,49 @@ export default function ProjectLauncher({ onOpenProject, onCreateProject }: Proj
             </p>
           </div>
 
-          {/* Project grid */}
+          {/* Project list */}
           {recentProjects.length > 0 ? (
-            <div className="flex-1 overflow-y-auto">
-              <div className="grid grid-cols-3 gap-4 pb-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))" }}>
-                {/* New project card */}
-                <button
-                  onClick={() => setShowNewProject(true)}
-                  className="group flex flex-col items-center justify-center rounded-2xl transition-all h-48"
-                  style={{
-                    border: "2px dashed var(--border-default)",
-                    background: "transparent",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = "var(--accent)";
-                    e.currentTarget.style.background = "var(--accent-muted)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = "var(--border-default)";
-                    e.currentTarget.style.background = "transparent";
-                  }}
-                >
-                  <div
-                    className="w-12 h-12 rounded-xl flex items-center justify-center mb-3 transition-transform group-hover:scale-110"
-                    style={{ background: "var(--bg-tertiary)" }}
-                  >
-                    <Plus size={20} style={{ color: "var(--text-muted)" }} />
-                  </div>
-                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>New Project</span>
-                </button>
-
-                {/* Existing projects */}
+            <div className="flex-1 overflow-y-auto -mx-2">
+              <div className="flex flex-col gap-0.5">
                 {recentProjects.map((project) => (
                   <div
                     key={project.id}
                     onClick={() => onOpenProject(project)}
                     onMouseEnter={() => setHoveredId(project.id)}
                     onMouseLeave={() => setHoveredId(null)}
-                    className="group relative flex flex-col rounded-2xl overflow-hidden cursor-pointer transition-all h-48"
+                    className="group flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all"
                     style={{
-                      background: "var(--bg-secondary)",
-                      border: hoveredId === project.id ? "1px solid var(--accent)" : "1px solid var(--border-subtle)",
-                      boxShadow: hoveredId === project.id ? "0 8px 32px rgba(124, 92, 252, 0.15)" : "none",
+                      background: hoveredId === project.id ? "rgba(255,255,255,0.05)" : "transparent",
                     }}
                   >
-                    {/* Thumbnail area */}
+                    {/* Project icon */}
                     <div
-                      className="h-24 flex-shrink-0 relative"
-                      style={{ background: seededGradient(project.id), opacity: 0.8 }}
+                      className="w-9 h-9 rounded-lg flex-shrink-0 flex items-center justify-center"
+                      style={{ background: seededGradient(project.id), opacity: 0.85 }}
                     >
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <Film size={24} style={{ color: "rgba(255,255,255,0.4)" }} />
-                      </div>
+                      <Film size={15} style={{ color: "rgba(255,255,255,0.6)" }} />
+                    </div>
 
-                      {/* Delete button */}
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{project.name}</h3>
+                      <p className="text-[11px] truncate" style={{ color: "var(--text-muted)" }}>
+                        {project.resolution} · {project.trackCount} tracks · {project.clipCount} clips
+                      </p>
+                    </div>
+
+                    {/* Time + actions */}
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>{formatDate(project.updatedAt)}</span>
                       {hoveredId === project.id && (
                         <button
                           onClick={(e) => { e.stopPropagation(); handleDelete(project.id); }}
-                          className="absolute top-2 right-2 p-1.5 rounded-lg transition-colors"
-                          style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
+                          className="p-1 rounded-md transition-colors hover:bg-white/10"
                         >
                           <Trash2 size={13} style={{ color: "var(--error)" }} />
                         </button>
                       )}
-                    </div>
-
-                    {/* Info */}
-                    <div className="flex-1 flex flex-col justify-between p-3">
-                      <div>
-                        <h3 className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{project.name}</h3>
-                        <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>
-                          {project.resolution} · {project.trackCount} tracks · {project.clipCount} clips
-                        </p>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>{formatDate(project.updatedAt)}</span>
-                        <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "var(--accent)" }} />
-                      </div>
+                      <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "var(--accent)" }} />
                     </div>
                   </div>
                 ))}
@@ -446,13 +412,13 @@ export default function ProjectLauncher({ onOpenProject, onCreateProject }: Proj
             /* Empty state */
             <div className="flex-1 flex flex-col items-center justify-center">
               <div
-                className="w-20 h-20 rounded-2xl flex items-center justify-center mb-5"
+                className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
                 style={{ background: "var(--bg-tertiary)", border: "1px solid var(--border-subtle)" }}
               >
-                <Film size={32} style={{ color: "var(--text-muted)" }} />
+                <Film size={28} style={{ color: "var(--text-muted)" }} />
               </div>
-              <h2 className="text-lg font-semibold mb-2" style={{ color: "var(--text-primary)" }}>No projects yet</h2>
-              <p className="text-sm mb-6 text-center max-w-xs" style={{ color: "var(--text-muted)" }}>
+              <h2 className="text-base font-semibold mb-1.5" style={{ color: "var(--text-primary)" }}>No projects yet</h2>
+              <p className="text-sm mb-5 text-center max-w-xs" style={{ color: "var(--text-muted)" }}>
                 Create your first project and start editing amazing videos.
               </p>
               <button

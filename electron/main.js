@@ -25,10 +25,10 @@ function getIconPath() {
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 800,
-    height: 540,
-    minWidth: 600,
-    minHeight: 400,
+    width: 900,
+    height: 600,
+    minWidth: 640,
+    minHeight: 440,
     frame: false,
     titleBarStyle: "hidden",
     backgroundColor: "#06060a",
@@ -101,8 +101,8 @@ ipcMain.handle("window:enterEditor", () => {
 
 ipcMain.handle("window:enterLauncher", () => {
   if (!mainWindow) return;
-  mainWindow.setMinimumSize(600, 400);
-  mainWindow.setSize(800, 540, true);
+  mainWindow.setMinimumSize(640, 440);
+  mainWindow.setSize(900, 600, true);
   mainWindow.center();
 });
 
