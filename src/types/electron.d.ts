@@ -4,6 +4,8 @@ export interface ElectronAPI {
   maximize: () => Promise<void>;
   close: () => Promise<void>;
   isMaximized: () => Promise<boolean>;
+  enterEditor: () => Promise<void>;
+  enterLauncher: () => Promise<void>;
   openFileDialog: (options?: Record<string, unknown>) => Promise<{
     canceled: boolean;
     filePaths: string[];

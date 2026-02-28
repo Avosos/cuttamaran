@@ -25,14 +25,15 @@ function getIconPath() {
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 1440,
-    height: 900,
-    minWidth: 1024,
-    minHeight: 680,
+    width: 800,
+    height: 540,
+    minWidth: 600,
+    minHeight: 400,
     frame: false,
     titleBarStyle: "hidden",
     backgroundColor: "#06060a",
     show: false,
+    center: true,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
@@ -86,6 +87,23 @@ ipcMain.handle("window:maximize", () => {
 
 ipcMain.handle("window:close", () => {
   mainWindow?.close();
+});
+
+ipcMain.handle("window:enterEditor", () => {
+  if (!mainWindow) return;
+  mainWindow.setMinimumSize(1024, 680);
+  const { width: screenW, height: screenH } = require("electron").screen.getPrimaryDisplay().workAreaSize;
+  const newW = Math.min(1440, screenW);
+  const newH = Math.min(900, screenH);
+  mainWindow.setSize(newW, newH, true);
+  mainWindow.center();
+});
+
+ipcMain.handle("window:enterLauncher", () => {
+  if (!mainWindow) return;
+  mainWindow.setMinimumSize(600, 400);
+  mainWindow.setSize(800, 540, true);
+  mainWindow.center();
 });
 
 ipcMain.handle("window:isMaximized", () => {

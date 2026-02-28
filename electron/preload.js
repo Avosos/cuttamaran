@@ -7,6 +7,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
   close: () => ipcRenderer.invoke("window:close"),
   isMaximized: () => ipcRenderer.invoke("window:isMaximized"),
 
+  // Window sizing
+  enterEditor: () => ipcRenderer.invoke("window:enterEditor"),
+  enterLauncher: () => ipcRenderer.invoke("window:enterLauncher"),
+
   // File dialogs
   openFileDialog: (options) => ipcRenderer.invoke("dialog:openFile", options),
   saveFileDialog: (options) => ipcRenderer.invoke("dialog:saveFile", options),

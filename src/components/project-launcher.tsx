@@ -241,8 +241,9 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
           <button
             onClick={() => name.trim() && onCreate(name.trim(), resolution)}
             disabled={!name.trim()}
-            className="px-5 py-2 text-sm font-medium rounded-lg transition-all disabled:opacity-40"
+            className="text-sm font-medium rounded-lg transition-all disabled:opacity-40 whitespace-nowrap"
             style={{
+              padding: "8px 20px",
               background: "linear-gradient(135deg, #7c5cfc, #6344e0)",
               color: "white",
               boxShadow: "0 2px 12px rgba(124, 92, 252, 0.3)",
@@ -291,8 +292,8 @@ export default function ProjectLauncher({ onOpenProject, onCreateProject }: Proj
     <div className="flex flex-col h-screen select-none" style={{ background: "#06060a" }}>
       {/* Title bar */}
       <div
-        className="flex items-center justify-between h-10 px-4 flex-shrink-0"
-        style={{ WebkitAppRegion: "drag", background: "var(--bg-secondary)", borderBottom: "1px solid var(--border-subtle)" } as React.CSSProperties}
+        className="flex items-center justify-between h-10 flex-shrink-0"
+        style={{ paddingLeft: 20, paddingRight: 0, WebkitAppRegion: "drag", background: "var(--bg-secondary)", borderBottom: "1px solid var(--border-subtle)" } as React.CSSProperties}
       >
         <div className="flex items-center gap-2" style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}>
           <div className="w-5 h-5 rounded flex items-center justify-center" style={{ background: "linear-gradient(135deg, #7c5cfc, #e879f9)" }}>
@@ -321,19 +322,19 @@ export default function ProjectLauncher({ onOpenProject, onCreateProject }: Proj
       <div className="flex-1 flex overflow-hidden">
         {/* Sidebar */}
         <div
-          className="w-56 flex-shrink-0 flex flex-col p-4 gap-1"
+          className="w-56 flex-shrink-0 flex flex-col pt-4 pr-4 pb-4 pl-5 gap-1"
           style={{ background: "var(--bg-secondary)", borderRight: "1px solid var(--border-subtle)" }}
         >
           <button
             onClick={() => setShowNewProject(true)}
-            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all mb-3"
+            className="flex items-center gap-2.5 w-full px-4 py-2.5 rounded-xl text-sm font-medium transition-all mb-3 whitespace-nowrap"
             style={{
               background: "linear-gradient(135deg, #7c5cfc, #6344e0)",
               color: "white",
               boxShadow: "0 2px 16px rgba(124, 92, 252, 0.3)",
             }}
           >
-            <Plus size={16} />
+            <Plus size={15} className="flex-shrink-0" />
             New Project
           </button>
 
@@ -456,14 +457,15 @@ export default function ProjectLauncher({ onOpenProject, onCreateProject }: Proj
               </p>
               <button
                 onClick={() => setShowNewProject(true)}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all"
+                className="flex items-center gap-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap"
                 style={{
+                  padding: "10px 24px",
                   background: "linear-gradient(135deg, #7c5cfc, #6344e0)",
                   color: "white",
                   boxShadow: "0 2px 16px rgba(124, 92, 252, 0.3)",
                 }}
               >
-                <Plus size={16} />
+                <Plus size={15} className="flex-shrink-0" />
                 Create Project
               </button>
             </div>

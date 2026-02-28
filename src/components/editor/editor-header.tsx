@@ -47,10 +47,11 @@ export default function EditorHeader() {
 
   return (
     <header
-      className="flex flex-shrink-0 items-center justify-between h-11 px-4"
+      className="flex flex-shrink-0 items-center justify-between h-11 pr-0"
       style={{
         background: "var(--bg-secondary)",
         borderBottom: "1px solid var(--border-subtle)",
+        paddingLeft: 20,
         WebkitAppRegion: "drag",
       } as React.CSSProperties}
     >
@@ -87,10 +88,11 @@ export default function EditorHeader() {
         />
 
         <button
-          className="flex items-center gap-1 text-xs px-2 py-1 rounded-md transition-colors"
+          className="flex items-center gap-1 text-[11px] px-2 py-0.5 rounded transition-colors"
           style={{
             color: "var(--text-muted)",
             background: "var(--bg-tertiary)",
+            border: "1px solid var(--border-subtle)",
           }}
         >
           {canvasSize.width}×{canvasSize.height}
@@ -140,8 +142,9 @@ export default function EditorHeader() {
         </button>
 
         <button
-          className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-medium transition-all"
+          className="flex items-center gap-2 rounded-lg text-sm font-medium transition-all"
           style={{
+            padding: "6px 16px",
             background: "linear-gradient(135deg, #7c5cfc, #6344e0)",
             color: "white",
             boxShadow: "0 2px 12px rgba(124, 92, 252, 0.3)",

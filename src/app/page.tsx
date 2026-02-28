@@ -42,6 +42,8 @@ export default function Home() {
         p.id === project.id ? { ...p, updatedAt: Date.now() } : p
       );
       saveProjects(updated);
+      // Expand window to editor size
+      window.electronAPI?.enterEditor();
       setScreen("editor");
     },
     [setProjectName, setCanvasSize]
@@ -68,6 +70,8 @@ export default function Home() {
       if (w && h) {
         setCanvasSize({ name: `${w}×${h}`, width: w, height: h });
       }
+      // Expand window to editor size
+      window.electronAPI?.enterEditor();
       setScreen("editor");
     },
     [setProjectName, setCanvasSize]
