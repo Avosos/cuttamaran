@@ -83,12 +83,13 @@ export default function EditorLayout() {
 
   return (
     <div
-      className="flex flex-col h-screen p-4 gap-4"
+      className="flex flex-col h-screen"
       style={{ background: "#06060a" }}
     >
+      {/* Top title bar - flush with window edges for proper drag */}
       <EditorHeader />
 
-      <div ref={containerRef} className="flex-1 flex flex-col min-h-0 gap-4">
+      <div ref={containerRef} className="flex-1 flex flex-col min-h-0 gap-3 px-3 pb-3">
         {/* Top section (panels + preview) */}
         <div className="flex-1 flex min-h-0 gap-4">
           {/* Left panel - Assets */}

@@ -47,10 +47,10 @@ export default function EditorHeader() {
 
   return (
     <header
-      className="flex flex-shrink-0 items-center justify-between h-14 px-4 rounded-2xl"
+      className="flex flex-shrink-0 items-center justify-between h-11 px-4"
       style={{
         background: "var(--bg-secondary)",
-        border: "1px solid var(--border-subtle)",
+        borderBottom: "1px solid var(--border-subtle)",
         WebkitAppRegion: "drag",
       } as React.CSSProperties}
     >

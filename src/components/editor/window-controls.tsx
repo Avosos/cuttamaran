@@ -28,14 +28,14 @@ export default function WindowControls() {
     <div className="flex items-center gap-0 ml-2" style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}>
       <button
         onClick={handleMinimize}
-        className="group flex items-center justify-center w-11 h-8 transition-colors hover:bg-white/10"
+        className="group flex items-center justify-center w-12 h-11 transition-colors hover:bg-white/10"
         title="Minimize"
       >
         <Minus size={14} className="text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]" />
       </button>
       <button
         onClick={handleMaximize}
-        className="group flex items-center justify-center w-11 h-8 transition-colors hover:bg-white/10"
+        className="group flex items-center justify-center w-12 h-11 transition-colors hover:bg-white/10"
         title={isMaximized ? "Restore" : "Maximize"}
       >
         {isMaximized ? (
@@ -46,7 +46,7 @@ export default function WindowControls() {
       </button>
       <button
         onClick={handleClose}
-        className="group flex items-center justify-center w-11 h-8 transition-colors hover:bg-red-500/90 rounded-tr-2xl"
+        className="group flex items-center justify-center w-12 h-11 transition-colors hover:bg-red-500/90"
         title="Close"
       >
         <X size={14} className="text-[var(--text-secondary)] group-hover:text-white" />
