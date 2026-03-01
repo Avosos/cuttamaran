@@ -176,6 +176,48 @@ export default function PropertiesPanel() {
 
       {/* Properties */}
       <div style={{ flex: 1, overflowY: "auto", padding: 12, display: "flex", flexDirection: "column", gap: 16 }}>
+        {/* Clip Color */}
+        <PropertySection icon={<Palette size={13} />} title="Clip Color">
+          <PropertyRow label="Timeline Color">
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <input
+                type="color"
+                value={selectedClip.clipColor || "#6366f1"}
+                onChange={(e) => handleUpdate({ clipColor: e.target.value })}
+                style={{
+                  width: 28,
+                  height: 22,
+                  padding: 0,
+                  border: "1px solid var(--border-subtle)",
+                  borderRadius: 4,
+                  background: "transparent",
+                  cursor: "pointer",
+                }}
+              />
+              {selectedClip.clipColor && (
+                <button
+                  onClick={() => handleUpdate({ clipColor: undefined })}
+                  style={{
+                    fontSize: 10,
+                    padding: "2px 6px",
+                    borderRadius: 4,
+                    border: "1px solid var(--border-subtle)",
+                    background: "var(--bg-tertiary)",
+                    color: "var(--text-muted)",
+                    cursor: "pointer",
+                    transition: "background 0.12s",
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = "var(--hover-overlay)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "var(--bg-tertiary)"; }}
+                  title="Reset to default clip color"
+                >
+                  Reset
+                </button>
+              )}
+            </div>
+          </PropertyRow>
+        </PropertySection>
+
         {/* Timing */}
         <PropertySection icon={<Clock size={13} />} title="Timing">
           <PropertyRow label="Start">

@@ -835,6 +835,11 @@ function ExportModal({ onClose }: { onClose: () => void }) {
       return;
     }
 
+    if (isAudioOnly) {
+      // Audio-only export: skip frame rendering, just finalize
+      setStatusText("Encoding audio…");
+      await api.exportFinish();
+    } else {
     // ── Frame-by-frame rendering ────────────────────────
     const offscreen = document.createElement("canvas");
     offscreen.width = w;
@@ -978,7 +983,8 @@ function ExportModal({ onClose }: { onClose: () => void }) {
       }
     }
     mediaElements.clear();
-  }, [projectName, format, quality, canvasSize, tracks, duration, mediaFiles]);
+    } // end else (not audio-only)
+  }, [projectName, format, quality, canvasSize, tracks, duration, mediaFiles, exportMode]);
 
   const handleCancel = useCallback(async () => {
     cancelledRef.current = true;
@@ -1046,11 +1052,43 @@ function ExportModal({ onClose }: { onClose: () => void }) {
 
           {!done && (
             <>
+              {/* Export Mode */}
+              <div>
+                <h3 style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10, color: "var(--text-muted)" }}>Export Mode</h3>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+                  {EXPORT_MODES.map((m) => {
+                    const active = exportMode === m.value;
+                    return (
+                      <button
+                        key={m.value}
+                        onClick={() => { if (!exporting) { setExportMode(m.value as ExportMode); if (m.value === "audio" && !["mp3","wav","aac"].includes(format)) setFormat("mp3"); if (m.value !== "audio" && ["mp3","wav","aac"].includes(format)) setFormat("mp4"); } }}
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "flex-start",
+                          padding: "10px 12px",
+                          borderRadius: 8,
+                          textAlign: "left",
+                          cursor: exporting ? "default" : "pointer",
+                          border: `1px solid ${active ? "var(--accent)" : "var(--border-subtle)"}`,
+                          background: active ? "var(--accent-muted)" : "var(--bg-tertiary)",
+                          opacity: exporting ? 0.5 : 1,
+                          transition: "border-color 0.15s, background 0.15s",
+                        }}
+                      >
+                        <span style={{ fontSize: 12, fontWeight: 500, color: active ? "var(--accent-hover)" : "var(--text-secondary)" }}>{m.label}</span>
+                        <span style={{ fontSize: 10, color: "var(--text-muted)" }}>{m.desc}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               {/* Format */}
               <div>
                 <h3 style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10, color: "var(--text-muted)" }}>Format</h3>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                  {EXPORT_FORMATS.map((f) => {
+                <div style={{ display: "grid", gridTemplateColumns: exportMode === "audio" ? "1fr 1fr 1fr" : "1fr 1fr", gap: 8 }}>
+                  {(exportMode === "audio" ? AUDIO_FORMATS : EXPORT_FORMATS).map((f) => {
                     const active = format === f.value;
                     return (
                       <button
@@ -1078,7 +1116,8 @@ function ExportModal({ onClose }: { onClose: () => void }) {
                 </div>
               </div>
 
-              {/* Quality */}
+              {/* Quality (hidden for audio-only) */}
+              {exportMode !== "audio" && (
               <div>
                 <h3 style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10, color: "var(--text-muted)" }}>Quality</h3>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
@@ -1109,6 +1148,7 @@ function ExportModal({ onClose }: { onClose: () => void }) {
                   })}
                 </div>
               </div>
+              )}
             </>
           )}
 

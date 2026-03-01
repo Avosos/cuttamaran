@@ -623,21 +623,29 @@ ipcMain.handle("export:start", async (_event, opts) => {
     quality = "high",
     totalFrames = 1,
     audioClips = [],
+    exportMode = "both",
   } = opts;
+
+  const isAudioOnly = exportMode === "audio";
+  const isVideoOnly = exportMode === "video";
 
   // ── Build FFmpeg arguments ────────────────────────────
   const args = [];
 
-  // Input 0: raw image pipe (PNG frames from the renderer canvas).
-  args.push(
-    "-y",                             // overwrite output
-    "-f", "image2pipe",
-    "-framerate", String(fps),
-    "-i", "pipe:0"                    // stdin
-  );
+  if (!isAudioOnly) {
+    // Input 0: raw image pipe (PNG frames from the renderer canvas).
+    args.push(
+      "-y",                             // overwrite output
+      "-f", "image2pipe",
+      "-framerate", String(fps),
+      "-i", "pipe:0"                    // stdin
+    );
+  } else {
+    args.push("-y"); // overwrite output
+  }
 
-  // Input 1…N: audio files — resolve local-media:// URLs to real paths
-  const resolvedAudioClips = audioClips
+  // Input 1…N (or 0…N for audio-only): audio files
+  const resolvedAudioClips = (isVideoOnly ? [] : audioClips)
     .map((a) => {
       const filePath = localMediaUrlToPath(a.src);
       const exists = filePath ? fs.existsSync(filePath) : false;
@@ -656,9 +664,10 @@ ipcMain.handle("export:start", async (_event, opts) => {
   if (resolvedAudioClips.length > 0) {
     const filterParts = [];
     const mixLabels = [];
+    const videoInputOffset = isAudioOnly ? 0 : 1; // input 0 is video pipe when not audio-only
 
     resolvedAudioClips.forEach((audio, idx) => {
-      const inputIdx = idx + 1; // input 0 is the video pipe
+      const inputIdx = idx + videoInputOffset;
       const label = `a${idx}`;
       const delayMs = Math.round(audio.startTime * 1000);
       const vol = audio.volume ?? 1;
@@ -670,10 +679,7 @@ ipcMain.handle("export:start", async (_event, opts) => {
       mixLabels.push(`[${label}]`);
     });
 
-    // For a single audio clip, skip amix (just pass through).
-    // amix with inputs=1 can behave oddly in some FFmpeg builds.
     if (resolvedAudioClips.length === 1) {
-      // The single clip's label is already [a0], rename to [aout]
       filterParts[0] = filterParts[0].replace(/\[a0\]$/, "[aout]");
     } else {
       filterParts.push(
@@ -681,13 +687,32 @@ ipcMain.handle("export:start", async (_event, opts) => {
       );
     }
     args.push("-filter_complex", filterParts.join(";"));
-    args.push("-map", "0:v");
+    if (!isAudioOnly) {
+      args.push("-map", "0:v");
+    }
     args.push("-map", "[aout]");
   }
 
   // ── Codec settings per format / quality ───────────────
   const crf = quality === "high" ? "18" : quality === "medium" ? "23" : "28";
 
+  if (isAudioOnly) {
+    // Audio-only codec settings
+    switch (format) {
+      case "mp3":
+        args.push("-c:a", "libmp3lame", "-b:a", quality === "high" ? "320k" : quality === "medium" ? "192k" : "128k");
+        break;
+      case "wav":
+        args.push("-c:a", "pcm_s16le");
+        break;
+      case "aac":
+        args.push("-c:a", "aac", "-b:a", quality === "high" ? "256k" : quality === "medium" ? "192k" : "128k");
+        break;
+      default:
+        args.push("-c:a", "libmp3lame", "-b:a", "192k");
+        break;
+    }
+  } else {
   switch (format) {
     case "mp4":
       args.push("-c:v", "libx264", "-preset", "medium", "-crf", crf,
@@ -715,9 +740,10 @@ ipcMain.handle("export:start", async (_event, opts) => {
                 "-pix_fmt", "yuv420p");
       break;
   }
+  }
 
   // Ensure audio doesn't extend past video (or vice versa)
-  if (resolvedAudioClips.length > 0) {
+  if (resolvedAudioClips.length > 0 && !isAudioOnly) {
     args.push("-shortest");
   }
 
@@ -731,7 +757,7 @@ ipcMain.handle("export:start", async (_event, opts) => {
     let framesWritten = 0;
 
     const proc = spawn(ffmpegPath, args, {
-      stdio: ["pipe", "pipe", "pipe"],
+      stdio: isAudioOnly ? ["ignore", "pipe", "pipe"] : ["pipe", "pipe", "pipe"],
     });
 
     let stderrLog = "";

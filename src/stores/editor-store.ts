@@ -66,6 +66,7 @@ interface EditorStore {
   removeTrack: (id: string) => void;
   renameTrack: (id: string, name: string) => void;
   reorderTracks: (fromIndex: number, toIndex: number) => void;
+  updateTrackColor: (id: string, color: string | undefined) => void;
   toggleTrackMute: (id: string) => void;
   toggleTrackLock: (id: string) => void;
   toggleTrackVisibility: (id: string) => void;
@@ -481,6 +482,13 @@ export const useEditorStore = create<EditorStore>()((set, get) => ({
     set((state) => ({
       ...captureSnapshot(state),
       tracks: state.tracks.filter((t) => t.id !== id),
+    })),
+  updateTrackColor: (id, color) =>
+    set((state) => ({
+      ...captureSnapshot(state),
+      tracks: state.tracks.map((t) =>
+        t.id === id ? { ...t, color } : t
+      ),
     })),
   toggleTrackMute: (id) =>
     set((state) => ({

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef, useCallback, useState, useEffect } from "react";
+import { v4 as uuidv4 } from "uuid";
 import { useEditorStore } from "@/stores/editor-store";
 import {
   Plus,
@@ -27,6 +28,8 @@ import {
   VolumeOff,
   Gauge,
   PanelRightOpen,
+  GripVertical,
+  Palette,
 } from "lucide-react";
 import { formatTime, getClipGradient } from "@/lib/utils";
 import type { TimelineClip, Track } from "@/types/editor";
@@ -52,6 +55,7 @@ export default function TimelinePanel() {
     updateClip,
     moveClip,
     addTrack,
+    addClipToTrack,
     isPlaying,
     splitClip,
     duplicateClip,
@@ -607,8 +611,8 @@ export default function TimelinePanel() {
           />
 
           {/* Track headers */}
-          {tracks.map((track) => (
-            <TrackHeader key={track.id} track={track} />
+          {tracks.map((track, idx) => (
+            <TrackHeader key={track.id} track={track} index={idx} totalTracks={tracks.length} />
           ))}
         </div>
 
@@ -667,14 +671,51 @@ export default function TimelinePanel() {
                     setSelectedClipId(null);
                   }
                 }}
+                onDragOver={(e) => {
+                  if (e.dataTransfer.types.includes("application/timeline-media")) {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = "copy";
+                  }
+                }}
+                onDrop={(e) => {
+                  const raw = e.dataTransfer.getData("application/timeline-media");
+                  if (!raw) return;
+                  try {
+                    const media = JSON.parse(raw);
+                    // Compute time position from mouse X relative to track lane
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const dropTime = Math.max(0, x / pxPerSecond);
+                    // Check track type compatibility
+                    const isAudioMedia = media.type === "audio";
+                    const isAudioTrack = track.type === "audio";
+                    if (isAudioMedia !== isAudioTrack) return; // don't allow cross-type drop
+                    addClipToTrack(track.id, {
+                      id: uuidv4(),
+                      mediaId: media.id,
+                      type: media.type,
+                      name: media.name,
+                      trackId: track.id,
+                      startTime: dropTime,
+                      duration: media.duration,
+                      trimStart: 0,
+                      trimEnd: 0,
+                      src: media.src,
+                      thumbnail: media.thumbnail,
+                      volume: 1,
+                      opacity: 1,
+                    });
+                  } catch { /* ignore */ }
+                }}
               >
                 {/* Track background pattern */}
                 <div
                   style={{
                     position: "absolute",
                     inset: 0,
-                    background:
-                      track.type === "video"
+                    background: track.color
+                      ? `${track.color}08`
+                      : track.type === "video"
                         ? "var(--accent-muted)"
                         : "rgba(6, 182, 212, 0.02)",
                   }}
@@ -732,12 +773,54 @@ export default function TimelinePanel() {
 }
 
 // ─── Track Header ─────────────────────────────────────
-function TrackHeader({ track }: { track: Track }) {
-  const { toggleTrackMute, toggleTrackLock, toggleTrackVisibility } =
+function TrackHeader({ track, index, totalTracks }: { track: Track; index: number; totalTracks: number }) {
+  const { toggleTrackMute, toggleTrackLock, toggleTrackVisibility, renameTrack, reorderTracks, removeTrack, updateTrackColor } =
     useEditorStore();
+  const [colorPickerPos, setColorPickerPos] = useState<{ x: number; y: number } | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState(track.name);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [dragOver, setDragOver] = useState(false);
+
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditing]);
+
+  const commitRename = () => {
+    const trimmed = editName.trim();
+    if (trimmed && trimmed !== track.name) {
+      renameTrack(track.id, trimmed);
+    }
+    setIsEditing(false);
+  };
 
   return (
     <div
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.setData("application/track-reorder", String(index));
+        e.dataTransfer.effectAllowed = "move";
+      }}
+      onDragOver={(e) => {
+        if (e.dataTransfer.types.includes("application/track-reorder")) {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "move";
+          setDragOver(true);
+        }
+      }}
+      onDragLeave={() => setDragOver(false)}
+      onDrop={(e) => {
+        setDragOver(false);
+        const fromIdx = parseInt(e.dataTransfer.getData("application/track-reorder"), 10);
+        if (!isNaN(fromIdx) && fromIdx !== index) {
+          reorderTracks(fromIdx, index);
+        }
+      }}
       style={{
         display: "flex",
         alignItems: "center",
@@ -745,36 +828,142 @@ function TrackHeader({ track }: { track: Track }) {
         padding: "0 8px",
         height: track.height,
         borderBottom: "1px solid var(--border-subtle)",
+        borderTop: dragOver ? "2px solid var(--accent)" : "2px solid transparent",
+        transition: "border-color 0.12s",
+        position: "relative",
+      }}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        setColorPickerPos({ x: e.clientX, y: e.clientY });
       }}
     >
+      {/* Track color picker (right-click menu) */}
+      {colorPickerPos && (
+        <>
+          <div
+            style={{ position: "fixed", inset: 0, zIndex: 999 }}
+            onClick={() => setColorPickerPos(null)}
+            onContextMenu={(e) => { e.preventDefault(); setColorPickerPos(null); }}
+          />
+          <div
+            style={{
+              position: "fixed",
+              left: colorPickerPos.x,
+              top: colorPickerPos.y,
+              zIndex: 1000,
+              padding: 8,
+              borderRadius: 10,
+              background: "var(--bg-secondary)",
+              border: "1px solid var(--border-default)",
+              boxShadow: "var(--shadow-dropdown)",
+              minWidth: 170,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)", marginBottom: 6 }}>Track Color</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 4, marginBottom: 8 }}>
+              {[
+                "#ef4444", "#f97316", "#eab308", "#22c55e", "#06b6d4", "#3b82f6",
+                "#8b5cf6", "#ec4899", "#f43f5e", "#14b8a6", "#6366f1", "#a855f7",
+              ].map((c) => (
+                <button
+                  key={c}
+                  onClick={() => { updateTrackColor(track.id, c); setColorPickerPos(null); }}
+                  style={{
+                    width: 22,
+                    height: 22,
+                    borderRadius: 5,
+                    border: track.color === c ? "2px solid #fff" : "1px solid var(--border-subtle)",
+                    background: c,
+                    cursor: "pointer",
+                    transition: "transform 0.1s",
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = "scale(1.15)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
+                />
+              ))}
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <input
+                type="color"
+                value={track.color || (track.type === "video" ? "#6366f1" : "#06b6d4")}
+                onChange={(e) => updateTrackColor(track.id, e.target.value)}
+                style={{ width: 26, height: 20, padding: 0, border: "1px solid var(--border-subtle)", borderRadius: 4, background: "transparent", cursor: "pointer" }}
+              />
+              <span style={{ fontSize: 10, color: "var(--text-muted)", flex: 1 }}>Custom</span>
+              {track.color && (
+                <button
+                  onClick={() => { updateTrackColor(track.id, undefined); setColorPickerPos(null); }}
+                  style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, border: "1px solid var(--border-subtle)", background: "var(--bg-tertiary)", color: "var(--text-muted)", cursor: "pointer" }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = "var(--hover-overlay)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "var(--bg-tertiary)"; }}
+                >Reset</button>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Drag handle */}
+      <GripVertical
+        size={12}
+        style={{ color: "var(--text-muted)", cursor: "grab", flexShrink: 0, opacity: 0.5 }}
+      />
+
       <div
         style={{
           width: 4,
           height: 20,
           borderRadius: 9999,
           flexShrink: 0,
-          background:
-            track.type === "video"
-              ? "var(--clip-video)"
-              : "var(--clip-audio)",
+          background: track.color || (track.type === "video" ? "var(--clip-video)" : "var(--clip-audio)"),
         }}
       />
 
-      <span
-        style={{
-          fontSize: 11,
-          fontWeight: 500,
-          flex: 1,
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          whiteSpace: "nowrap",
-          color: track.visible
-            ? "var(--text-secondary)"
-            : "var(--text-muted)",
-        }}
-      >
-        {track.name}
-      </span>
+      {isEditing ? (
+        <input
+          ref={inputRef}
+          value={editName}
+          onChange={(e) => setEditName(e.target.value)}
+          onBlur={commitRename}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") commitRename();
+            if (e.key === "Escape") { setEditName(track.name); setIsEditing(false); }
+          }}
+          style={{
+            fontSize: 11,
+            fontWeight: 500,
+            flex: 1,
+            overflow: "hidden",
+            color: "var(--text-primary)",
+            background: "var(--bg-tertiary)",
+            border: "1px solid var(--accent)",
+            borderRadius: 4,
+            padding: "1px 4px",
+            outline: "none",
+            minWidth: 0,
+          }}
+        />
+      ) : (
+        <span
+          onDoubleClick={() => { setEditName(track.name); setIsEditing(true); }}
+          style={{
+            fontSize: 11,
+            fontWeight: 500,
+            flex: 1,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            cursor: "text",
+            color: track.visible
+              ? "var(--text-secondary)"
+              : "var(--text-muted)",
+          }}
+          title="Double-click to rename"
+        >
+          {track.name}
+        </span>
+      )}
 
       <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
         <button
@@ -828,7 +1017,63 @@ function TrackHeader({ track }: { track: Track }) {
             />
           )}
         </button>
+        <button
+          onClick={() => {
+            if (track.clips.length > 0) {
+              setConfirmDelete(true);
+            } else {
+              removeTrack(track.id);
+            }
+          }}
+          style={{ padding: 4, borderRadius: 4, border: "none", background: confirmDelete ? "rgba(239,68,68,0.2)" : "transparent", cursor: "pointer", transition: "background 0.15s" }}
+          onMouseEnter={(e) => { if (!confirmDelete) e.currentTarget.style.background = "rgba(239,68,68,0.15)"; }}
+          onMouseLeave={(e) => { if (!confirmDelete) e.currentTarget.style.background = "transparent"; }}
+          title="Remove track"
+        >
+          <Trash2 size={11} style={{ color: confirmDelete ? "#ef4444" : "var(--text-muted)" }} />
+        </button>
       </div>
+
+      {/* Delete confirmation */}
+      {confirmDelete && (
+        <div
+          style={{
+            position: "absolute",
+            top: "100%",
+            right: 4,
+            zIndex: 100,
+            padding: "8px 10px",
+            borderRadius: 8,
+            background: "var(--bg-secondary)",
+            border: "1px solid var(--border-default)",
+            boxShadow: "var(--shadow-dropdown)",
+            minWidth: 180,
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <p style={{ fontSize: 11, color: "var(--text-secondary)", margin: "0 0 8px", lineHeight: 1.4 }}>
+            Delete <strong>{track.name}</strong> with {track.clips.length} clip{track.clips.length !== 1 ? "s" : ""}?
+          </p>
+          <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+            <button
+              onClick={() => setConfirmDelete(false)}
+              style={{
+                fontSize: 11, padding: "3px 10px", borderRadius: 5,
+                border: "1px solid var(--border-subtle)", background: "var(--bg-tertiary)",
+                color: "var(--text-secondary)", cursor: "pointer",
+              }}
+            >Cancel</button>
+            <button
+              onClick={() => { removeTrack(track.id); setConfirmDelete(false); }}
+              style={{
+                fontSize: 11, padding: "3px 10px", borderRadius: 5,
+                border: "none", background: "#ef4444",
+                color: "#fff", cursor: "pointer", fontWeight: 500,
+              }}
+            >Delete</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -858,6 +1103,13 @@ function TimelineClipView({
   const left = clip.startTime * pxPerSecond;
   const width = clip.duration * pxPerSecond;
 
+  // Build glow shadow based on clipColor when set
+  const clipGlow = clip.clipColor
+    ? isSelected
+      ? `0 0 0 2px ${clip.clipColor}, 0 0 20px ${clip.clipColor}66`
+      : undefined
+    : undefined;
+
   return (
     <div
       className={`timeline-clip${isSelected ? " selected" : ""}`}
@@ -869,8 +1121,19 @@ function TimelineClipView({
         height: trackHeight - 8,
         borderRadius: 6,
         overflow: "hidden",
-        background: getClipGradient(clip.type),
+        background: clip.clipColor || getClipGradient(clip.type),
         opacity: clip.opacity ?? 1,
+        ...(clipGlow ? { boxShadow: clipGlow } : {}),
+      }}
+      onMouseEnter={(e) => {
+        if (clip.clipColor && !isSelected) {
+          e.currentTarget.style.boxShadow = `0 0 0 1px ${clip.clipColor}, 0 4px 12px rgba(0,0,0,0.25)`;
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (clip.clipColor && !isSelected) {
+          e.currentTarget.style.boxShadow = "";
+        }
       }}
       onMouseDown={onMouseDown}
       onContextMenu={onContextMenu}
@@ -985,7 +1248,7 @@ function TimelineClipView({
             inset: 0,
             borderRadius: 6,
             pointerEvents: "none",
-            border: "2px solid rgba(255,255,255,0.6)",
+            border: `2px solid ${clip.clipColor ? clip.clipColor + "cc" : "rgba(255,255,255,0.6)"}`,
           }}
         />
       )}
@@ -1029,6 +1292,7 @@ function ClipContextMenu({
 
   const menuRef = useRef<HTMLDivElement>(null);
   const [speedSubmenu, setSpeedSubmenu] = useState(false);
+  const [colorSubmenu, setColorSubmenu] = useState(false);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
 
   // Find the actual clip
@@ -1112,6 +1376,13 @@ function ClipContextMenu({
         setPropertiesPanelOpen(true);
         onClose();
       },
+    },
+    {
+      id: "color",
+      label: "Clip Color",
+      icon: <Palette size={14} />,
+      hasSubmenu: true,
+      onClick: () => setColorSubmenu(!colorSubmenu),
     },
     { id: "sep3", label: "", icon: null, separator: true },
     {
@@ -1198,6 +1469,7 @@ function ClipContextMenu({
               onMouseEnter={() => {
                 setHoveredItem(item.id);
                 if (item.id !== "speed") setSpeedSubmenu(false);
+                if (item.id !== "color") setColorSubmenu(false);
               }}
               onMouseLeave={() => setHoveredItem(null)}
               style={{
@@ -1297,6 +1569,90 @@ function ClipContextMenu({
                     </button>
                   );
                 })}
+              </div>
+            )}
+
+            {/* Color submenu */}
+            {item.id === "color" && colorSubmenu && (
+              <div
+                style={{
+                  position: "absolute",
+                  left: "100%",
+                  top: -4,
+                  minWidth: 180,
+                  padding: 8,
+                  borderRadius: 10,
+                  background: "var(--bg-secondary)",
+                  border: "1px solid var(--border-default)",
+                  boxShadow: "var(--shadow-dropdown)",
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 4, marginBottom: 8 }}>
+                  {[
+                    "#ef4444", "#f97316", "#eab308", "#22c55e", "#06b6d4", "#3b82f6",
+                    "#8b5cf6", "#ec4899", "#f43f5e", "#14b8a6", "#6366f1", "#a855f7",
+                  ].map((color) => (
+                    <button
+                      key={color}
+                      onClick={() => {
+                        updateClip(trackId, clipId, { clipColor: color });
+                        onClose();
+                      }}
+                      style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: 6,
+                        border: clip.clipColor === color ? "2px solid #fff" : "1px solid var(--border-subtle)",
+                        background: color,
+                        cursor: "pointer",
+                        transition: "transform 0.1s",
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.transform = "scale(1.15)"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
+                    />
+                  ))}
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <input
+                    type="color"
+                    value={clip.clipColor || "#6366f1"}
+                    onChange={(e) => {
+                      updateClip(trackId, clipId, { clipColor: e.target.value });
+                    }}
+                    style={{
+                      width: 28,
+                      height: 22,
+                      padding: 0,
+                      border: "1px solid var(--border-subtle)",
+                      borderRadius: 4,
+                      background: "transparent",
+                      cursor: "pointer",
+                    }}
+                  />
+                  <span style={{ fontSize: 10, color: "var(--text-muted)", flex: 1 }}>Custom</span>
+                  {clip.clipColor && (
+                    <button
+                      onClick={() => {
+                        updateClip(trackId, clipId, { clipColor: undefined });
+                        onClose();
+                      }}
+                      style={{
+                        fontSize: 10,
+                        padding: "2px 6px",
+                        borderRadius: 4,
+                        border: "1px solid var(--border-subtle)",
+                        background: "var(--bg-tertiary)",
+                        color: "var(--text-muted)",
+                        cursor: "pointer",
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = "var(--hover-overlay)"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = "var(--bg-tertiary)"; }}
+                    >
+                      Reset
+                    </button>
+                  )}
+                </div>
               </div>
             )}
           </div>

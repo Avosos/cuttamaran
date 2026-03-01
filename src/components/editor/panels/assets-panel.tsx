@@ -468,6 +468,18 @@ export default function AssetsPanel() {
                   {filteredMedia.map((media) => (
                     <div
                       key={media.id}
+                      draggable
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData("application/timeline-media", JSON.stringify({
+                          id: media.id,
+                          type: media.type,
+                          name: media.name,
+                          src: media.src,
+                          thumbnail: media.thumbnail,
+                          duration: media.duration,
+                        }));
+                        e.dataTransfer.effectAllowed = "copy";
+                      }}
                       style={{
                         display: "flex",
                         alignItems: "center",

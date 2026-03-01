@@ -77,6 +77,7 @@ export interface Track {
   locked: boolean;
   height: number;
   visible: boolean;
+  color?: string;
 }
 
 export interface CanvasSize {
