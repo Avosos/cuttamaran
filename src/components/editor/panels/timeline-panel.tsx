@@ -30,6 +30,7 @@ import {
   PanelRightOpen,
   GripVertical,
   Palette,
+  Headphones,
 } from "lucide-react";
 import { formatTime, getClipGradient, getClipPrimaryColor } from "@/lib/utils";
 import type { TimelineClip, Track } from "@/types/editor";
@@ -774,7 +775,7 @@ export default function TimelinePanel() {
 
 // ─── Track Header ─────────────────────────────────────
 function TrackHeader({ track, index, totalTracks }: { track: Track; index: number; totalTracks: number }) {
-  const { toggleTrackMute, toggleTrackLock, toggleTrackVisibility, renameTrack, reorderTracks, removeTrack, updateTrackColor } =
+  const { toggleTrackMute, toggleTrackSolo, setTrackVolume, toggleTrackLock, toggleTrackVisibility, renameTrack, reorderTracks, removeTrack, updateTrackColor } =
     useEditorStore();
   const [colorPickerPos, setColorPickerPos] = useState<{ x: number; y: number } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -823,9 +824,10 @@ function TrackHeader({ track, index, totalTracks }: { track: Track; index: numbe
       }}
       style={{
         display: "flex",
-        alignItems: "center",
-        gap: 6,
-        padding: "0 8px",
+        flexDirection: "column",
+        justifyContent: "center",
+        gap: 2,
+        padding: "4px 8px",
         height: track.height,
         borderBottom: "1px solid var(--border-subtle)",
         borderTop: dragOver ? "2px solid var(--accent)" : "2px solid transparent",
@@ -904,6 +906,8 @@ function TrackHeader({ track, index, totalTracks }: { track: Track; index: numbe
         </>
       )}
 
+      {/* Top row: drag handle, color bar, name, buttons */}
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
       {/* Drag handle */}
       <GripVertical
         size={12}
@@ -1002,6 +1006,18 @@ function TrackHeader({ track, index, totalTracks }: { track: Track; index: numbe
           )}
         </button>
         <button
+          onClick={() => toggleTrackSolo(track.id)}
+          style={{ padding: 4, borderRadius: 4, border: "none", background: track.solo ? "rgba(234, 179, 8, 0.15)" : "transparent", cursor: "pointer", transition: "background 0.15s" }}
+          onMouseEnter={(e) => { if (!track.solo) e.currentTarget.style.background = "var(--hover-overlay)"; }}
+          onMouseLeave={(e) => { if (!track.solo) e.currentTarget.style.background = track.solo ? "rgba(234, 179, 8, 0.15)" : "transparent"; }}
+          title={track.solo ? "Unsolo" : "Solo"}
+        >
+          <Headphones
+            size={11}
+            style={{ color: track.solo ? "#eab308" : "var(--text-muted)" }}
+          />
+        </button>
+        <button
           onClick={() => toggleTrackLock(track.id)}
           style={{ padding: 4, borderRadius: 4, border: "none", background: "transparent", cursor: "pointer", transition: "background 0.15s" }}
           onMouseEnter={(e) => { e.currentTarget.style.background = "var(--hover-overlay)"; }}
@@ -1032,6 +1048,25 @@ function TrackHeader({ track, index, totalTracks }: { track: Track; index: numbe
         >
           <Trash2 size={11} style={{ color: confirmDelete ? "#ef4444" : "var(--text-muted)" }} />
         </button>
+      </div>
+      </div>{/* end top row */}
+
+      {/* Track volume slider */}
+      <div style={{ display: "flex", alignItems: "center", gap: 4, paddingLeft: 18 }}>
+        <Volume2 size={9} style={{ color: "var(--text-muted)", flexShrink: 0, opacity: 0.6 }} />
+        <input
+          type="range"
+          min="0"
+          max="1"
+          step="0.01"
+          value={track.volume ?? 1}
+          onChange={(e) => setTrackVolume(track.id, parseFloat(e.target.value))}
+          style={{ flex: 1, height: 3, maxWidth: 80 }}
+          title={`Track volume: ${Math.round((track.volume ?? 1) * 100)}%`}
+        />
+        <span style={{ fontSize: 9, fontFamily: "monospace", color: "var(--text-muted)", width: 26, textAlign: "right" }}>
+          {Math.round((track.volume ?? 1) * 100)}%
+        </span>
       </div>
 
       {/* Delete confirmation */}

@@ -68,6 +68,8 @@ interface EditorStore {
   reorderTracks: (fromIndex: number, toIndex: number) => void;
   updateTrackColor: (id: string, color: string | undefined) => void;
   toggleTrackMute: (id: string) => void;
+  toggleTrackSolo: (id: string) => void;
+  setTrackVolume: (id: string, volume: number) => void;
   toggleTrackLock: (id: string) => void;
   toggleTrackVisibility: (id: string) => void;
 
@@ -332,9 +334,11 @@ export const useEditorStore = create<EditorStore>()((set, get) => ({
         },
       ],
       muted: false,
+      solo: false,
       locked: false,
       height: 64,
       visible: true,
+      volume: 1,
     },
     {
       id: "video-2",
@@ -394,9 +398,11 @@ export const useEditorStore = create<EditorStore>()((set, get) => ({
         },
       ],
       muted: false,
+      solo: false,
       locked: false,
       height: 64,
       visible: true,
+      volume: 1,
     },
     {
       id: "audio-1",
@@ -419,9 +425,11 @@ export const useEditorStore = create<EditorStore>()((set, get) => ({
         },
       ],
       muted: false,
+      solo: false,
       locked: false,
       height: 48,
       visible: true,
+      volume: 1,
     },
     {
       id: "audio-2",
@@ -458,9 +466,11 @@ export const useEditorStore = create<EditorStore>()((set, get) => ({
         },
       ],
       muted: false,
+      solo: false,
       locked: false,
       height: 48,
       visible: true,
+      volume: 1,
     },
   ],
   addTrack: (type) =>
@@ -472,9 +482,11 @@ export const useEditorStore = create<EditorStore>()((set, get) => ({
         type,
         clips: [],
         muted: false,
+        solo: false,
         locked: false,
         height: type === "video" ? 64 : 48,
         visible: true,
+        volume: 1,
       };
       return { ...captureSnapshot(state), tracks: [...state.tracks, newTrack] };
     }),
@@ -495,6 +507,20 @@ export const useEditorStore = create<EditorStore>()((set, get) => ({
       ...captureSnapshot(state),
       tracks: state.tracks.map((t) =>
         t.id === id ? { ...t, muted: !t.muted } : t
+      ),
+    })),
+  toggleTrackSolo: (id) =>
+    set((state) => ({
+      ...captureSnapshot(state),
+      tracks: state.tracks.map((t) =>
+        t.id === id ? { ...t, solo: !t.solo } : t
+      ),
+    })),
+  setTrackVolume: (id, volume) =>
+    set((state) => ({
+      ...captureSnapshot(state),
+      tracks: state.tracks.map((t) =>
+        t.id === id ? { ...t, volume } : t
       ),
     })),
   toggleTrackLock: (id) =>

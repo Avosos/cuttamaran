@@ -74,9 +74,11 @@ export interface Track {
   type: "video" | "audio";
   clips: TimelineClip[];
   muted: boolean;
+  solo: boolean;
   locked: boolean;
   height: number;
   visible: boolean;
+  volume: number;
   color?: string;
 }
 

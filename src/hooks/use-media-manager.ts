@@ -7,6 +7,9 @@ interface CachedMedia {
   type: "video" | "audio" | "image";
   src: string;
   ready: boolean;
+  /** Web Audio nodes for this element (only for video/audio) */
+  sourceNode?: MediaElementAudioSourceNode;
+  gainNode?: GainNode;
 }
 
 /**
@@ -14,7 +17,10 @@ interface CachedMedia {
  *
  * - Creates/pools <video>, <audio>, and <img> elements for clips that have a
  *   real `src` (blob URL or file URL).
- * - Syncs play / pause / seek / volume with the editor timeline.
+ * - Routes all audio through the Web Audio API (AudioContext → GainNode)
+ *   so we get proper mixing with per-clip volume, per-track volume,
+ *   track mute, track solo, and a master volume knob.
+ * - Syncs play / pause / seek with the editor timeline.
  * - Exposes `getVideoElement` and `getImageElement` so the canvas renderer can
  *   call `ctx.drawImage(el, …)` to paint actual decoded frames.
  */
@@ -22,23 +28,41 @@ export function useMediaManager(masterVolume: number = 1) {
   const mediaCache = useRef<Map<string, CachedMedia>>(new Map());
   /** Tracks the last time we force-seeked each element (to avoid re-seeking every frame) */
   const lastSyncRef = useRef<Map<string, number>>(new Map());
+  /** Shared AudioContext for the entire mixer */
+  const audioCtxRef = useRef<AudioContext | null>(null);
 
   // Subscribe to individual slices so we don't re-render on unrelated changes
   const tracks = useEditorStore((s) => s.tracks);
   const currentTime = useEditorStore((s) => s.currentTime);
   const isPlaying = useEditorStore((s) => s.isPlaying);
 
+  /** Lazily create / resume the shared AudioContext */
+  const getAudioContext = useCallback(() => {
+    if (!audioCtxRef.current) {
+      audioCtxRef.current = new AudioContext();
+    }
+    if (audioCtxRef.current.state === "suspended") {
+      audioCtxRef.current.resume();
+    }
+    return audioCtxRef.current;
+  }, []);
+
   // ── helpers ───────────────────────────────────────────
   /** Flat list of every clip that carries a real source URL, annotated with
-   *  the track-level mute / visibility flags it inherits. */
+   *  the track-level mute / solo / volume / visibility flags it inherits. */
   const getClipsWithTrackInfo = useCallback(() => {
+    const anySolo = tracks.some((t) => t.solo);
     return tracks.flatMap((track) =>
       track.clips
         .filter((clip) => clip.src && clip.src.length > 0)
         .map((clip) => ({
           ...clip,
           trackMuted: track.muted,
+          trackSolo: track.solo,
+          trackVolume: track.volume ?? 1,
           trackVisible: track.visible,
+          /** When any track is soloed, non-soloed tracks are silenced */
+          effectivelyMuted: track.muted || (anySolo && !track.solo),
         }))
     );
   }, [tracks]);
@@ -57,6 +81,9 @@ export function useMediaManager(masterVolume: number = 1) {
           el.removeAttribute("src");
           el.load(); // release network resources
         }
+        // Disconnect Web Audio nodes
+        cached.gainNode?.disconnect();
+        cached.sourceNode?.disconnect();
         mediaCache.current.delete(id);
       }
     }
@@ -71,6 +98,8 @@ export function useMediaManager(masterVolume: number = 1) {
         if (existing.type !== "image") {
           (existing.element as HTMLMediaElement).pause();
         }
+        existing.gainNode?.disconnect();
+        existing.sourceNode?.disconnect();
         mediaCache.current.delete(clip.id);
       }
 
@@ -87,9 +116,10 @@ export function useMediaManager(masterVolume: number = 1) {
         video.src = clip.src;
         video.preload = "auto";
         video.playsInline = true;
-        // Keep audio on — volume is controlled per-element below
         video.addEventListener("loadeddata", () => {
           entry.ready = true;
+          // Connect to Web Audio graph once loaded
+          connectToAudioGraph(entry);
         });
         entry.element = video;
       } else if (clip.type === "audio") {
@@ -98,6 +128,7 @@ export function useMediaManager(masterVolume: number = 1) {
         audio.preload = "auto";
         audio.addEventListener("loadeddata", () => {
           entry.ready = true;
+          connectToAudioGraph(entry);
         });
         entry.element = audio;
       } else if (clip.type === "image") {
@@ -113,7 +144,28 @@ export function useMediaManager(masterVolume: number = 1) {
         mediaCache.current.set(clip.id, entry);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [getClipsWithTrackInfo]);
+
+  /** Route an HTMLMediaElement through Web Audio: source → gain → destination */
+  const connectToAudioGraph = useCallback((entry: CachedMedia) => {
+    if (entry.type === "image") return;
+    if (entry.sourceNode) return; // already connected
+
+    try {
+      const ctx = getAudioContext();
+      const el = entry.element as HTMLMediaElement;
+      const source = ctx.createMediaElementSource(el);
+      const gain = ctx.createGain();
+      source.connect(gain);
+      gain.connect(ctx.destination);
+      entry.sourceNode = source;
+      entry.gainNode = gain;
+    } catch {
+      // Some browsers may reject duplicate createMediaElementSource calls.
+      // Fall back to native volume control (handled in sync loop).
+    }
+  }, [getAudioContext]);
 
   // ── sync playback / seek / volume every frame ─────────
   useEffect(() => {
@@ -132,11 +184,23 @@ export function useMediaManager(masterVolume: number = 1) {
       const mediaTime = currentTime - clip.startTime + clip.trimStart;
 
       if (isActive) {
-        // Volume ─ clip vol × master vol, respecting track mute
+        // ── Volume mixing ──
+        // Final volume = clipVol × trackVol × masterVol
+        // Silence when the track is muted or when solo logic silences it.
         const clipVol = clip.volume ?? 1;
-        el.volume = clip.trackMuted
+        const finalVol = clip.effectivelyMuted
           ? 0
-          : Math.min(1, Math.max(0, clipVol * masterVolume));
+          : Math.min(1, Math.max(0, clipVol * clip.trackVolume * masterVolume));
+
+        if (cached.gainNode) {
+          // Use Web Audio gain for smooth, click-free volume changes
+          cached.gainNode.gain.value = finalVol;
+          // HTMLMediaElement volume must stay at 1 when routed through Web Audio
+          el.volume = 1;
+        } else {
+          // Fallback: direct volume on the element
+          el.volume = finalVol;
+        }
 
         if (isPlaying) {
           // During playback: let the native element run freely.
@@ -165,6 +229,9 @@ export function useMediaManager(masterVolume: number = 1) {
         }
       } else {
         // Clip not at playhead → silence it
+        if (cached.gainNode) {
+          cached.gainNode.gain.value = 0;
+        }
         if (!el.paused) el.pause();
         lastSyncRef.current.delete(clip.id);
       }
@@ -174,6 +241,7 @@ export function useMediaManager(masterVolume: number = 1) {
   // ── cleanup on unmount ────────────────────────────────
   useEffect(() => {
     const cache = mediaCache.current;
+    const ctx = audioCtxRef.current;
     return () => {
       for (const cached of cache.values()) {
         if (cached.type !== "image") {
@@ -182,8 +250,12 @@ export function useMediaManager(masterVolume: number = 1) {
           el.removeAttribute("src");
           el.load();
         }
+        cached.gainNode?.disconnect();
+        cached.sourceNode?.disconnect();
       }
       cache.clear();
+      if (ctx) ctx.close().catch(() => {});
+      audioCtxRef.current = null;
     };
   }, []);
 
