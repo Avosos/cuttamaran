@@ -26,6 +26,7 @@ import {
   Clapperboard,
   Mic,
   FileText,
+  Layers,
 } from "lucide-react";
 
 // ─── Custom Dropdown ─────────────────────────────────────
@@ -330,6 +331,61 @@ function deleteProject(id: string) {
   const projects = loadProjects().filter((p) => p.id !== id);
   saveProjects(projects);
   return projects;
+}
+
+// ─── Custom Templates (localStorage) ─────────────────
+const TEMPLATES_KEY = "cuttamaran_custom_templates";
+
+export interface CustomTemplate {
+  id: string;
+  name: string;
+  description: string;
+  resolution: string;
+  tracks: PresetTrack[];
+  createdAt: number;
+  gradient: string;
+}
+
+export function loadCustomTemplates(): CustomTemplate[] {
+  try {
+    const raw = localStorage.getItem(TEMPLATES_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveCustomTemplates(templates: CustomTemplate[]) {
+  localStorage.setItem(TEMPLATES_KEY, JSON.stringify(templates));
+}
+
+export function addCustomTemplate(template: CustomTemplate) {
+  const templates = loadCustomTemplates();
+  templates.push(template);
+  saveCustomTemplates(templates);
+  return templates;
+}
+
+export function deleteCustomTemplate(id: string) {
+  const templates = loadCustomTemplates().filter((t) => t.id !== id);
+  saveCustomTemplates(templates);
+  return templates;
+}
+
+// Pick a gradient for user templates from a palette
+const USER_TEMPLATE_GRADIENTS = [
+  "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+  "linear-gradient(135deg, #ec4899 0%, #f43f5e 100%)",
+  "linear-gradient(135deg, #14b8a6 0%, #06b6d4 100%)",
+  "linear-gradient(135deg, #f97316 0%, #eab308 100%)",
+  "linear-gradient(135deg, #8b5cf6 0%, #d946ef 100%)",
+  "linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)",
+  "linear-gradient(135deg, #10b981 0%, #34d399 100%)",
+  "linear-gradient(135deg, #f43f5e 0%, #fb923c 100%)",
+];
+
+export function pickTemplateGradient(): string {
+  return USER_TEMPLATE_GRADIENTS[Math.floor(Math.random() * USER_TEMPLATE_GRADIENTS.length)];
 }
 
 // ─── Resolution presets ──────────────────────────────────
@@ -745,7 +801,29 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
   const [hoveredPresetId, setHoveredPresetId] = useState<string | null>(null);
   const [customWidth, setCustomWidth] = useState(1920);
   const [customHeight, setCustomHeight] = useState(1080);
+  const [customTemplates, setCustomTemplates] = useState<CustomTemplate[]>(() => loadCustomTemplates());
   const isCustom = !RESOLUTIONS.some((r) => r.value === resolution);
+
+  // Convert a CustomTemplate to a ProjectPreset for unified handling
+  const customToPreset = (ct: CustomTemplate): ProjectPreset => ({
+    id: `custom_${ct.id}`,
+    name: ct.name,
+    description: ct.description,
+    icon: <Layers size={20} />,
+    gradient: ct.gradient,
+    resolution: ct.resolution,
+    tracks: ct.tracks,
+  });
+
+  const handleDeleteTemplate = (id: string) => {
+    const updated = deleteCustomTemplate(id);
+    setCustomTemplates(updated);
+    // If the deleted template was selected, fall back to Blank
+    if (selectedPreset.id === `custom_${id}`) {
+      setSelectedPreset(PROJECT_PRESETS[0]);
+      setResolution(PROJECT_PRESETS[0].resolution);
+    }
+  };
 
   // Sync resolution when preset changes
   const handlePresetSelect = (preset: ProjectPreset) => {
@@ -875,6 +953,93 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
                 );
               })}
             </div>
+
+            {/* Custom user templates */}
+            {customTemplates.length > 0 && (
+              <>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 14, marginBottom: 8 }}>
+                  <span style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>Your Templates</span>
+                  <div style={{ flex: 1, height: 1, background: "var(--border-subtle)" }} />
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                  {customTemplates.map((ct) => {
+                    const ctPreset = customToPreset(ct);
+                    const isSelected = selectedPreset.id === ctPreset.id;
+                    const isHovered = hoveredPresetId === ctPreset.id;
+                    return (
+                      <button
+                        key={ct.id}
+                        onClick={() => handlePresetSelect(ctPreset)}
+                        onMouseEnter={() => setHoveredPresetId(ctPreset.id)}
+                        onMouseLeave={() => setHoveredPresetId(null)}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 12,
+                          padding: "10px 12px",
+                          borderRadius: 10,
+                          textAlign: "left",
+                          cursor: "pointer",
+                          position: "relative",
+                          transition: "border-color 0.15s, background 0.15s, box-shadow 0.15s",
+                          background: isSelected ? "var(--accent-muted)" : isHovered ? "var(--hover-subtle)" : "var(--bg-tertiary)",
+                          border: `1.5px solid ${isSelected ? "var(--accent)" : "var(--border-subtle)"}`,
+                          boxShadow: isSelected ? "0 0 12px var(--accent-glow)" : "none",
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: 36,
+                            height: 36,
+                            borderRadius: 9,
+                            flexShrink: 0,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            background: ct.gradient,
+                            color: "rgba(255,255,255,0.9)",
+                            fontSize: 16,
+                          }}
+                        >
+                          <Layers size={18} />
+                        </div>
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, display: "block", color: isSelected ? "var(--accent-hover)" : "var(--text-primary)" }}>
+                            {ct.name}
+                          </span>
+                          <span style={{ fontSize: 10, display: "block", color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {ct.description}
+                          </span>
+                        </div>
+                        {/* Delete button */}
+                        {isHovered && (
+                          <div
+                            onClick={(e) => { e.stopPropagation(); handleDeleteTemplate(ct.id); }}
+                            style={{
+                              position: "absolute",
+                              top: 6,
+                              right: 6,
+                              width: 20,
+                              height: 20,
+                              borderRadius: 5,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              background: "var(--bg-primary)",
+                              border: "1px solid var(--border-subtle)",
+                              cursor: "pointer",
+                            }}
+                            title="Delete template"
+                          >
+                            <Trash2 size={10} style={{ color: "var(--error)" }} />
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
           </div>
 
           {/* Preset details */}

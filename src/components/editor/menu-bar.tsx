@@ -3,6 +3,12 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useEditorStore } from "@/stores/editor-store";
 import { useShortcutStore, formatShortcut } from "@/stores/shortcut-store";
+import {
+  addCustomTemplate,
+  pickTemplateGradient,
+  type CustomTemplate,
+  type PresetTrack,
+} from "@/components/project-launcher";
 
 // ─── Types ───────────────────────────────────────────────
 interface MenuItem {
@@ -51,6 +57,7 @@ export default function MenuBar() {
     saveProject,
     loadProject,
     addTrack,
+    canvasSize,
     propertiesPanelOpen,
     setPropertiesPanelOpen,
     activeTab,
@@ -98,6 +105,28 @@ export default function MenuBar() {
       }
     }
   }, [tracks, setSelectedClipId]);
+
+  const handleSaveAsTemplate = useCallback(() => {
+    const name = window.prompt("Template name:");
+    if (!name || !name.trim()) return;
+    const desc = window.prompt("Short description (optional):") ?? "";
+    const presetTracks: PresetTrack[] = tracks.map((t) => ({
+      name: t.name,
+      type: t.type,
+      height: t.height,
+    }));
+    const tpl: CustomTemplate = {
+      id: crypto.randomUUID(),
+      name: name.trim(),
+      description: desc.trim(),
+      resolution: `${canvasSize.width}x${canvasSize.height}`,
+      tracks: presetTracks,
+      createdAt: Date.now(),
+      gradient: pickTemplateGradient(),
+    };
+    addCustomTemplate(tpl);
+    alert(`Template "${tpl.name}" saved!`);
+  }, [tracks, canvasSize]);
 
   // ── Gather all clips sorted by startTime for navigation ─
   const allClipsSorted = tracks
@@ -153,6 +182,9 @@ export default function MenuBar() {
         { separator: true, label: "---" },
         { label: "Save", shortcut: formatShortcut(shortcuts.save), action: () => handleSave(false) },
         { label: "Save As…", shortcut: formatShortcut(shortcuts.save_as), action: () => handleSave(true) },
+        { separator: true, label: "---" },
+        { label: "Save as Template…", action: handleSaveAsTemplate },
+        { separator: true, label: "---" },
         { label: "Export…", shortcut: formatShortcut(shortcuts.export), action: () => {
           window.dispatchEvent(new CustomEvent("cuttamaran:open-export"));
         }},
