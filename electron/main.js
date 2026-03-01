@@ -438,8 +438,8 @@ app.on("window-all-closed", () => {
 function localMediaUrlToPath(src) {
   if (!src) return null;
   if (!src.startsWith("local-media://")) {
-    // Already a plain file path
-    return src;
+    // Already a plain file path — just normalize separators
+    return path.normalize(src);
   }
   try {
     let filePath = decodeURIComponent(new URL(src).pathname);
@@ -447,8 +447,10 @@ function localMediaUrlToPath(src) {
     if (process.platform === "win32" && filePath.startsWith("/")) {
       filePath = filePath.slice(1);
     }
-    return filePath;
-  } catch {
+    // Normalize to native separators so FFmpeg is happy on Windows
+    return path.normalize(filePath);
+  } catch (err) {
+    console.error("[export] Failed to parse local-media URL:", src, err);
     return null;
   }
 }
@@ -502,8 +504,16 @@ ipcMain.handle("export:start", async (_event, opts) => {
 
   // Input 1…N: audio files — resolve local-media:// URLs to real paths
   const resolvedAudioClips = audioClips
-    .map((a) => ({ ...a, filePath: localMediaUrlToPath(a.src) }))
+    .map((a) => {
+      const filePath = localMediaUrlToPath(a.src);
+      const exists = filePath ? fs.existsSync(filePath) : false;
+      console.log(`[export] Audio clip: src=${a.src}  →  path=${filePath}  exists=${exists}`);
+      return { ...a, filePath };
+    })
     .filter((a) => a.filePath && fs.existsSync(a.filePath));
+
+  console.log(`[export] ${resolvedAudioClips.length} audio clip(s) resolved for FFmpeg`);
+
   for (const audio of resolvedAudioClips) {
     args.push("-i", audio.filePath);
   }
@@ -516,19 +526,26 @@ ipcMain.handle("export:start", async (_event, opts) => {
     resolvedAudioClips.forEach((audio, idx) => {
       const inputIdx = idx + 1; // input 0 is the video pipe
       const label = `a${idx}`;
-      const delay = Math.round(audio.startTime * 1000);
+      const delayMs = Math.round(audio.startTime * 1000);
       const vol = audio.volume ?? 1;
       const trimStart = audio.trimStart ?? 0;
       const trimEnd = trimStart + audio.duration;
       filterParts.push(
-        `[${inputIdx}:a]atrim=start=${trimStart}:end=${trimEnd},asetpts=PTS-STARTPTS,adelay=${delay}|${delay},volume=${vol}[${label}]`
+        `[${inputIdx}:a]atrim=start=${trimStart}:end=${trimEnd},asetpts=PTS-STARTPTS,adelay=${delayMs}|${delayMs},volume=${vol}[${label}]`
       );
       mixLabels.push(`[${label}]`);
     });
 
-    filterParts.push(
-      `${mixLabels.join("")}amix=inputs=${resolvedAudioClips.length}:normalize=0[aout]`
-    );
+    // For a single audio clip, skip amix (just pass through).
+    // amix with inputs=1 can behave oddly in some FFmpeg builds.
+    if (resolvedAudioClips.length === 1) {
+      // The single clip's label is already [a0], rename to [aout]
+      filterParts[0] = filterParts[0].replace(/\[a0\]$/, "[aout]");
+    } else {
+      filterParts.push(
+        `${mixLabels.join("")}amix=inputs=${resolvedAudioClips.length}:dropout_transition=0:normalize=0[aout]`
+      );
+    }
     args.push("-filter_complex", filterParts.join(";"));
     args.push("-map", "0:v");
     args.push("-map", "[aout]");
@@ -565,7 +582,15 @@ ipcMain.handle("export:start", async (_event, opts) => {
       break;
   }
 
+  // Ensure audio doesn't extend past video (or vice versa)
+  if (resolvedAudioClips.length > 0) {
+    args.push("-shortest");
+  }
+
   args.push(outputPath);
+
+  console.log("[export] FFmpeg path:", ffmpegPath);
+  console.log("[export] FFmpeg args:", args.join(" "));
 
   // ── Spawn FFmpeg ──────────────────────────────────────
   return new Promise((resolve) => {

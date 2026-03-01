@@ -689,7 +689,7 @@ function resolveExportSettings(
 }
 
 function ExportModal({ onClose }: { onClose: () => void }) {
-  const { projectName, canvasSize, tracks, duration } = useEditorStore();
+  const { projectName, canvasSize, tracks, duration, mediaFiles } = useEditorStore();
   const [format, setFormat] = useState("mp4");
   const [quality, setQuality] = useState("high");
   const [exporting, setExporting] = useState(false);
@@ -769,17 +769,21 @@ function ExportModal({ onClose }: { onClose: () => void }) {
 
     // Collect audio clips with local file paths.
     // Include both standalone audio clips AND video clips that carry audio.
-    // (blob: URLs won't work for FFmpeg – those are filtered out.)
+    // Prefer diskPath (real filesystem path) over the local-media:// URL for FFmpeg.
     const audioClips = tracks.flatMap((track) =>
       track.clips
         .filter((c) => (c.type === "audio" || c.type === "video") && c.src && !c.src.startsWith("blob:"))
-        .map((c) => ({
-          src: c.src,
-          startTime: c.startTime,
-          duration: c.duration,
-          trimStart: c.trimStart,
-          volume: track.muted ? 0 : (c.volume ?? 1),
-        }))
+        .map((c) => {
+          // Look up the source media file to get diskPath
+          const media = mediaFiles.find((m) => m.id === c.mediaId);
+          return {
+            src: media?.diskPath || c.src,
+            startTime: c.startTime,
+            duration: c.duration,
+            trimStart: c.trimStart,
+            volume: track.muted ? 0 : (c.volume ?? 1),
+          };
+        })
     );
 
     // Tell main process to spawn FFmpeg
@@ -942,7 +946,7 @@ function ExportModal({ onClose }: { onClose: () => void }) {
       }
     }
     mediaElements.clear();
-  }, [projectName, format, quality, canvasSize, tracks, duration]);
+  }, [projectName, format, quality, canvasSize, tracks, duration, mediaFiles]);
 
   const handleCancel = useCallback(async () => {
     cancelledRef.current = true;
