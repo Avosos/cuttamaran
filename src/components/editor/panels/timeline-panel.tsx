@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { formatTime, getClipGradient } from "@/lib/utils";
 import type { TimelineClip, Track } from "@/types/editor";
+import { useWaveform } from "@/hooks/use-waveform";
 
 const PIXELS_PER_SECOND_BASE = 80;
 const RULER_HEIGHT = 28;
@@ -876,7 +877,14 @@ function TimelineClipView({
     >
       {/* Waveform / thumbnail */}
       <div style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
-        {clip.type === "audio" && <AudioWaveform width={width} />}
+        {clip.type === "audio" && (
+          <AudioWaveform
+            src={clip.src}
+            width={width}
+            trimStart={clip.trimStart}
+            clipDuration={clip.duration}
+          />
+        )}
         {clip.type === "video" && clip.thumbnail && (
           <div style={{ position: "absolute", inset: 0, display: "flex" }}>
             {Array.from({
@@ -896,6 +904,15 @@ function TimelineClipView({
               />
             ))}
           </div>
+        )}
+        {clip.type === "video" && clip.src && (
+          <AudioWaveform
+            src={clip.src}
+            width={width}
+            trimStart={clip.trimStart}
+            clipDuration={clip.duration}
+            overlay
+          />
         )}
       </div>
 
@@ -974,12 +991,6 @@ function TimelineClipView({
       )}
     </div>
   );
-}
-
-// Deterministic pseudo-random for stable hydration
-function seededRandom(seed: number): number {
-  const x = Math.sin(seed * 9301 + 49297) * 49297;
-  return x - Math.floor(x);
 }
 
 // ─── Clip Context Menu ──────────────────────────────────
@@ -1296,8 +1307,52 @@ function ClipContextMenu({
 }
 
 // ─── Audio Waveform Visualization ───────────────────────
-function AudioWaveform({ width }: { width: number }) {
-  const bars = Math.max(1, Math.floor(width / 3));
+function AudioWaveform({
+  src,
+  width,
+  trimStart,
+  clipDuration,
+  overlay,
+}: {
+  src: string;
+  width: number;
+  trimStart: number;
+  clipDuration: number;
+  overlay?: boolean;
+}) {
+  // ~3px per bar
+  const totalBars = Math.max(1, Math.floor(width / 3));
+  // Decode enough peaks to cover the full source, we'll slice for trim
+  const numPeaks = Math.max(totalBars, 200);
+  const waveform = useWaveform(src, numPeaks);
+
+  // Determine which slice of peaks to show based on trim
+  let bars: number[] = [];
+  if (waveform && waveform.peaks.length > 0) {
+    const totalSourceDur = waveform.duration;
+    const startFrac = totalSourceDur > 0 ? trimStart / totalSourceDur : 0;
+    const endFrac =
+      totalSourceDur > 0
+        ? Math.min(1, (trimStart + clipDuration) / totalSourceDur)
+        : 1;
+    const startIdx = Math.floor(startFrac * waveform.peaks.length);
+    const endIdx = Math.ceil(endFrac * waveform.peaks.length);
+    const sliced = waveform.peaks.slice(startIdx, endIdx);
+
+    // Resample sliced peaks to match totalBars
+    if (sliced.length > 0) {
+      for (let i = 0; i < totalBars; i++) {
+        const srcIdx = (i / totalBars) * sliced.length;
+        const lo = Math.floor(srcIdx);
+        const hi = Math.min(lo + 1, sliced.length - 1);
+        const frac = srcIdx - lo;
+        bars.push(sliced[lo] * (1 - frac) + sliced[hi] * frac);
+      }
+    }
+  }
+
+  // If no waveform data yet, show a subtle placeholder
+  const hasPeaks = bars.length > 0;
 
   return (
     <div
@@ -1305,27 +1360,38 @@ function AudioWaveform({ width }: { width: number }) {
         position: "absolute",
         inset: 0,
         display: "flex",
-        alignItems: "center",
+        alignItems: overlay ? "flex-end" : "center",
         gap: 1,
-        padding: "0 4px",
-        opacity: 0.4,
+        padding: overlay ? "0 4px 2px" : "0 4px",
+        opacity: overlay ? 0.25 : 0.4,
       }}
     >
-      {Array.from({ length: bars }).map((_, i) => {
-        const h = 20 + Math.sin(i * 0.7) * 30 + seededRandom(i) * 20;
-        return (
-          <div
-            key={i}
-            style={{
-              flexShrink: 0,
-              borderRadius: 9999,
-              width: 2,
-              height: `${h}%`,
-              background: "rgba(255,255,255,0.6)",
-            }}
-          />
-        );
-      })}
+      {hasPeaks
+        ? bars.map((v, i) => (
+            <div
+              key={i}
+              style={{
+                flexShrink: 0,
+                borderRadius: 9999,
+                width: 2,
+                height: `${Math.max(4, v * (overlay ? 40 : 80))}%`,
+                background: "rgba(255,255,255,0.6)",
+              }}
+            />
+          ))
+        : /* Placeholder bars while decoding */
+          Array.from({ length: totalBars }).map((_, i) => (
+            <div
+              key={i}
+              style={{
+                flexShrink: 0,
+                borderRadius: 9999,
+                width: 2,
+                height: "8%",
+                background: "rgba(255,255,255,0.2)",
+              }}
+            />
+          ))}
     </div>
   );
 }
