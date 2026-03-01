@@ -62,6 +62,8 @@ export interface TimelineClip {
   lineHeight?: number;
   strokeColor?: string;
   strokeWidth?: number;
+  // Timeline appearance
+  clipColor?: string;
   // Effects
   effects?: ClipEffect[];
 }

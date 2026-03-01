@@ -676,6 +676,20 @@ const EXPORT_FORMATS = [
   { value: "gif", label: "GIF", desc: "Animated — social media" },
 ];
 
+const AUDIO_FORMATS = [
+  { value: "mp3", label: "MP3", desc: "Wide compatibility" },
+  { value: "wav", label: "WAV", desc: "Lossless — highest quality" },
+  { value: "aac", label: "AAC", desc: "Apple / streaming" },
+];
+
+const EXPORT_MODES = [
+  { value: "both", label: "Video + Audio", desc: "Full project" },
+  { value: "video", label: "Video Only", desc: "No audio track" },
+  { value: "audio", label: "Audio Only", desc: "Sound only — no video" },
+] as const;
+
+type ExportMode = "both" | "video" | "audio";
+
 const EXPORT_QUALITY = [
   { value: "low", label: "Draft", desc: "720p — fast render" },
   { value: "medium", label: "Standard", desc: "1080p — balanced" },
@@ -702,6 +716,7 @@ function ExportModal({ onClose }: { onClose: () => void }) {
   const { projectName, canvasSize, tracks, duration, mediaFiles } = useEditorStore();
   const [format, setFormat] = useState("mp4");
   const [quality, setQuality] = useState("high");
+  const [exportMode, setExportMode] = useState<ExportMode>("both");
   const [exporting, setExporting] = useState(false);
   const [progress, setProgress] = useState(0);
   const [statusText, setStatusText] = useState("");
@@ -751,11 +766,17 @@ function ExportModal({ onClose }: { onClose: () => void }) {
       return;
     }
 
+    const isAudioOnly = exportMode === "audio";
+    const activeFormat = isAudioOnly ? format : format; // format state already adapted
+    const fileExt = isAudioOnly
+      ? (format === "mp3" ? "mp3" : format === "wav" ? "wav" : "aac")
+      : format;
+
     // Ask user where to save
     const result = await api.saveFileDialog({
-      defaultPath: `${projectName}.${format}`,
+      defaultPath: `${projectName}.${fileExt}`,
       filters: [
-        { name: format.toUpperCase(), extensions: [format] },
+        { name: fileExt.toUpperCase(), extensions: [fileExt] },
       ],
     });
     if (result.canceled || !result.filePath) return;
@@ -780,7 +801,7 @@ function ExportModal({ onClose }: { onClose: () => void }) {
     // Collect audio clips with local file paths.
     // Include both standalone audio clips AND video clips that carry audio.
     // Prefer diskPath (real filesystem path) over the local-media:// URL for FFmpeg.
-    const audioClips = tracks.flatMap((track) =>
+    const audioClips = exportMode === "video" ? [] : tracks.flatMap((track) =>
       track.clips
         .filter((c) => (c.type === "audio" || c.type === "video") && c.src && !c.src.startsWith("blob:"))
         .map((c) => {
@@ -802,9 +823,10 @@ function ExportModal({ onClose }: { onClose: () => void }) {
       fps,
       width: w,
       height: h,
-      format,
+      format: fileExt,
       quality,
-      totalFrames,
+      totalFrames: isAudioOnly ? 0 : totalFrames,
+      exportMode,
       audioClips,
     });
     if (!startResult.ok) {

@@ -64,6 +64,8 @@ interface EditorStore {
   tracks: Track[];
   addTrack: (type: "video" | "audio") => void;
   removeTrack: (id: string) => void;
+  renameTrack: (id: string, name: string) => void;
+  reorderTracks: (fromIndex: number, toIndex: number) => void;
   toggleTrackMute: (id: string) => void;
   toggleTrackLock: (id: string) => void;
   toggleTrackVisibility: (id: string) => void;
@@ -501,6 +503,20 @@ export const useEditorStore = create<EditorStore>()((set, get) => ({
         t.id === id ? { ...t, visible: !t.visible } : t
       ),
     })),
+  renameTrack: (id, name) =>
+    set((state) => ({
+      ...captureSnapshot(state),
+      tracks: state.tracks.map((t) =>
+        t.id === id ? { ...t, name } : t
+      ),
+    })),
+  reorderTracks: (fromIndex, toIndex) =>
+    set((state) => {
+      const newTracks = [...state.tracks];
+      const [moved] = newTracks.splice(fromIndex, 1);
+      newTracks.splice(toIndex, 0, moved);
+      return { ...captureSnapshot(state), tracks: newTracks };
+    }),
 
   // Clips
   addClipToTrack: (trackId, clip) =>

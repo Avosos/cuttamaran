@@ -31,6 +31,7 @@ export interface ElectronAPI {
     format: string;
     quality: string;
     totalFrames: number;
+    exportMode: "both" | "video" | "audio";
     audioClips: {
       src: string;
       startTime: number;
