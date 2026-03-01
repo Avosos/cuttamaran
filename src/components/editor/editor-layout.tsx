@@ -99,7 +99,7 @@ export default function EditorLayout() {
 
   return (
     <div
-      style={{ display: "flex", flexDirection: "column", height: "100vh", background: "#06060a" }}
+      style={{ display: "flex", flexDirection: "column", height: "100vh", background: "var(--bg-primary)" }}
     >
       {/* Top title bar */}
       <EditorHeader />

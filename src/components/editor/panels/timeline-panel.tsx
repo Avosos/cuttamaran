@@ -99,7 +99,7 @@ export default function TimelinePanel() {
             width: 1,
             background: isMajor
               ? "rgba(255,255,255,0.25)"
-              : "rgba(255,255,255,0.08)",
+              : "var(--hover-strong)",
             bottom: 0,
             top: "auto",
           }}
@@ -458,7 +458,7 @@ export default function TimelinePanel() {
               opacity: selectedClipId ? 1 : 0.3,
               transition: "all 0.15s",
             }}
-            onMouseEnter={(e) => { if (selectedClipId) e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
+            onMouseEnter={(e) => { if (selectedClipId) e.currentTarget.style.background = "var(--hover-overlay)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
             title="Delete clip"
           >
@@ -491,7 +491,7 @@ export default function TimelinePanel() {
               opacity: selectedClipId ? 1 : 0.3,
               transition: "all 0.15s",
             }}
-            onMouseEnter={(e) => { if (selectedClipId) e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
+            onMouseEnter={(e) => { if (selectedClipId) e.currentTarget.style.background = "var(--hover-overlay)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
             title="Split clip (Ctrl+B)"
           >
@@ -506,7 +506,7 @@ export default function TimelinePanel() {
           <button
             onClick={() => setZoom(zoom - 0.2)}
             style={{ padding: 4, borderRadius: 4, border: "none", background: "transparent", cursor: "pointer", transition: "all 0.15s" }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--hover-overlay)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
           >
             <ZoomOut
@@ -530,7 +530,7 @@ export default function TimelinePanel() {
           <button
             onClick={() => setZoom(zoom + 0.2)}
             style={{ padding: 4, borderRadius: 4, border: "none", background: "transparent", cursor: "pointer", transition: "all 0.15s" }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--hover-overlay)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
           >
             <ZoomIn
@@ -556,7 +556,7 @@ export default function TimelinePanel() {
               color: "var(--text-muted)",
               transition: "background 0.15s",
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--hover-overlay)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
           >
             <Plus size={12} />
@@ -577,7 +577,7 @@ export default function TimelinePanel() {
               color: "var(--text-muted)",
               transition: "background 0.15s",
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--hover-overlay)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
           >
             <Plus size={12} />
@@ -780,7 +780,7 @@ function TrackHeader({ track }: { track: Track }) {
         <button
           onClick={() => toggleTrackVisibility(track.id)}
           style={{ padding: 4, borderRadius: 4, border: "none", background: "transparent", cursor: "pointer", transition: "background 0.15s" }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "var(--hover-overlay)"; }}
           onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
           title={track.visible ? "Hide track" : "Show track"}
         >
@@ -796,7 +796,7 @@ function TrackHeader({ track }: { track: Track }) {
         <button
           onClick={() => toggleTrackMute(track.id)}
           style={{ padding: 4, borderRadius: 4, border: "none", background: "transparent", cursor: "pointer", transition: "background 0.15s" }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "var(--hover-overlay)"; }}
           onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
           title={track.muted ? "Unmute" : "Mute"}
         >
@@ -815,7 +815,7 @@ function TrackHeader({ track }: { track: Track }) {
         <button
           onClick={() => toggleTrackLock(track.id)}
           style={{ padding: 4, borderRadius: 4, border: "none", background: "transparent", cursor: "pointer", transition: "background 0.15s" }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "var(--hover-overlay)"; }}
           onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
           title={track.locked ? "Unlock" : "Lock"}
         >
@@ -1140,7 +1140,7 @@ function ClipContextMenu({
         borderRadius: 10,
         background: "var(--bg-secondary)",
         border: "1px solid var(--border-default)",
-        boxShadow: "0 12px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04)",
+        boxShadow: "var(--shadow-dropdown)",
         backdropFilter: "blur(20px)",
       }}
       onClick={(e) => e.stopPropagation()}
@@ -1211,7 +1211,7 @@ function ClipContextMenu({
                 background: isHovered
                   ? item.danger
                     ? "rgba(239, 68, 68, 0.12)"
-                    : "rgba(255,255,255,0.06)"
+                    : "var(--hover-overlay)"
                   : "transparent",
                 color: item.disabled
                   ? "var(--text-muted)"
@@ -1257,7 +1257,7 @@ function ClipContextMenu({
                   borderRadius: 10,
                   background: "var(--bg-secondary)",
                   border: "1px solid var(--border-default)",
-                  boxShadow: "0 8px 30px rgba(0,0,0,0.4)",
+                  boxShadow: "var(--shadow-dropdown)",
                 }}
                 onClick={(e) => e.stopPropagation()}
               >
@@ -1290,7 +1290,7 @@ function ClipContextMenu({
                         fontWeight: opt.value === 1 ? 500 : 400,
                         transition: "background 0.1s",
                       }}
-                      onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = "var(--hover-overlay)"; }}
                       onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
                     >
                       {opt.label}

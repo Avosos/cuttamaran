@@ -99,7 +99,7 @@ export default function KeyboardShortcuts() {
           padding: 8,
           borderRadius: 8,
           border: "none",
-          background: btnHovered ? "rgba(255,255,255,0.05)" : "transparent",
+          background: btnHovered ? "var(--hover-overlay)" : "transparent",
           cursor: "pointer",
           zIndex: 50,
           color: "var(--text-muted)",
@@ -116,7 +116,7 @@ export default function KeyboardShortcuts() {
     <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center" }}>
       {/* Backdrop */}
       <div
-        style={{ position: "absolute", inset: 0, background: "rgba(0, 0, 0, 0.6)", backdropFilter: "blur(4px)" }}
+        style={{ position: "absolute", inset: 0, background: "var(--overlay-bg)", backdropFilter: "blur(4px)" }}
         onClick={() => { if (!recording) setIsOpen(false); }}
       />
 
@@ -134,7 +134,7 @@ export default function KeyboardShortcuts() {
           flexDirection: "column",
           background: "var(--bg-elevated)",
           border: "1px solid var(--border-default)",
-          boxShadow: "0 25px 80px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255,255,255,0.05)",
+          boxShadow: "var(--shadow-heavy)",
         }}
       >
         {/* Header */}
@@ -159,7 +159,7 @@ export default function KeyboardShortcuts() {
                 border: "none",
                 fontSize: 11,
                 color: "var(--text-muted)",
-                background: resetAllHovered ? "rgba(255,255,255,0.06)" : "transparent",
+                background: resetAllHovered ? "var(--hover-overlay)" : "transparent",
                 cursor: "pointer",
                 transition: "background 0.15s",
               }}
@@ -176,7 +176,7 @@ export default function KeyboardShortcuts() {
                 padding: 4,
                 borderRadius: 6,
                 border: "none",
-                background: closeBtnHovered ? "rgba(255,255,255,0.05)" : "transparent",
+                background: closeBtnHovered ? "var(--hover-overlay)" : "transparent",
                 cursor: "pointer",
                 transition: "background 0.15s",
               }}
@@ -293,7 +293,7 @@ function ShortcutRow({
               padding: 2,
               borderRadius: 4,
               border: "none",
-              background: resetHovered ? "rgba(255,255,255,0.08)" : "transparent",
+              background: resetHovered ? "var(--hover-strong)" : "transparent",
               cursor: "pointer",
               color: "var(--text-muted)",
               display: "flex",

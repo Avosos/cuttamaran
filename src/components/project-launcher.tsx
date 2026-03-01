@@ -69,7 +69,7 @@ function CustomDropdown({ value, options, onChange }: { value: string; options: 
             padding: 4,
             background: "var(--bg-tertiary)",
             border: "1px solid var(--border-subtle)",
-            boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+            boxShadow: "var(--shadow-dropdown)",
             zIndex: 100,
           }}
         >
@@ -78,14 +78,14 @@ function CustomDropdown({ value, options, onChange }: { value: string; options: 
               key={opt.value}
               onClick={() => { onChange(opt.value); setOpen(false); }}
               onMouseEnter={(e) => { e.currentTarget.style.background = "var(--accent-muted)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = opt.value === value ? "rgba(255,255,255,0.06)" : "transparent"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = opt.value === value ? "var(--hover-overlay)" : "transparent"; }}
               style={{
                 padding: "6px 10px",
                 borderRadius: 5,
                 fontSize: 13,
                 cursor: "pointer",
                 whiteSpace: "nowrap",
-                background: opt.value === value ? "rgba(255,255,255,0.06)" : "transparent",
+                background: opt.value === value ? "var(--hover-overlay)" : "transparent",
                 color: opt.value === value ? "var(--accent-hover)" : "var(--text-secondary)",
               }}
             >
@@ -222,7 +222,7 @@ function FirstTimeSetup({ onComplete }: { onComplete: () => void }) {
           overflow: "hidden",
           background: "var(--bg-secondary)",
           border: "1px solid var(--border-subtle)",
-          boxShadow: "0 24px 80px rgba(0,0,0,0.6)",
+          boxShadow: "var(--shadow-heavy)",
         }}
       >
         {/* Header with icon */}
@@ -329,7 +329,7 @@ function SettingsPanel({ onClose }: { onClose: () => void }) {
           overflow: "hidden",
           background: "var(--bg-secondary)",
           border: "1px solid var(--border-subtle)",
-          boxShadow: "0 24px 80px rgba(0,0,0,0.6)",
+          boxShadow: "var(--shadow-heavy)",
         }}
       >
         {/* Header */}
@@ -338,7 +338,7 @@ function SettingsPanel({ onClose }: { onClose: () => void }) {
           <button
             onClick={onClose}
             style={{ padding: 6, borderRadius: 8, background: "transparent", border: "none", cursor: "pointer" }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--hover-overlay)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
           >
             <X size={16} style={{ color: "var(--text-muted)" }} />
@@ -397,7 +397,7 @@ function SettingsPanel({ onClose }: { onClose: () => void }) {
               {/* Default Resolution */}
               <div
                 style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", borderRadius: 8 }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "var(--hover-subtle)"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -414,7 +414,7 @@ function SettingsPanel({ onClose }: { onClose: () => void }) {
               {/* Auto-Save */}
               <div
                 style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", borderRadius: 8 }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "var(--hover-subtle)"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -452,7 +452,7 @@ function SettingsPanel({ onClose }: { onClose: () => void }) {
               {/* Theme */}
               <div
                 style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", borderRadius: 8 }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "var(--hover-subtle)"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -469,7 +469,7 @@ function SettingsPanel({ onClose }: { onClose: () => void }) {
               {/* Accent Color */}
               <div
                 style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", borderRadius: 8 }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "var(--hover-subtle)"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -510,7 +510,7 @@ function SettingsPanel({ onClose }: { onClose: () => void }) {
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               <div
                 style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", borderRadius: 8 }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "var(--hover-subtle)"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -558,7 +558,7 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
           overflow: "hidden",
           background: "var(--bg-secondary)",
           border: "1px solid var(--border-subtle)",
-          boxShadow: "0 24px 80px rgba(0,0,0,0.6)",
+          boxShadow: "var(--shadow-heavy)",
         }}
       >
         {/* Header */}
@@ -567,7 +567,7 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
           <button
             onClick={onClose}
             style={{ padding: 6, borderRadius: 8, background: "transparent", border: "none", cursor: "pointer" }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--hover-overlay)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
           >
             <X size={16} style={{ color: "var(--text-muted)" }} />
@@ -636,7 +636,7 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
           <button
             onClick={onClose}
             style={{ padding: "8px 16px", fontSize: 13, borderRadius: 8, background: "transparent", border: "none", cursor: "pointer", color: "var(--text-secondary)" }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--hover-overlay)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
           >
             Cancel
@@ -704,7 +704,7 @@ export default function ProjectLauncher({ onOpenProject, onCreateProject, onOpen
   const recentProjects = projects.sort((a, b) => b.updatedAt - a.updatedAt);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100vh", userSelect: "none", background: "#06060a" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100vh", userSelect: "none", background: "var(--bg-primary)" }}>
       {/* Title bar */}
       <div
         style={{
@@ -858,7 +858,7 @@ export default function ProjectLauncher({ onOpenProject, onCreateProject, onOpen
                       borderRadius: 10,
                       cursor: "pointer",
                       transition: "background 0.15s",
-                      background: hoveredId === project.id ? "rgba(255,255,255,0.05)" : "transparent",
+                      background: hoveredId === project.id ? "var(--hover-overlay)" : "transparent",
                     }}
                   >
                     {/* Project icon */}
@@ -985,7 +985,7 @@ function NavItem({ icon, label, active, onClick }: { icon: React.ReactNode; labe
         background: active ? "var(--accent-muted)" : "transparent",
         color: active ? "var(--accent-hover)" : "var(--text-secondary)",
       }}
-      onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = "rgba(255,255,255,0.04)"; }}
+      onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = "var(--hover-subtle)"; }}
       onMouseLeave={(e) => { e.currentTarget.style.background = active ? "var(--accent-muted)" : "transparent"; }}
     >
       <span style={{ flexShrink: 0, display: "flex" }}>{icon}</span>

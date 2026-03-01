@@ -289,9 +289,9 @@ export default function MenuBar() {
                   : "var(--text-secondary)",
               background:
                 openMenu === menu.label
-                  ? "rgba(255,255,255,0.08)"
+                  ? "var(--hover-strong)"
                   : hoveredMenu === menu.label
-                  ? "rgba(255,255,255,0.04)"
+                  ? "var(--hover-subtle)"
                   : "transparent",
               border: "none",
               borderRadius: 4,
@@ -315,7 +315,7 @@ export default function MenuBar() {
                 padding: 4,
                 background: "var(--bg-elevated)",
                 border: "1px solid var(--border-subtle)",
-                boxShadow: "0 12px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)",
+                boxShadow: "var(--shadow-dropdown)",
                 zIndex: 1000,
               }}
             >
@@ -352,7 +352,7 @@ export default function MenuBar() {
                       cursor: item.disabled ? "default" : "pointer",
                       fontSize: 12,
                       color: item.disabled ? "var(--text-muted)" : "var(--text-secondary)",
-                      background: hoveredItem === i && !item.disabled ? "rgba(255,255,255,0.06)" : "transparent",
+                      background: hoveredItem === i && !item.disabled ? "var(--hover-overlay)" : "transparent",
                       opacity: item.disabled ? 0.5 : 1,
                       transition: "background 0.1s",
                       gap: 20,

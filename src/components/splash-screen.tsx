@@ -47,7 +47,7 @@ export default function SplashScreen({ onFinished }: SplashScreenProps) {
   return (
     <div
       className="fixed inset-0 z-[9999] flex flex-col items-center justify-center select-none"
-      style={{ background: "#06060a" }}
+      style={{ background: "var(--bg-primary)" }}
     >
       {/* Ambient glow */}
       <div
@@ -111,7 +111,7 @@ export default function SplashScreen({ onFinished }: SplashScreenProps) {
         style={{
           width: 260,
           height: 3,
-          background: "rgba(255,255,255,0.06)",
+          background: "var(--hover-overlay)",
           animation: "splashFadeUp 0.6s 0.5s ease-out both",
         }}
       >
@@ -137,7 +137,7 @@ export default function SplashScreen({ onFinished }: SplashScreenProps) {
       {/* Version */}
       <p
         className="absolute bottom-6 text-[10px]"
-        style={{ color: "rgba(255,255,255,0.15)" }}
+        style={{ color: "var(--text-muted)", opacity: 0.5 }}
       >
         v0.1.0
       </p>

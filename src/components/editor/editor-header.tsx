@@ -90,7 +90,7 @@ export default function EditorHeader() {
     padding: 8,
     borderRadius: 8,
     border: "none",
-    background: hoveredBtn === id && !disabled ? "rgba(255,255,255,0.05)" : "transparent",
+    background: hoveredBtn === id && !disabled ? "var(--hover-overlay)" : "transparent",
     cursor: disabled ? "default" : "pointer",
     opacity: disabled ? 0.3 : 1,
     transition: "all 0.15s",
@@ -160,7 +160,7 @@ export default function EditorHeader() {
           onMouseLeave={() => setInputHovered(false)}
           style={{
             fontSize: 14,
-            background: inputFocused || inputHovered ? "rgba(255,255,255,0.05)" : "transparent",
+            background: inputFocused || inputHovered ? "var(--hover-overlay)" : "transparent",
             border: "none",
             outline: "none",
             padding: "4px 8px",
@@ -206,7 +206,7 @@ export default function EditorHeader() {
                 padding: 4,
                 background: "var(--bg-secondary)",
                 border: "1px solid var(--border-subtle)",
-                boxShadow: "0 12px 40px rgba(0,0,0,0.5)",
+                boxShadow: "var(--shadow-dropdown)",
                 zIndex: 100,
               }}
             >
@@ -230,7 +230,7 @@ export default function EditorHeader() {
                       background: active ? "var(--accent-muted)" : "transparent",
                       transition: "background 0.12s",
                     }}
-                    onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
+                    onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = "var(--hover-overlay)"; }}
                     onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}
                   >
                     <span>{preset.name}</span>
@@ -382,7 +382,7 @@ function EditorSettingsModal({ onClose }: { onClose: () => void }) {
     justifyContent: "space-between",
     padding: "8px 12px",
     borderRadius: 8,
-    background: hoveredRow === id ? "rgba(255,255,255,0.03)" : "transparent",
+    background: hoveredRow === id ? "var(--hover-subtle)" : "transparent",
     transition: "background 0.12s",
   });
 
@@ -408,7 +408,7 @@ function EditorSettingsModal({ onClose }: { onClose: () => void }) {
           overflow: "hidden",
           background: "var(--bg-secondary)",
           border: "1px solid var(--border-subtle)",
-          boxShadow: "0 24px 80px rgba(0,0,0,0.6)",
+          boxShadow: "var(--shadow-heavy)",
         }}
       >
         {/* Header */}
@@ -418,7 +418,7 @@ function EditorSettingsModal({ onClose }: { onClose: () => void }) {
             onClick={onClose}
             onMouseEnter={() => setCloseBtnHovered(true)}
             onMouseLeave={() => setCloseBtnHovered(false)}
-            style={{ padding: 6, borderRadius: 8, background: closeBtnHovered ? "rgba(255,255,255,0.05)" : "transparent", border: "none", cursor: "pointer", transition: "background 0.12s" }}
+            style={{ padding: 6, borderRadius: 8, background: closeBtnHovered ? "var(--hover-overlay)" : "transparent", border: "none", cursor: "pointer", transition: "background 0.12s" }}
           >
             <X size={16} style={{ color: "var(--text-muted)" }} />
           </button>
@@ -635,7 +635,7 @@ function SettingsDropdown({ value, options, onChange }: { value: string; options
             padding: 3,
             background: "var(--bg-secondary)",
             border: "1px solid var(--border-subtle)",
-            boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+            boxShadow: "var(--shadow-dropdown)",
             zIndex: 300,
           }}
         >
@@ -655,7 +655,7 @@ function SettingsDropdown({ value, options, onChange }: { value: string; options
                 textAlign: "left",
                 cursor: "pointer",
                 color: o.value === value ? "var(--accent-hover)" : "var(--text-secondary)",
-                background: o.value === value ? "var(--accent-muted)" : hovered === o.value ? "rgba(255,255,255,0.05)" : "transparent",
+                background: o.value === value ? "var(--accent-muted)" : hovered === o.value ? "var(--hover-overlay)" : "transparent",
                 transition: "background 0.1s",
               }}
             >
@@ -990,7 +990,7 @@ function ExportModal({ onClose }: { onClose: () => void }) {
           overflow: "hidden",
           background: "var(--bg-secondary)",
           border: "1px solid var(--border-subtle)",
-          boxShadow: "0 24px 80px rgba(0,0,0,0.6)",
+          boxShadow: "var(--shadow-heavy)",
         }}
       >
         {/* Header */}
@@ -1003,7 +1003,7 @@ function ExportModal({ onClose }: { onClose: () => void }) {
             onClick={onClose}
             onMouseEnter={() => setCloseBtnHovered(true)}
             onMouseLeave={() => setCloseBtnHovered(false)}
-            style={{ padding: 6, borderRadius: 8, background: closeBtnHovered ? "rgba(255,255,255,0.05)" : "transparent", border: "none", cursor: "pointer", transition: "background 0.12s", opacity: exporting ? 0.3 : 1, pointerEvents: exporting ? "none" : "auto" }}
+            style={{ padding: 6, borderRadius: 8, background: closeBtnHovered ? "var(--hover-overlay)" : "transparent", border: "none", cursor: "pointer", transition: "background 0.12s", opacity: exporting ? 0.3 : 1, pointerEvents: exporting ? "none" : "auto" }}
           >
             <X size={16} style={{ color: "var(--text-muted)" }} />
           </button>
@@ -1169,7 +1169,7 @@ function ExportModal({ onClose }: { onClose: () => void }) {
                   cursor: "pointer",
                   color: "var(--text-secondary)",
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "var(--hover-overlay)"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
               >
                 {exporting ? "Cancel" : "Close"}

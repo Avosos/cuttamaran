@@ -68,6 +68,11 @@ export default function PreviewPanel() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    // Read theme-aware colors from CSS variables
+    const cs = getComputedStyle(document.documentElement);
+    const canvasBg = cs.getPropertyValue("--canvas-bg").trim() || "#0f0f1a";
+    const accentColor = cs.getPropertyValue("--accent").trim() || "#7c5cfc";
+
     // Clear
     ctx.fillStyle = "#000000";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -76,11 +81,11 @@ export default function PreviewPanel() {
 
     if (activeClips.length === 0) {
       // Draw empty state
-      ctx.fillStyle = "#1a1a2e";
+      ctx.fillStyle = canvasBg;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       // Draw grid pattern
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.03)";
+      ctx.strokeStyle = cs.getPropertyValue("--hover-subtle").trim();
       ctx.lineWidth = 1;
       const gridSize = 40;
       for (let x = 0; x < canvas.width; x += gridSize) {
@@ -99,7 +104,7 @@ export default function PreviewPanel() {
       // Center crosshair
       const cx = canvas.width / 2;
       const cy = canvas.height / 2;
-      ctx.strokeStyle = "rgba(124, 92, 252, 0.3)";
+      ctx.strokeStyle = accentColor + "4d";
       ctx.lineWidth = 1;
       ctx.setLineDash([8, 4]);
       ctx.beginPath();
@@ -111,7 +116,7 @@ export default function PreviewPanel() {
       ctx.setLineDash([]);
 
       // Center text
-      ctx.fillStyle = "rgba(255, 255, 255, 0.15)";
+      ctx.fillStyle = cs.getPropertyValue("--text-muted").trim();
       ctx.font = "14px Inter, sans-serif";
       ctx.textAlign = "center";
       ctx.fillText("Drop media to get started", cx, cy + 50);
@@ -277,17 +282,17 @@ export default function PreviewPanel() {
           ctx.globalAlpha = 1;
         } else {
           // Placeholder – no source or still loading
-          ctx.fillStyle = "#0f0f1a";
+          ctx.fillStyle = canvasBg;
           ctx.fillRect(0, 0, canvas.width, canvas.height);
 
           const cx = canvas.width / 2;
           const cy = canvas.height / 2;
 
           // Film-frame icon
-          ctx.strokeStyle = "rgba(124, 92, 252, 0.3)";
+          ctx.strokeStyle = accentColor + "4d";
           ctx.lineWidth = 2;
           ctx.strokeRect(cx - 32, cy - 24, 64, 48);
-          ctx.fillStyle = "rgba(124, 92, 252, 0.25)";
+          ctx.fillStyle = accentColor + "40";
           ctx.beginPath();
           ctx.moveTo(cx - 10, cy - 14);
           ctx.lineTo(cx - 10, cy + 14);
@@ -296,13 +301,13 @@ export default function PreviewPanel() {
           ctx.fill();
 
           // Clip name
-          ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
+          ctx.fillStyle = cs.getPropertyValue("--text-muted").trim();
           ctx.font = "13px Inter, sans-serif";
           ctx.textAlign = "center";
           ctx.fillText(clip.name, cx, cy + 50);
 
           if (clip.src) {
-            ctx.fillStyle = "rgba(255, 255, 255, 0.2)";
+            ctx.fillStyle = cs.getPropertyValue("--text-muted").trim();
             ctx.font = "11px Inter, sans-serif";
             ctx.fillText("Loading\u2026", cx, cy + 68);
           }
@@ -388,7 +393,7 @@ export default function PreviewPanel() {
             width: aspectRatio > 1 ? "100%" : "auto",
             height: aspectRatio <= 1 ? "100%" : "auto",
             boxShadow:
-              "0 0 0 1px rgba(255,255,255,0.05), 0 20px 60px rgba(0,0,0,0.5)",
+              "var(--shadow-heavy)",
           }}
         >
           <canvas
@@ -408,7 +413,7 @@ export default function PreviewPanel() {
               borderRadius: 6,
               fontSize: 10,
               fontWeight: 500,
-              background: "rgba(0, 0, 0, 0.6)",
+              background: "var(--overlay-bg)",
               backdropFilter: "blur(8px)",
               color: "var(--text-muted)",
               border: "1px solid rgba(255,255,255,0.1)",
@@ -498,7 +503,7 @@ export default function PreviewPanel() {
                 cursor: "pointer",
                 transition: "background 0.15s",
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "var(--hover-overlay)"; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
               title="Go to start"
             >
@@ -545,7 +550,7 @@ export default function PreviewPanel() {
                 cursor: "pointer",
                 transition: "background 0.15s",
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "var(--hover-overlay)"; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
               title="Go to end"
             >
@@ -577,7 +582,7 @@ export default function PreviewPanel() {
                 marginLeft: 4,
                 transition: "background 0.15s",
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "var(--hover-overlay)"; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
               title="Fullscreen"
             >

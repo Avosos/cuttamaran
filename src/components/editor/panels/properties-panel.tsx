@@ -167,7 +167,7 @@ export default function PropertiesPanel() {
             cursor: "pointer",
             transition: "background 0.15s",
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "var(--hover-overlay)"; }}
           onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
         >
           <X size={14} style={{ color: "var(--text-muted)" }} />
