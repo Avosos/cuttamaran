@@ -767,12 +767,12 @@ function ExportModal({ onClose }: { onClose: () => void }) {
     const h = height % 2 === 0 ? height : height + 1;
     const totalFrames = Math.ceil(duration * fps);
 
-    // Collect audio clips with local file paths
-    // (blob: URLs won't work for FFmpeg, but file:// paths will be
-    //  resolved on the Electron side)
+    // Collect audio clips with local file paths.
+    // Include both standalone audio clips AND video clips that carry audio.
+    // (blob: URLs won't work for FFmpeg – those are filtered out.)
     const audioClips = tracks.flatMap((track) =>
       track.clips
-        .filter((c) => c.type === "audio" && c.src && !c.src.startsWith("blob:"))
+        .filter((c) => (c.type === "audio" || c.type === "video") && c.src && !c.src.startsWith("blob:"))
         .map((c) => ({
           src: c.src,
           startTime: c.startTime,
