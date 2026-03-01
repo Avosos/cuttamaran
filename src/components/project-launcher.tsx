@@ -743,11 +743,26 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
   const [resolution, setResolution] = useState("1920x1080");
   const [selectedPreset, setSelectedPreset] = useState<ProjectPreset>(PROJECT_PRESETS[0]);
   const [hoveredPresetId, setHoveredPresetId] = useState<string | null>(null);
+  const [customWidth, setCustomWidth] = useState(1920);
+  const [customHeight, setCustomHeight] = useState(1080);
+  const isCustom = !RESOLUTIONS.some((r) => r.value === resolution);
 
   // Sync resolution when preset changes
   const handlePresetSelect = (preset: ProjectPreset) => {
     setSelectedPreset(preset);
     setResolution(preset.resolution);
+  };
+
+  const handleCustomWidth = (w: number) => {
+    const clamped = Math.max(1, Math.min(7680, w));
+    setCustomWidth(clamped);
+    setResolution(`${clamped}x${customHeight}`);
+  };
+
+  const handleCustomHeight = (h: number) => {
+    const clamped = Math.max(1, Math.min(4320, h));
+    setCustomHeight(clamped);
+    setResolution(`${customWidth}x${clamped}`);
   };
 
   return (
@@ -935,7 +950,80 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
                   <span style={{ fontSize: 10, color: "var(--text-muted)" }}>{r.desc}</span>
                 </button>
               ))}
+              {/* Custom resolution */}
+              <button
+                onClick={() => setResolution(`${customWidth}x${customHeight}`)}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-start",
+                  padding: "10px 12px",
+                  borderRadius: 8,
+                  textAlign: "left",
+                  cursor: "pointer",
+                  transition: "border-color 0.15s, background 0.15s",
+                  background: isCustom ? "var(--accent-muted)" : "var(--bg-tertiary)",
+                  border: `1px solid ${isCustom ? "var(--accent)" : "var(--border-subtle)"}`,
+                }}
+              >
+                <span style={{ fontSize: 12, fontWeight: 500, color: isCustom ? "var(--accent-hover)" : "var(--text-secondary)" }}>Custom</span>
+                <span style={{ fontSize: 10, color: "var(--text-muted)" }}>Enter your own size</span>
+              </button>
             </div>
+
+            {/* Custom width × height inputs */}
+            {isCustom && (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10 }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: 10, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Width</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={7680}
+                    value={customWidth}
+                    onChange={(e) => handleCustomWidth(parseInt(e.target.value) || 1)}
+                    style={{
+                      width: "100%",
+                      padding: "8px 10px",
+                      borderRadius: 6,
+                      fontSize: 13,
+                      outline: "none",
+                      background: "var(--bg-tertiary)",
+                      border: "1px solid var(--border-default)",
+                      color: "var(--text-primary)",
+                      boxSizing: "border-box",
+                    }}
+                    onFocus={(e) => { e.currentTarget.style.borderColor = "var(--accent)"; }}
+                    onBlur={(e) => { e.currentTarget.style.borderColor = "var(--border-default)"; }}
+                  />
+                </div>
+                <span style={{ fontSize: 16, color: "var(--text-muted)", marginTop: 18 }}>×</span>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: 10, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Height</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={4320}
+                    value={customHeight}
+                    onChange={(e) => handleCustomHeight(parseInt(e.target.value) || 1)}
+                    style={{
+                      width: "100%",
+                      padding: "8px 10px",
+                      borderRadius: 6,
+                      fontSize: 13,
+                      outline: "none",
+                      background: "var(--bg-tertiary)",
+                      border: "1px solid var(--border-default)",
+                      color: "var(--text-primary)",
+                      boxSizing: "border-box",
+                    }}
+                    onFocus={(e) => { e.currentTarget.style.borderColor = "var(--accent)"; }}
+                    onBlur={(e) => { e.currentTarget.style.borderColor = "var(--border-default)"; }}
+                  />
+                </div>
+                <span style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 18 }}>px</span>
+              </div>
+            )}
           </div>
         </div>
 
