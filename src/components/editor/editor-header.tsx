@@ -110,7 +110,7 @@ export default function EditorHeader() {
         WebkitAppRegion: "drag",
       } as React.CSSProperties}
     >
-      {/* Left section - Logo & Project name */}
+      {/* Left section - Logo & Menu Bar */}
       <div style={{ display: "flex", alignItems: "center", gap: 12, WebkitAppRegion: "no-drag" } as React.CSSProperties}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <div
@@ -144,9 +144,10 @@ export default function EditorHeader() {
         <div style={{ width: 1, height: 20, background: "var(--border-default)" }} />
 
         <MenuBar />
+      </div>
 
-        <div style={{ width: 1, height: 20, background: "var(--border-default)" }} />
-
+      {/* Center section - Project name & Resolution */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, WebkitAppRegion: "no-drag" } as React.CSSProperties}>
         <input
           ref={inputRef}
           type="text"
@@ -165,6 +166,7 @@ export default function EditorHeader() {
             borderRadius: 6,
             color: "var(--text-secondary)",
             width: 180,
+            textAlign: "center",
             transition: "background 0.15s",
           }}
         />
@@ -240,7 +242,7 @@ export default function EditorHeader() {
         </div>
       </div>
 
-      {/* Center section - Undo/Redo & Tools */}
+      {/* Right section - Undo/Redo, Save, Export & Window Controls */}
       <div style={{ display: "flex", alignItems: "center", gap: 4, WebkitAppRegion: "no-drag" } as React.CSSProperties}>
         <button
           onClick={undo}
@@ -263,7 +265,7 @@ export default function EditorHeader() {
           <Redo2 size={16} style={{ color: "var(--text-secondary)" }} />
         </button>
 
-        <div style={{ width: 1, height: 20, margin: "0 8px", background: "var(--border-default)" }} />
+        <div style={{ width: 1, height: 20, margin: "0 4px", background: "var(--border-default)" }} />
 
         <div style={{ position: "relative" }}>
           <button
@@ -302,10 +304,9 @@ export default function EditorHeader() {
             </span>
           )}
         </div>
-      </div>
 
-      {/* Right section - Export & Window Controls */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, WebkitAppRegion: "no-drag" } as React.CSSProperties}>
+        <div style={{ width: 1, height: 20, margin: "0 4px", background: "var(--border-default)" }} />
+
         <button
           onClick={() => setShowExport(true)}
           onMouseEnter={() => setExportHovered(true)}
