@@ -338,6 +338,125 @@ export default function PropertiesPanel() {
           </PropertyRow>
         </PropertySection>
 
+        {/* Transform (visual clips only) */}
+        {(selectedClip.type === "video" || selectedClip.type === "image" || selectedClip.type === "text") && (
+          <PropertySection icon={<Move size={13} />} title="Transform">
+            <PropertyRow label="Position X">
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <input
+                  type="range"
+                  min={-1920}
+                  max={1920}
+                  step={1}
+                  value={selectedClip.positionX ?? 0}
+                  onChange={(e) => handleUpdate({ positionX: parseFloat(e.target.value) })}
+                  style={{ width: 64, accentColor: "var(--accent)" }}
+                />
+                <PropertyInput
+                  type="number"
+                  value={String(selectedClip.positionX ?? 0)}
+                  onChange={(v) => handleUpdate({ positionX: parseFloat(v) || 0 })}
+                  suffix="px"
+                />
+              </div>
+            </PropertyRow>
+            <PropertyRow label="Position Y">
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <input
+                  type="range"
+                  min={-1080}
+                  max={1080}
+                  step={1}
+                  value={selectedClip.positionY ?? 0}
+                  onChange={(e) => handleUpdate({ positionY: parseFloat(e.target.value) })}
+                  style={{ width: 64, accentColor: "var(--accent)" }}
+                />
+                <PropertyInput
+                  type="number"
+                  value={String(selectedClip.positionY ?? 0)}
+                  onChange={(v) => handleUpdate({ positionY: parseFloat(v) || 0 })}
+                  suffix="px"
+                />
+              </div>
+            </PropertyRow>
+            <PropertyRow label="Scale X">
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <input
+                  type="range"
+                  min={0.1}
+                  max={5}
+                  step={0.01}
+                  value={selectedClip.scaleX ?? 1}
+                  onChange={(e) => handleUpdate({ scaleX: parseFloat(e.target.value) })}
+                  style={{ width: 64, accentColor: "var(--accent)" }}
+                />
+                <span style={{ fontSize: 10, fontFamily: "monospace", color: "var(--text-secondary)", width: 32, textAlign: "right" }}>
+                  {Math.round((selectedClip.scaleX ?? 1) * 100)}%
+                </span>
+              </div>
+            </PropertyRow>
+            <PropertyRow label="Scale Y">
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <input
+                  type="range"
+                  min={0.1}
+                  max={5}
+                  step={0.01}
+                  value={selectedClip.scaleY ?? 1}
+                  onChange={(e) => handleUpdate({ scaleY: parseFloat(e.target.value) })}
+                  style={{ width: 64, accentColor: "var(--accent)" }}
+                />
+                <span style={{ fontSize: 10, fontFamily: "monospace", color: "var(--text-secondary)", width: 32, textAlign: "right" }}>
+                  {Math.round((selectedClip.scaleY ?? 1) * 100)}%
+                </span>
+              </div>
+            </PropertyRow>
+            <PropertyRow label="Rotation">
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <input
+                  type="range"
+                  min={-180}
+                  max={180}
+                  step={1}
+                  value={selectedClip.rotation ?? 0}
+                  onChange={(e) => handleUpdate({ rotation: parseFloat(e.target.value) })}
+                  style={{ width: 64, accentColor: "var(--accent)" }}
+                />
+                <PropertyInput
+                  type="number"
+                  value={String(selectedClip.rotation ?? 0)}
+                  onChange={(v) => handleUpdate({ rotation: parseFloat(v) || 0 })}
+                  suffix="°"
+                />
+              </div>
+            </PropertyRow>
+            {/* Reset all transforms */}
+            {((selectedClip.positionX ?? 0) !== 0 || (selectedClip.positionY ?? 0) !== 0 ||
+              (selectedClip.scaleX ?? 1) !== 1 || (selectedClip.scaleY ?? 1) !== 1 ||
+              (selectedClip.rotation ?? 0) !== 0) && (
+              <button
+                onClick={() => handleUpdate({ positionX: 0, positionY: 0, scaleX: 1, scaleY: 1, rotation: 0 })}
+                style={{
+                  width: "100%",
+                  padding: "4px 8px",
+                  borderRadius: 4,
+                  border: "1px solid var(--border-subtle)",
+                  background: "var(--bg-primary)",
+                  color: "var(--text-muted)",
+                  fontSize: 10,
+                  cursor: "pointer",
+                  transition: "background 0.12s",
+                  marginTop: 2,
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "var(--hover-overlay)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "var(--bg-primary)"; }}
+              >
+                Reset Transform
+              </button>
+            )}
+          </PropertySection>
+        )}
+
         {/* Audio */}
         {(selectedClip.type === "video" ||
           selectedClip.type === "audio") && (

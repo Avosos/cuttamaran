@@ -49,15 +49,21 @@ export default function PreviewPanel() {
   useEffect(() => { currentTimeRef.current = currentTime; }, [currentTime]);
   useEffect(() => { durationRef.current = duration; }, [duration]);
 
-  // Get active clips at current time
+  // Get active clips at current time, z-ordered for compositing.
+  // tracks[0] = top of timeline = foreground, so iterate in reverse:
+  // bottom tracks paint first (background), top tracks paint last (foreground).
   const getActiveClips = useCallback(() => {
-    return tracks.flatMap((track) =>
-      track.clips.filter(
-        (clip) =>
-          currentTime >= clip.startTime &&
-          currentTime < clip.startTime + clip.duration
-      )
-    );
+    const ordered: typeof tracks[number]["clips"] = [];
+    for (let i = tracks.length - 1; i >= 0; i--) {
+      const track = tracks[i];
+      if (!track.visible || track.type === "audio") continue;
+      for (const clip of track.clips) {
+        if (currentTime >= clip.startTime && currentTime < clip.startTime + clip.duration) {
+          ordered.push(clip);
+        }
+      }
+    }
+    return ordered;
   }, [tracks, currentTime]);
 
   // Render the preview canvas
@@ -182,6 +188,25 @@ export default function PreviewPanel() {
       fadeAlpha = Math.max(0, Math.min(1, fadeAlpha));
       const hasVignette = effects.find((e) => e.type === "vignette");
 
+      // ── Per-clip compositing: save state, apply opacity + transform ──
+      ctx.save();
+      ctx.globalAlpha = (clip.opacity ?? 1) * fadeAlpha;
+
+      // Transform (position, rotation, scale) around canvas center
+      const px = (clip.positionX ?? 0) * (canvas.width / canvasSize.width);
+      const py = (clip.positionY ?? 0) * (canvas.height / canvasSize.height);
+      const rot = (clip.rotation ?? 0) * Math.PI / 180;
+      const sx = clip.scaleX ?? 1;
+      const sy = clip.scaleY ?? 1;
+      if (px !== 0 || py !== 0 || rot !== 0 || sx !== 1 || sy !== 1) {
+        const anchorX = canvas.width / 2;
+        const anchorY = canvas.height / 2;
+        ctx.translate(anchorX + px, anchorY + py);
+        ctx.rotate(rot);
+        ctx.scale(sx, sy);
+        ctx.translate(-anchorX, -anchorY);
+      }
+
       // Apply CSS filters
       if (filterParts.length > 0) {
         ctx.filter = filterParts.join(" ");
@@ -239,8 +264,6 @@ export default function PreviewPanel() {
         ctx.shadowOffsetX = 2;
         ctx.shadowOffsetY = 2;
 
-        ctx.globalAlpha = fadeAlpha;
-
         for (let i = 0; i < lines.length; i++) {
           const ly = startY + i * lh;
           // Stroke
@@ -263,11 +286,6 @@ export default function PreviewPanel() {
 
         ctx.shadowColor = "transparent";
         ctx.shadowBlur = 0;
-        ctx.globalAlpha = 1;
-        // Reset letter spacing
-        if ("letterSpacing" in ctx) {
-          (ctx as CanvasRenderingContext2D & { letterSpacing: string }).letterSpacing = "0px";
-        }
       } else if (clip.type === "image") {
         // Draw decoded image (cached by media manager)
         const imgEl = getImageElement(clip.id);
@@ -286,17 +304,13 @@ export default function PreviewPanel() {
             dx = (canvas.width - dw) / 2;
             dy = 0;
           }
-          ctx.globalAlpha = (clip.opacity ?? 1) * fadeAlpha;
           ctx.drawImage(imgEl, dx, dy, dw, dh);
-          ctx.globalAlpha = 1;
         } else if (clip.thumbnail) {
           // Fallback while image loads
           const img = new window.Image();
           img.src = clip.thumbnail;
           try {
-            ctx.globalAlpha = fadeAlpha;
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            ctx.globalAlpha = 1;
           } catch {
             /* not loaded yet */
           }
@@ -319,9 +333,7 @@ export default function PreviewPanel() {
             dx = (canvas.width - dw) / 2;
             dy = 0;
           }
-          ctx.globalAlpha = (clip.opacity ?? 1) * fadeAlpha;
           ctx.drawImage(videoEl, dx, dy, dw, dh);
-          ctx.globalAlpha = 1;
         } else {
           // Placeholder – no source or still loading
           ctx.fillStyle = canvasBg;
@@ -356,21 +368,23 @@ export default function PreviewPanel() {
         }
       }
 
-      // Reset CSS filter after each clip
-      ctx.filter = "none";
-
-      // ── Vignette: radial gradient overlay ──
+      // ── Vignette: radial gradient overlay (draw in clip's transform space) ──
       if (hasVignette) {
+        // Reset filter so vignette isn't double-processed
+        ctx.filter = "none";
         const strength = hasVignette.value;
-        const cx = canvas.width / 2;
-        const cy = canvas.height / 2;
-        const radius = Math.max(cx, cy);
-        const grad = ctx.createRadialGradient(cx, cy, radius * (1 - strength * 0.6), cx, cy, radius);
+        const vcx = canvas.width / 2;
+        const vcy = canvas.height / 2;
+        const radius = Math.max(vcx, vcy);
+        const grad = ctx.createRadialGradient(vcx, vcy, radius * (1 - strength * 0.6), vcx, vcy, radius);
         grad.addColorStop(0, "rgba(0,0,0,0)");
         grad.addColorStop(1, `rgba(0,0,0,${(strength * 0.85).toFixed(2)})`);
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
+
+      // Restore state (resets globalAlpha, transform, filter, shadows, etc.)
+      ctx.restore();
     }
   }, [getActiveClips, currentTime, canvasSize, getVideoElement, getImageElement]);
 

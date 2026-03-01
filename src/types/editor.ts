@@ -64,6 +64,12 @@ export interface TimelineClip {
   strokeWidth?: number;
   // Timeline appearance
   clipColor?: string;
+  // Transform properties
+  positionX?: number;
+  positionY?: number;
+  scaleX?: number;
+  scaleY?: number;
+  rotation?: number;
   // Effects
   effects?: ClipEffect[];
 }
