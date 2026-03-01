@@ -59,6 +59,8 @@ interface EditorStore {
     clipId: string,
     newStartTime: number
   ) => void;
+  splitClip: (trackId: string, clipId: string, splitTime: number) => void;
+  duplicateClip: (trackId: string, clipId: string) => void;
   selectedClipId: string | null;
   setSelectedClipId: (id: string | null) => void;
   getSelectedClip: () => TimelineClip | null;
@@ -391,6 +393,53 @@ export const useEditorStore = create<EditorStore>()((set, get) => ({
             return { ...t, clips: [...t.clips, updatedClip] };
           }
           return t;
+        }),
+      };
+    }),
+  splitClip: (trackId, clipId, splitTime) =>
+    set((state) => {
+      get().pushHistory();
+      return {
+        tracks: state.tracks.map((t) => {
+          if (t.id !== trackId) return t;
+          const clip = t.clips.find((c) => c.id === clipId);
+          if (!clip) return t;
+
+          const relativeTime = splitTime - clip.startTime;
+          if (relativeTime <= 0.05 || relativeTime >= clip.duration - 0.05) return t;
+
+          const leftClip: TimelineClip = {
+            ...clip,
+            duration: relativeTime,
+          };
+          const rightClip: TimelineClip = {
+            ...clip,
+            id: uuidv4(),
+            startTime: splitTime,
+            duration: clip.duration - relativeTime,
+            trimStart: clip.trimStart + relativeTime,
+          };
+          return {
+            ...t,
+            clips: t.clips.map((c) => (c.id === clipId ? leftClip : c)).concat(rightClip),
+          };
+        }),
+      };
+    }),
+  duplicateClip: (trackId, clipId) =>
+    set((state) => {
+      get().pushHistory();
+      return {
+        tracks: state.tracks.map((t) => {
+          if (t.id !== trackId) return t;
+          const clip = t.clips.find((c) => c.id === clipId);
+          if (!clip) return t;
+          const newClip: TimelineClip = {
+            ...clip,
+            id: uuidv4(),
+            startTime: clip.startTime + clip.duration,
+          };
+          return { ...t, clips: [...t.clips, newClip] };
         }),
       };
     }),

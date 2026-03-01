@@ -21,6 +21,12 @@ import {
   ZoomIn,
   ZoomOut,
   ChevronsLeftRight,
+  Copy,
+  ClipboardPaste,
+  SplitSquareHorizontal,
+  VolumeOff,
+  Gauge,
+  PanelRightOpen,
 } from "lucide-react";
 import { formatTime, getClipGradient } from "@/lib/utils";
 import type { TimelineClip, Track } from "@/types/editor";
@@ -45,6 +51,9 @@ export default function TimelinePanel() {
     updateClip,
     addTrack,
     isPlaying,
+    splitClip,
+    duplicateClip,
+    setPropertiesPanelOpen,
   } = useEditorStore();
 
   const timelineRef = useRef<HTMLDivElement>(null);
@@ -55,6 +64,12 @@ export default function TimelinePanel() {
     clipId: string;
     trackId: string;
     edge: "left" | "right";
+  } | null>(null);
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    clipId: string;
+    trackId: string;
   } | null>(null);
 
   const pxPerSecond = PIXELS_PER_SECOND_BASE * zoom;
@@ -277,6 +292,31 @@ export default function TimelinePanel() {
     el.addEventListener("wheel", handleWheel, { passive: false });
     return () => el.removeEventListener("wheel", handleWheel);
   }, [zoom, setZoom]);
+
+  // ─── Close context menu on outside click / scroll ─────
+  useEffect(() => {
+    if (!contextMenu) return;
+    const close = () => setContextMenu(null);
+    window.addEventListener("click", close);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    return () => {
+      window.removeEventListener("click", close);
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+    };
+  }, [contextMenu]);
+
+  // ─── Context menu handler ─────────────────────────────
+  const handleClipContextMenu = useCallback(
+    (e: React.MouseEvent, clip: TimelineClip, trackId: string) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setSelectedClipId(clip.id);
+      setContextMenu({ x: e.clientX, y: e.clientY, clipId: clip.id, trackId });
+    },
+    [setSelectedClipId]
+  );
 
   // ─── Auto-scroll playhead ─────────────────────────────
   useEffect(() => {
@@ -605,6 +645,9 @@ export default function TimelinePanel() {
                     onResizeStart={(e, edge) =>
                       handleClipResize(e, clip, track.id, edge)
                     }
+                    onContextMenu={(e) =>
+                      handleClipContextMenu(e, clip, track.id)
+                    }
                     getClipIcon={getClipIcon}
                   />
                 ))}
@@ -623,6 +666,17 @@ export default function TimelinePanel() {
           </div>
         </div>
       </div>
+
+      {/* Clip Context Menu */}
+      {contextMenu && (
+        <ClipContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          clipId={contextMenu.clipId}
+          trackId={contextMenu.trackId}
+          onClose={() => setContextMenu(null)}
+        />
+      )}
     </div>
   );
 }
@@ -738,6 +792,7 @@ function TimelineClipView({
   isSelected,
   onMouseDown,
   onResizeStart,
+  onContextMenu,
   getClipIcon,
 }: {
   clip: TimelineClip;
@@ -747,6 +802,7 @@ function TimelineClipView({
   isSelected: boolean;
   onMouseDown: (e: React.MouseEvent) => void;
   onResizeStart: (e: React.MouseEvent, edge: "left" | "right") => void;
+  onContextMenu: (e: React.MouseEvent) => void;
   getClipIcon: (type: string) => React.ReactNode;
 }) {
   const left = clip.startTime * pxPerSecond;
@@ -767,6 +823,7 @@ function TimelineClipView({
         opacity: clip.opacity ?? 1,
       }}
       onMouseDown={onMouseDown}
+      onContextMenu={onContextMenu}
     >
       {/* Waveform / thumbnail */}
       <div style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
@@ -874,6 +931,319 @@ function TimelineClipView({
 function seededRandom(seed: number): number {
   const x = Math.sin(seed * 9301 + 49297) * 49297;
   return x - Math.floor(x);
+}
+
+// ─── Clip Context Menu ──────────────────────────────────
+const SPEED_OPTIONS = [
+  { label: "0.25×", value: 0.25 },
+  { label: "0.5×", value: 0.5 },
+  { label: "1× (Normal)", value: 1 },
+  { label: "1.5×", value: 1.5 },
+  { label: "2×", value: 2 },
+  { label: "4×", value: 4 },
+];
+
+function ClipContextMenu({
+  x,
+  y,
+  clipId,
+  trackId,
+  onClose,
+}: {
+  x: number;
+  y: number;
+  clipId: string;
+  trackId: string;
+  onClose: () => void;
+}) {
+  const {
+    currentTime,
+    removeClip,
+    splitClip,
+    duplicateClip,
+    updateClip,
+    setSelectedClipId,
+    setPropertiesPanelOpen,
+    tracks,
+  } = useEditorStore();
+
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [speedSubmenu, setSpeedSubmenu] = useState(false);
+  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+
+  // Find the actual clip
+  const track = tracks.find((t) => t.id === trackId);
+  const clip = track?.clips.find((c) => c.id === clipId);
+
+  // Adjust position to keep menu on-screen
+  const [pos, setPos] = useState({ x, y });
+  useEffect(() => {
+    const el = menuRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const nx = x + rect.width > window.innerWidth ? x - rect.width : x;
+    const ny = y + rect.height > window.innerHeight ? y - rect.height : y;
+    setPos({ x: Math.max(0, nx), y: Math.max(0, ny) });
+  }, [x, y]);
+
+  if (!clip) return null;
+
+  const isMuted = (clip.volume ?? 1) === 0;
+  const canSplit =
+    currentTime > clip.startTime &&
+    currentTime < clip.startTime + clip.duration;
+
+  const menuItems: {
+    id: string;
+    label: string;
+    icon: React.ReactNode;
+    shortcut?: string;
+    danger?: boolean;
+    disabled?: boolean;
+    separator?: boolean;
+    hasSubmenu?: boolean;
+    onClick?: () => void;
+  }[] = [
+    {
+      id: "split",
+      label: "Split at Playhead",
+      icon: <Scissors size={14} />,
+      shortcut: "Ctrl+B",
+      disabled: !canSplit,
+      onClick: () => {
+        splitClip(trackId, clipId, currentTime);
+        onClose();
+      },
+    },
+    {
+      id: "duplicate",
+      label: "Duplicate",
+      icon: <Copy size={14} />,
+      shortcut: "Ctrl+D",
+      onClick: () => {
+        duplicateClip(trackId, clipId);
+        onClose();
+      },
+    },
+    { id: "sep1", label: "", icon: null, separator: true },
+    {
+      id: "mute",
+      label: isMuted ? "Unmute Clip" : "Mute Clip",
+      icon: isMuted ? <Volume2 size={14} /> : <VolumeOff size={14} />,
+      onClick: () => {
+        updateClip(trackId, clipId, { volume: isMuted ? 1 : 0 });
+        onClose();
+      },
+    },
+    {
+      id: "speed",
+      label: "Speed",
+      icon: <Gauge size={14} />,
+      hasSubmenu: true,
+      onClick: () => setSpeedSubmenu(!speedSubmenu),
+    },
+    { id: "sep2", label: "", icon: null, separator: true },
+    {
+      id: "properties",
+      label: "Properties",
+      icon: <PanelRightOpen size={14} />,
+      onClick: () => {
+        setSelectedClipId(clipId);
+        setPropertiesPanelOpen(true);
+        onClose();
+      },
+    },
+    { id: "sep3", label: "", icon: null, separator: true },
+    {
+      id: "delete",
+      label: "Delete",
+      icon: <Trash2 size={14} />,
+      shortcut: "Del",
+      danger: true,
+      onClick: () => {
+        removeClip(trackId, clipId);
+        onClose();
+      },
+    },
+  ];
+
+  return (
+    <div
+      ref={menuRef}
+      style={{
+        position: "fixed",
+        left: pos.x,
+        top: pos.y,
+        zIndex: 1000,
+        minWidth: 200,
+        padding: "4px 0",
+        borderRadius: 10,
+        background: "var(--bg-secondary)",
+        border: "1px solid var(--border-default)",
+        boxShadow: "0 12px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04)",
+        backdropFilter: "blur(20px)",
+      }}
+      onClick={(e) => e.stopPropagation()}
+      onContextMenu={(e) => e.preventDefault()}
+    >
+      {/* Clip info header */}
+      <div
+        style={{
+          padding: "6px 12px 4px",
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          borderBottom: "1px solid var(--border-subtle)",
+          marginBottom: 4,
+        }}
+      >
+        <span style={{ color: "var(--text-muted)" }}>
+          {clip.type === "video" ? <Film size={12} /> :
+           clip.type === "audio" ? <Music size={12} /> :
+           clip.type === "image" ? <Image size={12} /> :
+           <Type size={12} />}
+        </span>
+        <span
+          style={{
+            fontSize: 11,
+            fontWeight: 500,
+            color: "var(--text-secondary)",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            maxWidth: 160,
+          }}
+        >
+          {clip.name}
+        </span>
+      </div>
+
+      {menuItems.map((item) => {
+        if (item.separator) {
+          return (
+            <div
+              key={item.id}
+              style={{ height: 1, margin: "4px 8px", background: "var(--border-subtle)" }}
+            />
+          );
+        }
+
+        const isHovered = hoveredItem === item.id;
+
+        return (
+          <div key={item.id} style={{ position: "relative" }}>
+            <button
+              disabled={item.disabled}
+              onClick={item.onClick}
+              onMouseEnter={() => {
+                setHoveredItem(item.id);
+                if (item.id !== "speed") setSpeedSubmenu(false);
+              }}
+              onMouseLeave={() => setHoveredItem(null)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                width: "100%",
+                padding: "6px 12px",
+                border: "none",
+                borderRadius: 0,
+                background: isHovered
+                  ? item.danger
+                    ? "rgba(239, 68, 68, 0.12)"
+                    : "rgba(255,255,255,0.06)"
+                  : "transparent",
+                color: item.disabled
+                  ? "var(--text-muted)"
+                  : item.danger
+                    ? "#ef4444"
+                    : "var(--text-secondary)",
+                cursor: item.disabled ? "default" : "pointer",
+                opacity: item.disabled ? 0.4 : 1,
+                fontSize: 12,
+                textAlign: "left",
+                transition: "background 0.1s",
+              }}
+            >
+              <span style={{ width: 16, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                {item.icon}
+              </span>
+              <span style={{ flex: 1 }}>{item.label}</span>
+              {item.shortcut && (
+                <span
+                  style={{
+                    fontSize: 10,
+                    color: "var(--text-muted)",
+                    fontFamily: "monospace",
+                  }}
+                >
+                  {item.shortcut}
+                </span>
+              )}
+              {item.hasSubmenu && (
+                <span style={{ fontSize: 10, color: "var(--text-muted)" }}>▸</span>
+              )}
+            </button>
+
+            {/* Speed submenu */}
+            {item.id === "speed" && speedSubmenu && (
+              <div
+                style={{
+                  position: "absolute",
+                  left: "100%",
+                  top: -4,
+                  minWidth: 140,
+                  padding: "4px 0",
+                  borderRadius: 10,
+                  background: "var(--bg-secondary)",
+                  border: "1px solid var(--border-default)",
+                  boxShadow: "0 8px 30px rgba(0,0,0,0.4)",
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {SPEED_OPTIONS.map((opt) => {
+                  // Compute effective speed from current duration vs original
+                  const isActive = false; // could compare to stored speed
+                  return (
+                    <button
+                      key={opt.value}
+                      onClick={() => {
+                        // Adjust clip duration by speed factor
+                        const originalDuration = clip.duration;
+                        const currentSpeed = 1; // base
+                        const newDuration = (originalDuration * currentSpeed) / opt.value;
+                        updateClip(trackId, clipId, { duration: newDuration });
+                        onClose();
+                      }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        width: "100%",
+                        padding: "6px 12px",
+                        border: "none",
+                        background: "transparent",
+                        color: opt.value === 1 ? "var(--accent)" : "var(--text-secondary)",
+                        cursor: "pointer",
+                        fontSize: 12,
+                        textAlign: "left",
+                        fontWeight: opt.value === 1 ? 500 : 400,
+                        transition: "background 0.1s",
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 // ─── Audio Waveform Visualization ───────────────────────
