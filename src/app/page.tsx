@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import SplashScreen from "@/components/splash-screen";
 import ProjectLauncher, {
   type ProjectMeta,
+  type ProjectPreset,
   loadProjects,
   saveProjects,
 } from "@/components/project-launcher";
@@ -74,7 +75,7 @@ export default function Home() {
   }, [loadProject]);
 
   const handleCreateProject = useCallback(
-    (name: string, resolution: string) => {
+    (name: string, resolution: string, preset?: ProjectPreset) => {
       const newProject: ProjectMeta = {
         id: uuidv4(),
         name,
@@ -94,34 +95,60 @@ export default function Home() {
       if (w && h) {
         setCanvasSize({ name: `${w}×${h}`, width: w, height: h });
       }
-      // Reset to default tracks for a new project
+
+      // Build tracks from preset or fall back to defaults
+      const presetTracks = preset?.tracks ?? [
+        { name: "Video 1", type: "video" as const, height: 64 },
+        { name: "Audio 1", type: "audio" as const, height: 48 },
+      ];
+
+      const builtTracks = presetTracks.map((t) => {
+        const trackId = uuidv4();
+        return {
+          id: trackId,
+          name: t.name,
+          type: t.type as "video" | "audio",
+          clips: [] as import("@/types/editor").TimelineClip[],
+          muted: false,
+          solo: false,
+          locked: false,
+          height: t.height ?? (t.type === "video" ? 64 : 48),
+          visible: true,
+          volume: 1,
+        };
+      });
+
+      // Create starter clips from preset
+      if (preset?.clips) {
+        for (const pc of preset.clips) {
+          const track = builtTracks[pc.trackIndex];
+          if (!track) continue;
+          track.clips.push({
+            id: uuidv4(),
+            mediaId: "",
+            type: pc.type,
+            name: pc.name,
+            trackId: track.id,
+            startTime: 0,
+            duration: pc.duration,
+            trimStart: 0,
+            trimEnd: 0,
+            src: "",
+            volume: 1,
+            opacity: 1,
+            text: pc.text,
+            fontSize: pc.fontSize,
+            fontFamily: pc.fontFamily,
+            color: pc.color,
+            backgroundColor: pc.backgroundColor,
+            fontWeight: pc.fontWeight,
+          });
+        }
+      }
+
+      // Reset to preset tracks for the new project
       useEditorStore.setState({
-        tracks: [
-          {
-            id: uuidv4(),
-            name: "Video 1",
-            type: "video" as const,
-            clips: [],
-            muted: false,
-            solo: false,
-            locked: false,
-            height: 64,
-            visible: true,
-            volume: 1,
-          },
-          {
-            id: uuidv4(),
-            name: "Audio 1",
-            type: "audio" as const,
-            clips: [],
-            muted: false,
-            solo: false,
-            locked: false,
-            height: 48,
-            visible: true,
-            volume: 1,
-          },
-        ],
+        tracks: builtTracks,
         mediaFiles: [],
         projectFilePath: null,
         dirty: false,

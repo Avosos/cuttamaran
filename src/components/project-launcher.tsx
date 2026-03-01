@@ -19,6 +19,13 @@ import {
   Square,
   Copy,
   Palette,
+  Gamepad2,
+  Music,
+  Youtube,
+  Smartphone,
+  Clapperboard,
+  Mic,
+  FileText,
 } from "lucide-react";
 
 // ─── Custom Dropdown ─────────────────────────────────────
@@ -111,9 +118,195 @@ export interface ProjectMeta {
   filePath?: string;  // path to .cmp file on disk
 }
 
+// ─── Project Presets ─────────────────────────────────────
+export interface PresetTrack {
+  name: string;
+  type: "video" | "audio";
+  height?: number;
+}
+
+export interface PresetClip {
+  trackIndex: number;
+  type: "text";
+  name: string;
+  duration: number;
+  text?: string;
+  fontSize?: number;
+  fontFamily?: string;
+  color?: string;
+  backgroundColor?: string;
+  fontWeight?: "normal" | "bold";
+}
+
+export interface ProjectPreset {
+  id: string;
+  name: string;
+  description: string;
+  icon: React.ReactNode;
+  gradient: string;
+  resolution: string;
+  tracks: PresetTrack[];
+  clips?: PresetClip[];
+}
+
+const PROJECT_PRESETS: ProjectPreset[] = [
+  {
+    id: "blank",
+    name: "Blank Project",
+    description: "Start from scratch with a clean timeline",
+    icon: <FileText size={20} />,
+    gradient: "linear-gradient(135deg, #64748b 0%, #475569 100%)",
+    resolution: "1920x1080",
+    tracks: [
+      { name: "Video 1", type: "video", height: 64 },
+      { name: "Audio 1", type: "audio", height: 48 },
+    ],
+  },
+  {
+    id: "valorant-montage",
+    name: "Valorant Montage",
+    description: "Fast-paced gaming edits with overlay tracks",
+    icon: <Gamepad2 size={20} />,
+    gradient: "linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)",
+    resolution: "1920x1080",
+    tracks: [
+      { name: "Overlay", type: "video", height: 48 },
+      { name: "Gameplay", type: "video", height: 64 },
+      { name: "SFX", type: "audio", height: 40 },
+      { name: "Music", type: "audio", height: 48 },
+    ],
+    clips: [
+      {
+        trackIndex: 0,
+        type: "text",
+        name: "Title Card",
+        duration: 3,
+        text: "MONTAGE TITLE",
+        fontSize: 72,
+        fontFamily: "Impact",
+        color: "#ffffff",
+        fontWeight: "bold",
+      },
+    ],
+  },
+  {
+    id: "music-video",
+    name: "Music Video",
+    description: "Multi-layer visuals with dedicated music track",
+    icon: <Music size={20} />,
+    gradient: "linear-gradient(135deg, #a855f7 0%, #7c3aed 100%)",
+    resolution: "1920x1080",
+    tracks: [
+      { name: "Text / Titles", type: "video", height: 48 },
+      { name: "B-Roll", type: "video", height: 56 },
+      { name: "Main Video", type: "video", height: 64 },
+      { name: "Vocals", type: "audio", height: 40 },
+      { name: "Instrumental", type: "audio", height: 48 },
+    ],
+    clips: [
+      {
+        trackIndex: 0,
+        type: "text",
+        name: "Song Title",
+        duration: 4,
+        text: "Song Title — Artist",
+        fontSize: 56,
+        fontFamily: "Inter",
+        color: "#ffffff",
+        fontWeight: "bold",
+      },
+    ],
+  },
+  {
+    id: "youtube-video",
+    name: "YouTube Video",
+    description: "Main footage, facecam overlay & voiceover",
+    icon: <Youtube size={20} />,
+    gradient: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
+    resolution: "1920x1080",
+    tracks: [
+      { name: "Facecam", type: "video", height: 48 },
+      { name: "Main Footage", type: "video", height: 64 },
+      { name: "Voiceover", type: "audio", height: 48 },
+      { name: "Background Music", type: "audio", height: 40 },
+    ],
+    clips: [
+      {
+        trackIndex: 0,
+        type: "text",
+        name: "Intro Title",
+        duration: 4,
+        text: "Video Title Goes Here",
+        fontSize: 52,
+        fontFamily: "Inter",
+        color: "#ffffff",
+        fontWeight: "bold",
+      },
+    ],
+  },
+  {
+    id: "tiktok-reels",
+    name: "TikTok / Reels",
+    description: "Vertical 9:16 format for short-form content",
+    icon: <Smartphone size={20} />,
+    gradient: "linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)",
+    resolution: "1080x1920",
+    tracks: [
+      { name: "Text", type: "video", height: 48 },
+      { name: "Video", type: "video", height: 64 },
+      { name: "Sound", type: "audio", height: 48 },
+    ],
+    clips: [
+      {
+        trackIndex: 0,
+        type: "text",
+        name: "Caption",
+        duration: 3,
+        text: "Your caption here",
+        fontSize: 44,
+        fontFamily: "Inter",
+        color: "#ffffff",
+        backgroundColor: "rgba(0,0,0,0.6)",
+        fontWeight: "bold",
+      },
+    ],
+  },
+  {
+    id: "cinematic",
+    name: "Cinematic",
+    description: "4K multi-track layout for film projects",
+    icon: <Clapperboard size={20} />,
+    gradient: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+    resolution: "3840x2160",
+    tracks: [
+      { name: "Titles", type: "video", height: 48 },
+      { name: "B-Roll", type: "video", height: 56 },
+      { name: "Main", type: "video", height: 64 },
+      { name: "Dialogue", type: "audio", height: 44 },
+      { name: "Foley / SFX", type: "audio", height: 40 },
+      { name: "Score", type: "audio", height: 48 },
+    ],
+  },
+  {
+    id: "podcast",
+    name: "Podcast",
+    description: "Camera feed with separate host & guest audio",
+    icon: <Mic size={20} />,
+    gradient: "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)",
+    resolution: "1920x1080",
+    tracks: [
+      { name: "Graphics", type: "video", height: 48 },
+      { name: "Camera", type: "video", height: 64 },
+      { name: "Host", type: "audio", height: 48 },
+      { name: "Guest", type: "audio", height: 48 },
+      { name: "Intro/Outro", type: "audio", height: 40 },
+    ],
+  },
+];
+
 interface ProjectLauncherProps {
   onOpenProject: (project: ProjectMeta) => void;
-  onCreateProject: (name: string, resolution: string) => void;
+  onCreateProject: (name: string, resolution: string, preset?: ProjectPreset) => void;
   onOpenFromDisk?: () => void;
 }
 
@@ -545,24 +738,35 @@ function SettingsPanel({ onClose }: { onClose: () => void }) {
 }
 
 // ─── New Project Modal ───────────────────────────────────
-function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate: (name: string, res: string) => void }) {
+function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate: (name: string, res: string, preset?: ProjectPreset) => void }) {
   const [name, setName] = useState("");
   const [resolution, setResolution] = useState("1920x1080");
+  const [selectedPreset, setSelectedPreset] = useState<ProjectPreset>(PROJECT_PRESETS[0]);
+  const [hoveredPresetId, setHoveredPresetId] = useState<string | null>(null);
+
+  // Sync resolution when preset changes
+  const handlePresetSelect = (preset: ProjectPreset) => {
+    setSelectedPreset(preset);
+    setResolution(preset.resolution);
+  };
 
   return (
     <div style={{ position: "absolute", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(6,6,10,0.85)", backdropFilter: "blur(8px)" }}>
       <div
         style={{
-          width: 440,
+          width: 620,
+          maxHeight: "85vh",
           borderRadius: 16,
           overflow: "hidden",
+          display: "flex",
+          flexDirection: "column",
           background: "var(--bg-secondary)",
           border: "1px solid var(--border-subtle)",
           boxShadow: "var(--shadow-heavy)",
         }}
       >
         {/* Header */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px", borderBottom: "1px solid var(--border-subtle)" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px", borderBottom: "1px solid var(--border-subtle)", flexShrink: 0 }}>
           <h2 style={{ fontSize: 16, fontWeight: 600, margin: 0, color: "var(--text-primary)" }}>New Project</h2>
           <button
             onClick={onClose}
@@ -574,8 +778,8 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
           </button>
         </div>
 
-        {/* Body */}
-        <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
+        {/* Scrollable body */}
+        <div style={{ flex: 1, overflowY: "auto", padding: "20px 24px", display: "flex", flexDirection: "column", gap: 20 }}>
           {/* Project name */}
           <div>
             <label style={{ fontSize: 11, fontWeight: 500, marginBottom: 6, display: "block", color: "var(--text-muted)" }}>Project Name</label>
@@ -583,7 +787,7 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="My Awesome Video"
+              placeholder={selectedPreset.id === "blank" ? "My Awesome Video" : selectedPreset.name}
               autoFocus
               style={{
                 width: "100%",
@@ -598,11 +802,115 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
               }}
               onFocus={(e) => { e.currentTarget.style.borderColor = "var(--accent)"; }}
               onBlur={(e) => { e.currentTarget.style.borderColor = "var(--border-default)"; }}
-              onKeyDown={(e) => { if (e.key === "Enter" && name.trim()) onCreate(name.trim(), resolution); }}
+              onKeyDown={(e) => { if (e.key === "Enter" && name.trim()) onCreate(name.trim(), resolution, selectedPreset.id === "blank" ? undefined : selectedPreset); }}
             />
           </div>
 
-          {/* Resolution */}
+          {/* Presets */}
+          <div>
+            <label style={{ fontSize: 11, fontWeight: 500, marginBottom: 8, display: "block", color: "var(--text-muted)" }}>Template</label>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              {PROJECT_PRESETS.map((preset) => {
+                const isSelected = selectedPreset.id === preset.id;
+                const isHovered = hoveredPresetId === preset.id;
+                return (
+                  <button
+                    key={preset.id}
+                    onClick={() => handlePresetSelect(preset)}
+                    onMouseEnter={() => setHoveredPresetId(preset.id)}
+                    onMouseLeave={() => setHoveredPresetId(null)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                      padding: "10px 12px",
+                      borderRadius: 10,
+                      textAlign: "left",
+                      cursor: "pointer",
+                      transition: "border-color 0.15s, background 0.15s, box-shadow 0.15s",
+                      background: isSelected ? "var(--accent-muted)" : isHovered ? "var(--hover-subtle)" : "var(--bg-tertiary)",
+                      border: `1.5px solid ${isSelected ? "var(--accent)" : "var(--border-subtle)"}`,
+                      boxShadow: isSelected ? "0 0 12px var(--accent-glow)" : "none",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 9,
+                        flexShrink: 0,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        background: preset.gradient,
+                        color: "rgba(255,255,255,0.9)",
+                      }}
+                    >
+                      {preset.icon}
+                    </div>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, display: "block", color: isSelected ? "var(--accent-hover)" : "var(--text-primary)" }}>
+                        {preset.name}
+                      </span>
+                      <span style={{ fontSize: 10, display: "block", color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {preset.description}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Preset details */}
+          <div style={{ padding: 12, borderRadius: 10, background: "var(--bg-tertiary)", border: "1px solid var(--border-subtle)" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+              <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", color: "var(--text-muted)" }}>
+                Track Layout
+              </span>
+              <span style={{ fontSize: 10, color: "var(--text-muted)" }}>
+                {RESOLUTIONS.find((r) => r.value === selectedPreset.resolution)?.label ?? selectedPreset.resolution} · {selectedPreset.tracks.length} tracks
+              </span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              {selectedPreset.tracks.map((t, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "5px 8px",
+                    borderRadius: 6,
+                    background: "var(--bg-primary)",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: 3,
+                      flexShrink: 0,
+                      background: t.type === "video" ? "var(--clip-video)" : "var(--clip-audio)",
+                    }}
+                  />
+                  <span style={{ fontSize: 11, color: "var(--text-secondary)", flex: 1 }}>{t.name}</span>
+                  <span style={{ fontSize: 9, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.05em", color: "var(--text-muted)" }}>
+                    {t.type}
+                  </span>
+                </div>
+              ))}
+            </div>
+            {selectedPreset.clips && selectedPreset.clips.length > 0 && (
+              <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid var(--border-subtle)" }}>
+                <span style={{ fontSize: 10, color: "var(--text-muted)" }}>
+                  Includes {selectedPreset.clips.length} starter clip{selectedPreset.clips.length > 1 ? "s" : ""} (title card{selectedPreset.clips.length > 1 ? "s" : ""})
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Resolution override */}
           <div>
             <label style={{ fontSize: 11, fontWeight: 500, marginBottom: 6, display: "block", color: "var(--text-muted)" }}>Resolution</label>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
@@ -632,7 +940,7 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
         </div>
 
         {/* Footer */}
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, padding: "16px 24px", borderTop: "1px solid var(--border-subtle)" }}>
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, padding: "16px 24px", borderTop: "1px solid var(--border-subtle)", flexShrink: 0 }}>
           <button
             onClick={onClose}
             style={{ padding: "8px 16px", fontSize: 13, borderRadius: 8, background: "transparent", border: "none", cursor: "pointer", color: "var(--text-secondary)" }}
@@ -642,7 +950,7 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
             Cancel
           </button>
           <button
-            onClick={() => name.trim() && onCreate(name.trim(), resolution)}
+            onClick={() => name.trim() && onCreate(name.trim(), resolution, selectedPreset.id === "blank" ? undefined : selectedPreset)}
             disabled={!name.trim()}
             style={{
               padding: "8px 20px",
@@ -725,8 +1033,8 @@ export default function ProjectLauncher({ onOpenProject, onCreateProject, onOpen
     setProjects(updated);
   }, []);
 
-  const handleCreate = useCallback((name: string, resolution: string) => {
-    onCreateProject(name, resolution);
+  const handleCreate = useCallback((name: string, resolution: string, preset?: ProjectPreset) => {
+    onCreateProject(name, resolution, preset);
   }, [onCreateProject]);
 
   const recentProjects = projects.sort((a, b) => b.updatedAt - a.updatedAt);
@@ -1108,7 +1416,7 @@ export default function ProjectLauncher({ onOpenProject, onCreateProject, onOpen
       {showNewProject && (
         <NewProjectModal
           onClose={() => setShowNewProject(false)}
-          onCreate={handleCreate}
+          onCreate={(name, res, preset) => handleCreate(name, res, preset)}
         />
       )}
     </div>
