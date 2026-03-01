@@ -20,6 +20,8 @@ interface CachedMedia {
  */
 export function useMediaManager(masterVolume: number = 1) {
   const mediaCache = useRef<Map<string, CachedMedia>>(new Map());
+  /** Tracks the last time we force-seeked each element (to avoid re-seeking every frame) */
+  const lastSyncRef = useRef<Map<string, number>>(new Map());
 
   // Subscribe to individual slices so we don't re-render on unrelated changes
   const tracks = useEditorStore((s) => s.tracks);
@@ -116,6 +118,7 @@ export function useMediaManager(masterVolume: number = 1) {
   // ── sync playback / seek / volume every frame ─────────
   useEffect(() => {
     const clips = getClipsWithTrackInfo();
+    const now = performance.now();
 
     for (const clip of clips) {
       if (clip.type === "image") continue; // images don't "play"
@@ -136,10 +139,17 @@ export function useMediaManager(masterVolume: number = 1) {
           : Math.min(1, Math.max(0, clipVol * masterVolume));
 
         if (isPlaying) {
-          // During playback let the element run; only re-seek if drift
-          // exceeds 150 ms so we don't stutter.
-          if (Math.abs(el.currentTime - mediaTime) > 0.15) {
+          // During playback: let the native element run freely.
+          // Only force-seek when drift is large (> 300ms) AND we haven't
+          // synced recently (debounce 500ms) to prevent the constant
+          // seek→play→seek cycle that causes the "morse code" sound.
+          const drift = Math.abs(el.currentTime - mediaTime);
+          const lastSync = lastSyncRef.current.get(clip.id) ?? 0;
+          const sinceLast = now - lastSync;
+
+          if (drift > 0.3 && sinceLast > 500) {
             el.currentTime = mediaTime;
+            lastSyncRef.current.set(clip.id, now);
           }
           if (el.paused) {
             el.play().catch(() => {});
@@ -150,10 +160,13 @@ export function useMediaManager(masterVolume: number = 1) {
           if (Math.abs(el.currentTime - mediaTime) > 0.01) {
             el.currentTime = mediaTime;
           }
+          // Reset sync tracker so next play starts fresh
+          lastSyncRef.current.delete(clip.id);
         }
       } else {
         // Clip not at playhead → silence it
         if (!el.paused) el.pause();
+        lastSyncRef.current.delete(clip.id);
       }
     }
   }, [currentTime, isPlaying, getClipsWithTrackInfo, masterVolume]);

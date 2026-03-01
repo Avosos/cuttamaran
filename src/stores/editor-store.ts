@@ -690,3 +690,33 @@ export const useEditorStore = create<EditorStore>()((set, get) => ({
       };
     }),
 }));
+
+// ── Auto-expand project duration when clips extend beyond it ──
+const MIN_DURATION = 10; // minimum timeline length
+const PADDING = 5; // extra seconds after last clip
+let prevTrackSnapshot = "";
+
+useEditorStore.subscribe((state) => {
+  // Quick check: only recalculate if tracks actually changed
+  // (use a cheap serialisation of clip endpoints to avoid deep-equal)
+  let snap = "";
+  for (const t of state.tracks) {
+    for (const c of t.clips) {
+      snap += `${c.id}:${c.startTime}:${c.duration};`;
+    }
+  }
+  if (snap === prevTrackSnapshot) return;
+  prevTrackSnapshot = snap;
+
+  let maxEnd = 0;
+  for (const track of state.tracks) {
+    for (const clip of track.clips) {
+      const end = clip.startTime + clip.duration;
+      if (end > maxEnd) maxEnd = end;
+    }
+  }
+  const needed = Math.max(MIN_DURATION, maxEnd + PADDING);
+  if (Math.abs(needed - state.duration) > 0.5) {
+    useEditorStore.setState({ duration: needed });
+  }
+});
