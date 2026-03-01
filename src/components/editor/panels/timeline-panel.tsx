@@ -31,7 +31,7 @@ import {
   GripVertical,
   Palette,
 } from "lucide-react";
-import { formatTime, getClipGradient } from "@/lib/utils";
+import { formatTime, getClipGradient, getClipPrimaryColor } from "@/lib/utils";
 import type { TimelineClip, Track } from "@/types/editor";
 import { useWaveform } from "@/hooks/use-waveform";
 
@@ -1103,11 +1103,11 @@ function TimelineClipView({
   const left = clip.startTime * pxPerSecond;
   const width = clip.duration * pxPerSecond;
 
-  // Build glow shadow based on clipColor when set
-  const clipGlow = clip.clipColor
-    ? isSelected
-      ? `0 0 0 2px ${clip.clipColor}, 0 0 20px ${clip.clipColor}66`
-      : undefined
+  // Build glow shadow that always matches the clip's visual color
+  // null means "use the CSS .selected rule" (for accent-themed video clips)
+  const glowColor = clip.clipColor || getClipPrimaryColor(clip.type);
+  const clipGlow = isSelected && glowColor
+    ? `0 0 0 2px ${glowColor}, 0 0 20px ${glowColor}66`
     : undefined;
 
   return (
@@ -1126,13 +1126,13 @@ function TimelineClipView({
         ...(clipGlow ? { boxShadow: clipGlow } : {}),
       }}
       onMouseEnter={(e) => {
-        if (clip.clipColor && !isSelected) {
-          e.currentTarget.style.boxShadow = `0 0 0 1px ${clip.clipColor}, 0 4px 12px rgba(0,0,0,0.25)`;
+        if (!isSelected && glowColor) {
+          e.currentTarget.style.boxShadow = `0 0 0 1px ${glowColor}, 0 4px 12px rgba(0,0,0,0.25)`;
         }
       }}
       onMouseLeave={(e) => {
-        if (clip.clipColor && !isSelected) {
-          e.currentTarget.style.boxShadow = "";
+        if (!isSelected && glowColor) {
+          e.currentTarget.style.boxShadow = clipGlow || "";
         }
       }}
       onMouseDown={onMouseDown}
@@ -1248,7 +1248,7 @@ function TimelineClipView({
             inset: 0,
             borderRadius: 6,
             pointerEvents: "none",
-            border: `2px solid ${clip.clipColor ? clip.clipColor + "cc" : "rgba(255,255,255,0.6)"}`,
+            border: `2px solid ${glowColor ? glowColor + "cc" : "rgba(255,255,255,0.6)"}`,
           }}
         />
       )}

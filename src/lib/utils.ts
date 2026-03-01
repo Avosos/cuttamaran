@@ -52,6 +52,19 @@ export function getClipGradient(type: string): string {
   }
 }
 
+export function getClipPrimaryColor(type: string): string | null {
+  switch (type) {
+    case "audio":
+      return "#06b6d4";
+    case "image":
+      return "#f59e0b";
+    case "text":
+      return "#ec4899";
+    default:
+      return null;
+  }
+}
+
 export function generateWaveform(length: number): number[] {
   const waveform: number[] = [];
   for (let i = 0; i < length; i++) {
