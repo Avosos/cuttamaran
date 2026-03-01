@@ -9,6 +9,7 @@ import PropertiesPanel from "@/components/editor/panels/properties-panel";
 import KeyboardShortcuts from "@/components/editor/keyboard-shortcuts";
 import { useEditorStore } from "@/stores/editor-store";
 import { useGlobalShortcuts } from "@/hooks/use-global-shortcuts";
+import { useSettings } from "@/hooks/use-settings";
 
 const MIN_PANEL_WIDTH = 200;
 const MIN_TIMELINE_HEIGHT = 150;
@@ -18,6 +19,7 @@ const DEFAULT_TIMELINE_HEIGHT = 260;
 export default function EditorLayout() {
   useGlobalShortcuts();
   const { propertiesPanelOpen } = useEditorStore();
+  const [settings] = useSettings();
   const [leftWidth, setLeftWidth] = useState(DEFAULT_LEFT_WIDTH);
   const [timelineHeight, setTimelineHeight] = useState(
     DEFAULT_TIMELINE_HEIGHT
@@ -27,8 +29,9 @@ export default function EditorLayout() {
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // ─── Auto-save (every 30 s if dirty & has a file path) ──
+  // ─── Auto-save (every 30 s if dirty & has a file path & setting enabled) ──
   useEffect(() => {
+    if (!settings.autoSave) return;
     const timer = setInterval(() => {
       const { dirty, projectFilePath, saveProject } = useEditorStore.getState();
       if (dirty && projectFilePath) {
@@ -36,7 +39,7 @@ export default function EditorLayout() {
       }
     }, 30_000);
     return () => clearInterval(timer);
-  }, []);
+  }, [settings.autoSave]);
 
   // ─── Left panel resize ────────────────────────────────
   const handleLeftResize = useCallback((e: MouseEvent) => {

@@ -349,42 +349,15 @@ export default function EditorHeader() {
 }
 
 // ─── Settings Modal (Editor) ────────────────────────────
-const SETTINGS_KEY = "cuttamaran_settings";
-interface AppSettings {
-  projectsPath: string;
-  defaultResolution: string;
-  autoSave: boolean;
-  theme: "dark" | "light";
-  previewQuality: "low" | "medium" | "high";
-}
-const DEFAULT_SETTINGS: AppSettings = {
-  projectsPath: "",
-  defaultResolution: "1920x1080",
-  autoSave: true,
-  theme: "dark",
-  previewQuality: "medium",
-};
-function loadSettings(): AppSettings {
-  try {
-    const raw = localStorage.getItem(SETTINGS_KEY);
-    return raw ? { ...DEFAULT_SETTINGS, ...JSON.parse(raw) } : { ...DEFAULT_SETTINGS };
-  } catch {
-    return { ...DEFAULT_SETTINGS };
-  }
-}
-function saveSettingsData(settings: AppSettings) {
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-}
+import { useSettings, type AppSettings, updateSetting as updateSettingGlobal } from "@/hooks/use-settings";
 
 function EditorSettingsModal({ onClose }: { onClose: () => void }) {
-  const [settings, setSettings] = useState<AppSettings>(loadSettings);
+  const [settings] = useSettings();
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
   const [closeBtnHovered, setCloseBtnHovered] = useState(false);
 
   const updateSetting = <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
-    const updated = { ...settings, [key]: value };
-    setSettings(updated);
-    saveSettingsData(updated);
+    updateSettingGlobal(key, value);
   };
 
   const handleBrowseFolder = async () => {

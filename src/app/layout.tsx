@@ -6,6 +6,19 @@ export const metadata: Metadata = {
   description: "A beautiful, open-source desktop video editor",
 };
 
+/**
+ * Inline script reads the persisted theme from localStorage and applies
+ * `data-theme` before first paint to avoid a flash of wrong colours.
+ */
+const themeInitScript = `
+(function(){
+  try {
+    var s = JSON.parse(localStorage.getItem("cuttamaran_settings") || "{}");
+    if (s.theme === "light") document.documentElement.setAttribute("data-theme","light");
+  } catch(e){}
+})();
+`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -13,6 +26,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body className="antialiased" style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", overflow: "hidden" }}>
         {children}
       </body>

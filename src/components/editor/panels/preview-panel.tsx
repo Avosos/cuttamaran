@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { formatTime } from "@/lib/utils";
 import { useMediaManager } from "@/hooks/use-media-manager";
+import { useSettings } from "@/hooks/use-settings";
 
 export default function PreviewPanel() {
   const {
@@ -34,6 +35,15 @@ export default function PreviewPanel() {
   const durationRef = useRef(duration);
   const [volume, setVolume] = useState(80);
   const { getVideoElement, getImageElement } = useMediaManager(volume / 100);
+  const [settings] = useSettings();
+
+  // Scale the internal canvas resolution based on preview quality setting.
+  // Lower quality = smaller canvas = faster rendering (CSS auto-scales it up).
+  const qualityScale = settings.previewQuality === "low" ? 0.25
+    : settings.previewQuality === "medium" ? 0.5
+    : 1;
+  const renderWidth = Math.round(canvasSize.width * qualityScale);
+  const renderHeight = Math.round(canvasSize.height * qualityScale);
 
   // Keep refs in sync with store values
   useEffect(() => { currentTimeRef.current = currentTime; }, [currentTime]);
@@ -383,8 +393,8 @@ export default function PreviewPanel() {
         >
           <canvas
             ref={canvasRef}
-            width={canvasSize.width}
-            height={canvasSize.height}
+            width={renderWidth}
+            height={renderHeight}
             style={{ width: "100%", height: "100%", background: "#000" }}
           />
 
@@ -404,7 +414,7 @@ export default function PreviewPanel() {
               border: "1px solid rgba(255,255,255,0.1)",
             }}
           >
-            {canvasSize.width}×{canvasSize.height}
+            {canvasSize.width}×{canvasSize.height}{qualityScale < 1 ? ` (${settings.previewQuality})` : ""}
           </div>
         </div>
       </div>

@@ -183,36 +183,13 @@ function formatDate(ts: number): string {
 }
 
 // ─── Settings storage ────────────────────────────────────
-const SETTINGS_KEY = "cuttamaran_settings";
-
-interface AppSettings {
-  projectsPath: string;
-  defaultResolution: string;
-  autoSave: boolean;
-  theme: "dark" | "light";
-  previewQuality: "low" | "medium" | "high";
-}
-
-const DEFAULT_SETTINGS: AppSettings = {
-  projectsPath: "",
-  defaultResolution: "1920x1080",
-  autoSave: true,
-  theme: "dark",
-  previewQuality: "high",
-};
-
-function loadSettings(): AppSettings {
-  try {
-    const raw = localStorage.getItem(SETTINGS_KEY);
-    return raw ? { ...DEFAULT_SETTINGS, ...JSON.parse(raw) } : { ...DEFAULT_SETTINGS };
-  } catch {
-    return { ...DEFAULT_SETTINGS };
-  }
-}
-
-function saveSettingsData(settings: AppSettings) {
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-}
+import {
+  useSettings,
+  loadSettings,
+  saveSettings,
+  updateSetting as updateSettingGlobal,
+  type AppSettings,
+} from "@/hooks/use-settings";
 
 // ─── First-time Setup ────────────────────────────────────
 function FirstTimeSetup({ onComplete }: { onComplete: () => void }) {
@@ -229,9 +206,7 @@ function FirstTimeSetup({ onComplete }: { onComplete: () => void }) {
 
   const handleContinue = () => {
     if (folderPath) {
-      const settings = loadSettings();
-      settings.projectsPath = folderPath;
-      saveSettingsData(settings);
+      updateSettingGlobal("projectsPath", folderPath);
     }
     onComplete();
   };
@@ -329,12 +304,10 @@ function FirstTimeSetup({ onComplete }: { onComplete: () => void }) {
 
 // ─── Settings Panel ──────────────────────────────────────
 function SettingsPanel({ onClose }: { onClose: () => void }) {
-  const [settings, setSettings] = useState<AppSettings>(loadSettings);
+  const [settings] = useSettings();
 
   const updateSetting = <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
-    const updated = { ...settings, [key]: value };
-    setSettings(updated);
-    saveSettingsData(updated);
+    updateSettingGlobal(key, value);
   };
 
   const handleBrowseFolder = async () => {
