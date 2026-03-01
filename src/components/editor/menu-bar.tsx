@@ -31,8 +31,8 @@ export default function MenuBar() {
   const {
     undo,
     redo,
-    historyIndex,
-    history,
+    past,
+    future,
     togglePlayback,
     isPlaying,
     setCurrentTime,
@@ -169,8 +169,8 @@ export default function MenuBar() {
     {
       label: "Edit",
       items: [
-        { label: "Undo", shortcut: formatShortcut(shortcuts.undo), action: undo, disabled: historyIndex < 0 },
-        { label: "Redo", shortcut: formatShortcut(shortcuts.redo), action: redo, disabled: historyIndex >= history.length - 1 },
+        { label: "Undo", shortcut: formatShortcut(shortcuts.undo), action: undo, disabled: past.length === 0 },
+        { label: "Redo", shortcut: formatShortcut(shortcuts.redo), action: redo, disabled: future.length === 0 },
         { separator: true, label: "---" },
         { label: "Split Clip", shortcut: formatShortcut(shortcuts.split_clip), action: handleSplit, disabled: !canSplit },
         { label: "Duplicate Clip", shortcut: formatShortcut(shortcuts.duplicate_clip), action: handleDuplicate, disabled: !selectedClipId },

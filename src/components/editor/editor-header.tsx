@@ -28,8 +28,8 @@ export default function EditorHeader() {
     setProjectName,
     undo,
     redo,
-    historyIndex,
-    history,
+    past,
+    future,
     canvasSize,
     setCanvasSize,
     saveProject,
@@ -247,20 +247,20 @@ export default function EditorHeader() {
       <div style={{ display: "flex", alignItems: "center", gap: 4, WebkitAppRegion: "no-drag" } as React.CSSProperties}>
         <button
           onClick={undo}
-          disabled={historyIndex < 0}
+          disabled={past.length === 0}
           onMouseEnter={() => setHoveredBtn("undo")}
           onMouseLeave={() => setHoveredBtn(null)}
-          style={iconBtnStyle("undo", historyIndex < 0)}
+          style={iconBtnStyle("undo", past.length === 0)}
           title="Undo (Ctrl+Z)"
         >
           <Undo2 size={16} style={{ color: "var(--text-secondary)" }} />
         </button>
         <button
           onClick={redo}
-          disabled={historyIndex >= history.length - 1}
+          disabled={future.length === 0}
           onMouseEnter={() => setHoveredBtn("redo")}
           onMouseLeave={() => setHoveredBtn(null)}
-          style={iconBtnStyle("redo", historyIndex >= history.length - 1)}
+          style={iconBtnStyle("redo", future.length === 0)}
           title="Redo (Ctrl+Shift+Z)"
         >
           <Redo2 size={16} style={{ color: "var(--text-secondary)" }} />

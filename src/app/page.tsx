@@ -100,8 +100,8 @@ export default function Home() {
         mediaFiles: [],
         projectFilePath: null,
         dirty: false,
-        history: [],
-        historyIndex: -1,
+        past: [],
+        future: [],
       });
       // Expand window to editor size
       window.electronAPI?.enterEditor();

@@ -108,12 +108,46 @@ interface EditorStore {
   snapping: boolean;
   toggleSnapping: () => void;
 
-  // Undo/Redo (simplified)
-  history: Track[][];
-  historyIndex: number;
+  // Undo/Redo
+  past: Track[][];
+  future: Track[][];
   pushHistory: () => void;
   undo: () => void;
   redo: () => void;
+  canUndo: () => boolean;
+  canRedo: () => boolean;
+}
+
+// ─── Undo/Redo Helpers ──────────────────────────────────
+const MAX_HISTORY = 50;
+const MERGE_WINDOW_MS = 500;
+let _lastHistoryPush = 0;
+
+function deepCloneTracks(tracks: Track[]): Track[] {
+  return structuredClone(tracks);
+}
+
+/**
+ * Build partial state update that captures a history snapshot before a mutation.
+ * If called within the merge window of a previous push, it skips adding a new
+ * snapshot so that rapid operations (drags, slider adjustments) collapse into
+ * a single undo point.
+ */
+function captureSnapshot(state: { tracks: Track[]; past: Track[][] }): {
+  past: Track[][];
+  future: Track[][];
+  dirty: boolean;
+} {
+  const now = Date.now();
+  // Within merge window → keep the earlier snapshot, don't push another
+  if (now - _lastHistoryPush < MERGE_WINDOW_MS && state.past.length > 0) {
+    _lastHistoryPush = now;
+    return { past: state.past, future: [], dirty: true };
+  }
+  const snapshot = deepCloneTracks(state.tracks);
+  const newPast = [...state.past, snapshot].slice(-MAX_HISTORY);
+  _lastHistoryPush = now;
+  return { past: newPast, future: [], dirty: true };
 }
 
 // ─── Create Store ───────────────────────────────────────
@@ -215,8 +249,8 @@ export const useEditorStore = create<EditorStore>()((set, get) => ({
           snapping: d.snapping ?? true,
           projectFilePath: result.filePath ?? null,
           dirty: false,
-          history: [],
-          historyIndex: -1,
+          past: [],
+          future: [],
           selectedClipId: null,
           currentTime: 0,
           isPlaying: false,
@@ -439,26 +473,30 @@ export const useEditorStore = create<EditorStore>()((set, get) => ({
         height: type === "video" ? 64 : 48,
         visible: true,
       };
-      return { tracks: [...state.tracks, newTrack] };
+      return { ...captureSnapshot(state), tracks: [...state.tracks, newTrack] };
     }),
   removeTrack: (id) =>
     set((state) => ({
+      ...captureSnapshot(state),
       tracks: state.tracks.filter((t) => t.id !== id),
     })),
   toggleTrackMute: (id) =>
     set((state) => ({
+      ...captureSnapshot(state),
       tracks: state.tracks.map((t) =>
         t.id === id ? { ...t, muted: !t.muted } : t
       ),
     })),
   toggleTrackLock: (id) =>
     set((state) => ({
+      ...captureSnapshot(state),
       tracks: state.tracks.map((t) =>
         t.id === id ? { ...t, locked: !t.locked } : t
       ),
     })),
   toggleTrackVisibility: (id) =>
     set((state) => ({
+      ...captureSnapshot(state),
       tracks: state.tracks.map((t) =>
         t.id === id ? { ...t, visible: !t.visible } : t
       ),
@@ -466,29 +504,26 @@ export const useEditorStore = create<EditorStore>()((set, get) => ({
 
   // Clips
   addClipToTrack: (trackId, clip) =>
-    set((state) => {
-      get().pushHistory();
-      return {
-        tracks: state.tracks.map((t) =>
-          t.id === trackId ? { ...t, clips: [...t.clips, clip] } : t
-        ),
-      };
-    }),
+    set((state) => ({
+      ...captureSnapshot(state),
+      tracks: state.tracks.map((t) =>
+        t.id === trackId ? { ...t, clips: [...t.clips, clip] } : t
+      ),
+    })),
   removeClip: (trackId, clipId) =>
-    set((state) => {
-      get().pushHistory();
-      return {
-        tracks: state.tracks.map((t) =>
-          t.id === trackId
-            ? { ...t, clips: t.clips.filter((c) => c.id !== clipId) }
-            : t
-        ),
-        selectedClipId:
-          state.selectedClipId === clipId ? null : state.selectedClipId,
-      };
-    }),
+    set((state) => ({
+      ...captureSnapshot(state),
+      tracks: state.tracks.map((t) =>
+        t.id === trackId
+          ? { ...t, clips: t.clips.filter((c) => c.id !== clipId) }
+          : t
+      ),
+      selectedClipId:
+        state.selectedClipId === clipId ? null : state.selectedClipId,
+    })),
   updateClip: (trackId, clipId, updates) =>
     set((state) => ({
+      ...captureSnapshot(state),
       tracks: state.tracks.map((t) =>
         t.id === trackId
           ? {
@@ -501,45 +536,40 @@ export const useEditorStore = create<EditorStore>()((set, get) => ({
       ),
     })),
   addEffect: (trackId, clipId, effect) =>
-    set((state) => {
-      get().pushHistory();
-      return {
-        tracks: state.tracks.map((t) =>
-          t.id === trackId
-            ? {
-                ...t,
-                clips: t.clips.map((c) =>
-                  c.id === clipId
-                    ? { ...c, effects: [...(c.effects || []), effect] }
-                    : c
-                ),
-              }
-            : t
-        ),
-        dirty: true,
-      };
-    }),
+    set((state) => ({
+      ...captureSnapshot(state),
+      tracks: state.tracks.map((t) =>
+        t.id === trackId
+          ? {
+              ...t,
+              clips: t.clips.map((c) =>
+                c.id === clipId
+                  ? { ...c, effects: [...(c.effects || []), effect] }
+                  : c
+              ),
+            }
+          : t
+      ),
+    })),
   removeEffect: (trackId, clipId, effectId) =>
-    set((state) => {
-      get().pushHistory();
-      return {
-        tracks: state.tracks.map((t) =>
-          t.id === trackId
-            ? {
-                ...t,
-                clips: t.clips.map((c) =>
-                  c.id === clipId
-                    ? { ...c, effects: (c.effects || []).filter((e) => e.id !== effectId) }
-                    : c
-                ),
-              }
-            : t
-        ),
-        dirty: true,
-      };
-    }),
+    set((state) => ({
+      ...captureSnapshot(state),
+      tracks: state.tracks.map((t) =>
+        t.id === trackId
+          ? {
+              ...t,
+              clips: t.clips.map((c) =>
+                c.id === clipId
+                  ? { ...c, effects: (c.effects || []).filter((e) => e.id !== effectId) }
+                  : c
+              ),
+            }
+          : t
+      ),
+    })),
   updateEffect: (trackId, clipId, effectId, updates) =>
     set((state) => ({
+      ...captureSnapshot(state),
       tracks: state.tracks.map((t) =>
         t.id === trackId
           ? {
@@ -557,7 +587,6 @@ export const useEditorStore = create<EditorStore>()((set, get) => ({
             }
           : t
       ),
-      dirty: true,
     })),
   moveClip: (fromTrackId, toTrackId, clipId, newStartTime) =>
     set((state) => {
@@ -568,6 +597,7 @@ export const useEditorStore = create<EditorStore>()((set, get) => ({
       const updatedClip = { ...clip, startTime: newStartTime, trackId: toTrackId };
 
       return {
+        ...captureSnapshot(state),
         tracks: state.tracks.map((t) => {
           if (t.id === fromTrackId && fromTrackId !== toTrackId) {
             return { ...t, clips: t.clips.filter((c) => c.id !== clipId) };
@@ -589,10 +619,9 @@ export const useEditorStore = create<EditorStore>()((set, get) => ({
       };
     }),
   splitClip: (trackId, clipId, splitTime) =>
-    set((state) => {
-      get().pushHistory();
-      return {
-        tracks: state.tracks.map((t) => {
+    set((state) => ({
+      ...captureSnapshot(state),
+      tracks: state.tracks.map((t) => {
           if (t.id !== trackId) return t;
           const clip = t.clips.find((c) => c.id === clipId);
           if (!clip) return t;
@@ -617,13 +646,11 @@ export const useEditorStore = create<EditorStore>()((set, get) => ({
             clips: t.clips.map((c) => (c.id === clipId ? leftClip : c)).concat(rightClip),
           };
         }),
-      };
-    }),
+    })),
   duplicateClip: (trackId, clipId) =>
-    set((state) => {
-      get().pushHistory();
-      return {
-        tracks: state.tracks.map((t) => {
+    set((state) => ({
+      ...captureSnapshot(state),
+      tracks: state.tracks.map((t) => {
           if (t.id !== trackId) return t;
           const clip = t.clips.find((c) => c.id === clipId);
           if (!clip) return t;
@@ -634,8 +661,7 @@ export const useEditorStore = create<EditorStore>()((set, get) => ({
           };
           return { ...t, clips: [...t.clips, newClip] };
         }),
-      };
-    }),
+    })),
   selectedClipId: null,
   setSelectedClipId: (id) => set({ selectedClipId: id, propertiesPanelOpen: id !== null }),
   getSelectedClip: () => {
@@ -663,32 +689,41 @@ export const useEditorStore = create<EditorStore>()((set, get) => ({
   toggleSnapping: () => set((state) => ({ snapping: !state.snapping })),
 
   // Undo/Redo
-  history: [],
-  historyIndex: -1,
-  pushHistory: () =>
-    set((state) => {
-      const newHistory = [
-        ...state.history.slice(0, state.historyIndex + 1),
-        state.tracks.map((t) => ({ ...t, clips: [...t.clips] })),
-      ];
-      return { history: newHistory, historyIndex: newHistory.length - 1, dirty: true };
-    }),
+  past: [],
+  future: [],
+  pushHistory: () => {
+    const state = get();
+    const snapshot = deepCloneTracks(state.tracks);
+    _lastHistoryPush = Date.now();
+    set({
+      past: [...state.past, snapshot].slice(-MAX_HISTORY),
+      future: [],
+    });
+  },
   undo: () =>
     set((state) => {
-      if (state.historyIndex < 0) return state;
+      if (state.past.length === 0) return state;
+      const currentSnapshot = deepCloneTracks(state.tracks);
+      const previous = state.past[state.past.length - 1];
       return {
-        tracks: state.history[state.historyIndex],
-        historyIndex: state.historyIndex - 1,
+        tracks: previous,
+        past: state.past.slice(0, -1),
+        future: [currentSnapshot, ...state.future],
       };
     }),
   redo: () =>
     set((state) => {
-      if (state.historyIndex >= state.history.length - 1) return state;
+      if (state.future.length === 0) return state;
+      const currentSnapshot = deepCloneTracks(state.tracks);
+      const next = state.future[0];
       return {
-        tracks: state.history[state.historyIndex + 1],
-        historyIndex: state.historyIndex + 1,
+        tracks: next,
+        past: [...state.past, currentSnapshot],
+        future: state.future.slice(1),
       };
     }),
+  canUndo: () => get().past.length > 0,
+  canRedo: () => get().future.length > 0,
 }));
 
 // ── Auto-expand project duration when clips extend beyond it ──
