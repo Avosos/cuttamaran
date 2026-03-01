@@ -54,6 +54,14 @@ export interface TimelineClip {
   fontFamily?: string;
   color?: string;
   backgroundColor?: string;
+  textAlign?: "left" | "center" | "right";
+  fontWeight?: "normal" | "bold";
+  fontStyle?: "normal" | "italic";
+  textDecoration?: "none" | "underline";
+  letterSpacing?: number;
+  lineHeight?: number;
+  strokeColor?: string;
+  strokeWidth?: number;
   // Effects
   effects?: ClipEffect[];
 }
@@ -76,7 +84,30 @@ export interface CanvasSize {
   icon?: string;
 }
 
-export type PanelTab = "assets" | "text" | "audio" | "transitions" | "effects" | "stickers";
+export type PanelTab = "assets" | "text" | "audio" | "transitions" | "effects" | "stickers" | "library";
+
+// ─── Library ─────────────────────────────────────────────
+export type LibraryItemType = "clip" | "segment";
+
+export interface LibraryItem {
+  id: string;
+  name: string;
+  type: LibraryItemType;
+  /** Category / tag for organisation */
+  category: string;
+  createdAt: number;
+  /** For "clip": a single clip definition (without timeline position) */
+  clip?: Omit<TimelineClip, "id" | "trackId" | "startTime">;
+  /** For "segment": an array of track-snippets (multi-clip) */
+  segment?: {
+    tracks: {
+      type: "video" | "audio";
+      clips: Omit<TimelineClip, "id" | "trackId">[];
+    }[];
+    /** Total duration of the segment in seconds */
+    duration: number;
+  };
+}
 
 export interface EditorProject {
   id: string;

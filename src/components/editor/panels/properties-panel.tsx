@@ -400,7 +400,161 @@ export default function PropertiesPanel() {
                 <option value="Courier New">Courier New</option>
                 <option value="Times New Roman">Times New Roman</option>
                 <option value="Verdana">Verdana</option>
+                <option value="Impact">Impact</option>
+                <option value="Comic Sans MS">Comic Sans MS</option>
+                <option value="Trebuchet MS">Trebuchet MS</option>
+                <option value="Tahoma">Tahoma</option>
               </select>
+            </PropertyRow>
+
+            {/* Style row: Bold / Italic / Underline / Align */}
+            <PropertyRow label="Style">
+              <div style={{ display: "flex", gap: 2 }}>
+                {([
+                  { key: "fontWeight", active: (selectedClip.fontWeight || "bold") === "bold", toggle: { fontWeight: (selectedClip.fontWeight || "bold") === "bold" ? "normal" : "bold" }, label: "B", style: { fontWeight: 700 } },
+                  { key: "fontStyle", active: selectedClip.fontStyle === "italic", toggle: { fontStyle: selectedClip.fontStyle === "italic" ? "normal" : "italic" }, label: "I", style: { fontStyle: "italic" } },
+                  { key: "textDecoration", active: selectedClip.textDecoration === "underline", toggle: { textDecoration: selectedClip.textDecoration === "underline" ? "none" : "underline" }, label: "U", style: { textDecoration: "underline" } },
+                ] as const).map((btn) => (
+                  <button
+                    key={btn.key}
+                    onClick={() => handleUpdate(btn.toggle as Record<string, unknown>)}
+                    style={{
+                      width: 26,
+                      height: 26,
+                      borderRadius: 4,
+                      border: "1px solid var(--border-default)",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 12,
+                      fontFamily: "serif",
+                      background: btn.active ? "var(--accent-muted)" : "transparent",
+                      color: btn.active ? "var(--accent-hover)" : "var(--text-secondary)",
+                      ...btn.style,
+                    }}
+                  >
+                    {btn.label}
+                  </button>
+                ))}
+              </div>
+            </PropertyRow>
+
+            {/* Alignment */}
+            <PropertyRow label="Align">
+              <div style={{ display: "flex", gap: 2 }}>
+                {(["left", "center", "right"] as const).map((a) => (
+                  <button
+                    key={a}
+                    onClick={() => handleUpdate({ textAlign: a })}
+                    style={{
+                      width: 26,
+                      height: 26,
+                      borderRadius: 4,
+                      border: "1px solid var(--border-default)",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      background: (selectedClip.textAlign || "center") === a ? "var(--accent-muted)" : "transparent",
+                      color: (selectedClip.textAlign || "center") === a ? "var(--accent-hover)" : "var(--text-secondary)",
+                    }}
+                  >
+                    {/* Simple alignment icons using lines */}
+                    <svg width="12" height="10" viewBox="0 0 12 10" fill="currentColor">
+                      {a === "left" && <><rect x="0" y="0" width="10" height="2" rx="1"/><rect x="0" y="4" width="7" height="2" rx="1"/><rect x="0" y="8" width="10" height="2" rx="1"/></>}
+                      {a === "center" && <><rect x="1" y="0" width="10" height="2" rx="1"/><rect x="2.5" y="4" width="7" height="2" rx="1"/><rect x="1" y="8" width="10" height="2" rx="1"/></>}
+                      {a === "right" && <><rect x="2" y="0" width="10" height="2" rx="1"/><rect x="5" y="4" width="7" height="2" rx="1"/><rect x="2" y="8" width="10" height="2" rx="1"/></>}
+                    </svg>
+                  </button>
+                ))}
+              </div>
+            </PropertyRow>
+
+            {/* Letter Spacing */}
+            <PropertyRow label="Spacing">
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <input
+                  type="range"
+                  min={-5}
+                  max={20}
+                  step={0.5}
+                  value={selectedClip.letterSpacing ?? 0}
+                  onChange={(e) => handleUpdate({ letterSpacing: parseFloat(e.target.value) })}
+                  style={{ width: 64, accentColor: "var(--accent)" }}
+                />
+                <span style={{ fontSize: 10, fontFamily: "monospace", color: "var(--text-secondary)", width: 28, textAlign: "right" }}>
+                  {(selectedClip.letterSpacing ?? 0).toFixed(1)}
+                </span>
+              </div>
+            </PropertyRow>
+
+            {/* Line Height */}
+            <PropertyRow label="Line H.">
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <input
+                  type="range"
+                  min={0.8}
+                  max={3}
+                  step={0.1}
+                  value={selectedClip.lineHeight ?? 1.2}
+                  onChange={(e) => handleUpdate({ lineHeight: parseFloat(e.target.value) })}
+                  style={{ width: 64, accentColor: "var(--accent)" }}
+                />
+                <span style={{ fontSize: 10, fontFamily: "monospace", color: "var(--text-secondary)", width: 28, textAlign: "right" }}>
+                  {(selectedClip.lineHeight ?? 1.2).toFixed(1)}
+                </span>
+              </div>
+            </PropertyRow>
+
+            {/* Background Color */}
+            <PropertyRow label="BG Color">
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <input
+                  type="color"
+                  value={selectedClip.backgroundColor || "#7c5cfc"}
+                  onChange={(e) => handleUpdate({ backgroundColor: e.target.value })}
+                  style={{ width: 24, height: 24, borderRadius: 4, cursor: "pointer", border: "none", background: "transparent" }}
+                />
+                <button
+                  onClick={() => handleUpdate({ backgroundColor: selectedClip.backgroundColor ? undefined : "rgba(124, 92, 252, 0.8)" })}
+                  style={{
+                    fontSize: 10,
+                    padding: "2px 6px",
+                    borderRadius: 4,
+                    cursor: "pointer",
+                    border: "1px solid var(--border-default)",
+                    background: selectedClip.backgroundColor ? "var(--accent-muted)" : "transparent",
+                    color: selectedClip.backgroundColor ? "var(--accent-hover)" : "var(--text-muted)",
+                  }}
+                >
+                  {selectedClip.backgroundColor ? "On" : "Off"}
+                </button>
+              </div>
+            </PropertyRow>
+
+            {/* Stroke */}
+            <PropertyRow label="Stroke">
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <input
+                  type="color"
+                  value={selectedClip.strokeColor || "#000000"}
+                  onChange={(e) => handleUpdate({ strokeColor: e.target.value })}
+                  style={{ width: 20, height: 20, borderRadius: 4, cursor: "pointer", border: "none", background: "transparent" }}
+                />
+                <input
+                  type="range"
+                  min={0}
+                  max={20}
+                  step={1}
+                  value={selectedClip.strokeWidth ?? 0}
+                  onChange={(e) => handleUpdate({ strokeWidth: parseFloat(e.target.value) })}
+                  style={{ width: 48, accentColor: "var(--accent)" }}
+                />
+                <span style={{ fontSize: 10, fontFamily: "monospace", color: "var(--text-secondary)", width: 20, textAlign: "right" }}>
+                  {selectedClip.strokeWidth ?? 0}
+                </span>
+              </div>
             </PropertyRow>
           </PropertySection>
         )}

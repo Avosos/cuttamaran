@@ -18,8 +18,12 @@ import {
   FileImage,
   X,
   Sticker,
+  Library,
+  BookOpen,
+  Trash2,
+  Layers,
 } from "lucide-react";
-import type { ClipType, MediaFile, PanelTab } from "@/types/editor";
+import type { ClipType, MediaFile, PanelTab, LibraryItem } from "@/types/editor";
 import { formatFileSize, formatDuration } from "@/lib/utils";
 
 const TABS: { id: PanelTab; label: string; icon: React.ReactNode }[] = [
@@ -28,6 +32,7 @@ const TABS: { id: PanelTab; label: string; icon: React.ReactNode }[] = [
   { id: "audio", label: "Audio", icon: <Music size={18} /> },
   { id: "effects", label: "Effects", icon: <Sparkles size={18} /> },
   { id: "stickers", label: "Stickers", icon: <Sticker size={18} /> },
+  { id: "library", label: "Library", icon: <BookOpen size={18} /> },
 ];
 
 export default function AssetsPanel() {
@@ -587,6 +592,7 @@ export default function AssetsPanel() {
           {activeTab === "audio" && <AudioPanel />}
           {activeTab === "effects" && <EffectsPanel />}
           {activeTab === "stickers" && <StickersPanel />}
+          {activeTab === "library" && <LibraryPanel />}
         </div>
       </div>
     </div>
@@ -843,6 +849,351 @@ function StickersPanel() {
       <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>
         Stickers coming soon
       </p>
+    </div>
+  );
+}
+
+// ─── Library Panel ───────────────────────────────────────
+const LIBRARY_CATEGORIES = ["All", "Clips", "Segments", "Intros", "Outros", "Custom"];
+
+function LibraryPanel() {
+  const { tracks, addClipToTrack, addTrack, selectedClipId, currentTime } = useEditorStore();
+  const [items, setItems] = useState<LibraryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [category, setCategory] = useState("All");
+  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [saveName, setSaveName] = useState("");
+  const [saveCategory, setSaveCategory] = useState("Custom");
+  const [saveMode, setSaveMode] = useState<"clip" | "segment">("clip");
+
+  const getProjectsPath = () => {
+    try {
+      const raw = localStorage.getItem("cuttamaran_settings");
+      if (raw) return JSON.parse(raw).projectsPath || "";
+    } catch { /* */ }
+    return "";
+  };
+
+  const loadLibrary = useCallback(async () => {
+    const pp = getProjectsPath();
+    if (!pp) { setItems([]); setLoading(false); return; }
+    setLoading(true);
+    try {
+      const res = await window.electronAPI?.libraryList({ folderPath: pp });
+      if (res?.ok && res.items) {
+        setItems(res.items.sort((a, b) => b.createdAt - a.createdAt));
+      }
+    } finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { loadLibrary(); }, [loadLibrary]);
+
+  const filteredItems = category === "All"
+    ? items
+    : items.filter((i) => i.category === category || (category === "Clips" && i.type === "clip") || (category === "Segments" && i.type === "segment"));
+
+  // ─── Save current selection as library item ─────────
+  const handleSave = useCallback(async () => {
+    const pp = getProjectsPath();
+    if (!pp || !saveName.trim()) return;
+
+    let item: LibraryItem | null = null;
+
+    if (saveMode === "clip" && selectedClipId) {
+      const track = tracks.find((t) => t.clips.some((c) => c.id === selectedClipId));
+      const clip = track?.clips.find((c) => c.id === selectedClipId);
+      if (clip) {
+        const { id: _id, trackId: _tid, startTime: _st, ...rest } = clip;
+        item = {
+          id: uuidv4(),
+          name: saveName.trim(),
+          type: "clip",
+          category: saveCategory,
+          createdAt: Date.now(),
+          clip: rest,
+        };
+      }
+    } else if (saveMode === "segment") {
+      // Save all clips from all tracks as a segment
+      const segTracks = tracks
+        .filter((t) => t.clips.length > 0)
+        .map((t) => ({
+          type: t.type,
+          clips: t.clips.map((c) => {
+            const { id: _id, trackId: _tid, ...rest } = c;
+            return rest;
+          }),
+        }));
+      if (segTracks.length > 0) {
+        const allStarts = tracks.flatMap((t) => t.clips.map((c) => c.startTime));
+        const allEnds = tracks.flatMap((t) => t.clips.map((c) => c.startTime + c.duration));
+        const minStart = Math.min(...allStarts);
+        const maxEnd = Math.max(...allEnds);
+        // Normalize clips so segment starts at 0
+        const normalizedTracks = segTracks.map((st) => ({
+          ...st,
+          clips: st.clips.map((c) => ({ ...c, startTime: c.startTime - minStart })),
+        }));
+        item = {
+          id: uuidv4(),
+          name: saveName.trim(),
+          type: "segment",
+          category: saveCategory,
+          createdAt: Date.now(),
+          segment: { tracks: normalizedTracks, duration: maxEnd - minStart },
+        };
+      }
+    }
+
+    if (item) {
+      await window.electronAPI?.librarySave({ folderPath: pp, item });
+      setShowSaveDialog(false);
+      setSaveName("");
+      loadLibrary();
+    }
+  }, [saveMode, saveName, saveCategory, selectedClipId, tracks, loadLibrary]);
+
+  // ─── Add library item to timeline ──────────────────
+  const handleInsert = useCallback((libItem: LibraryItem) => {
+    if (libItem.type === "clip" && libItem.clip) {
+      const trackType = libItem.clip.type === "audio" ? "audio" : "video";
+      let targetTrack = tracks.find((t) => t.type === trackType);
+      if (!targetTrack) {
+        addTrack(trackType);
+        targetTrack = useEditorStore.getState().tracks.find((t) => t.type === trackType);
+      }
+      if (targetTrack) {
+        addClipToTrack(targetTrack.id, {
+          ...libItem.clip,
+          id: uuidv4(),
+          trackId: targetTrack.id,
+          startTime: currentTime,
+        });
+      }
+    } else if (libItem.type === "segment" && libItem.segment) {
+      for (const segTrack of libItem.segment.tracks) {
+        let targetTrack = tracks.find((t) => t.type === segTrack.type);
+        if (!targetTrack) {
+          addTrack(segTrack.type);
+          targetTrack = useEditorStore.getState().tracks.find((t) => t.type === segTrack.type);
+        }
+        if (targetTrack) {
+          for (const clip of segTrack.clips) {
+            addClipToTrack(targetTrack.id, {
+              ...clip,
+              id: uuidv4(),
+              trackId: targetTrack.id,
+              startTime: clip.startTime + currentTime,
+            });
+          }
+        }
+      }
+    }
+  }, [tracks, currentTime, addClipToTrack, addTrack]);
+
+  const handleDelete = useCallback(async (itemId: string) => {
+    const pp = getProjectsPath();
+    if (!pp) return;
+    await window.electronAPI?.libraryDelete({ folderPath: pp, itemId });
+    loadLibrary();
+  }, [loadLibrary]);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      {/* Action buttons */}
+      <div style={{ display: "flex", gap: 6 }}>
+        <button
+          onClick={() => { setSaveMode("clip"); setShowSaveDialog(true); }}
+          disabled={!selectedClipId}
+          style={{
+            flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+            padding: "8px 0", borderRadius: 8, fontSize: 11, fontWeight: 500,
+            border: "1px solid var(--border-subtle)", background: "var(--bg-tertiary)",
+            color: selectedClipId ? "var(--text-primary)" : "var(--text-muted)",
+            cursor: selectedClipId ? "pointer" : "default", opacity: selectedClipId ? 1 : 0.5,
+          }}
+        >
+          <Plus size={12} /> Save Clip
+        </button>
+        <button
+          onClick={() => { setSaveMode("segment"); setShowSaveDialog(true); }}
+          disabled={tracks.every((t) => t.clips.length === 0)}
+          style={{
+            flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+            padding: "8px 0", borderRadius: 8, fontSize: 11, fontWeight: 500,
+            border: "1px solid var(--border-subtle)", background: "var(--bg-tertiary)",
+            color: "var(--text-primary)", cursor: "pointer",
+          }}
+        >
+          <Layers size={12} /> Save Segment
+        </button>
+      </div>
+
+      {/* Category filter */}
+      <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+        {LIBRARY_CATEGORIES.map((cat) => (
+          <button
+            key={cat}
+            onClick={() => setCategory(cat)}
+            style={{
+              padding: "4px 10px", borderRadius: 6, fontSize: 10, fontWeight: 500,
+              border: "none", cursor: "pointer",
+              background: category === cat ? "var(--accent-muted)" : "var(--bg-tertiary)",
+              color: category === cat ? "var(--accent)" : "var(--text-muted)",
+            }}
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
+
+      {/* Items list */}
+      {loading ? (
+        <div style={{ textAlign: "center", padding: "24px 0" }}>
+          <p style={{ fontSize: 11, color: "var(--text-muted)" }}>Loading…</p>
+        </div>
+      ) : filteredItems.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "24px 0" }}>
+          <BookOpen size={28} style={{ color: "var(--text-muted)", opacity: 0.4, display: "block", margin: "0 auto 8px" }} />
+          <p style={{ fontSize: 11, color: "var(--text-muted)", margin: 0 }}>
+            {items.length === 0 ? "No library items yet" : "No items in this category"}
+          </p>
+          <p style={{ fontSize: 10, color: "var(--text-muted)", margin: "4px 0 0", opacity: 0.7 }}>
+            Save clips or segments to reuse them
+          </p>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          {filteredItems.map((item) => (
+            <div
+              key={item.id}
+              onClick={() => handleInsert(item)}
+              onMouseEnter={() => setHoveredItem(item.id)}
+              onMouseLeave={() => setHoveredItem(null)}
+              style={{
+                display: "flex", alignItems: "center", gap: 10,
+                padding: "8px 10px", borderRadius: 8, cursor: "pointer",
+                transition: "background 0.15s",
+                background: hoveredItem === item.id ? "var(--bg-hover)" : "var(--bg-tertiary)",
+                border: "1px solid var(--border-subtle)",
+              }}
+            >
+              <div style={{
+                width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                background: item.type === "segment" ? "var(--accent-muted)" : "var(--bg-secondary)",
+              }}>
+                {item.type === "segment" ? <Layers size={14} style={{ color: "var(--accent)" }} />
+                  : item.clip?.type === "audio" ? <Music size={14} style={{ color: "var(--text-muted)" }} />
+                  : item.clip?.type === "text" ? <Type size={14} style={{ color: "var(--text-muted)" }} />
+                  : <Film size={14} style={{ color: "var(--text-muted)" }} />}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: 12, fontWeight: 500, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--text-primary)" }}>
+                  {item.name}
+                </p>
+                <p style={{ fontSize: 10, margin: 0, color: "var(--text-muted)" }}>
+                  {item.type === "segment" ? `${item.segment?.tracks.length} tracks · ${item.segment?.duration.toFixed(1)}s` : item.category}
+                </p>
+              </div>
+              {hoveredItem === item.id && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }}
+                  style={{ padding: 4, borderRadius: 6, background: "transparent", border: "none", cursor: "pointer" }}
+                >
+                  <Trash2 size={12} style={{ color: "var(--error)" }} />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Save dialog */}
+      {showSaveDialog && (
+        <div
+          onClick={() => setShowSaveDialog(false)}
+          style={{
+            position: "fixed", inset: 0, zIndex: 10000,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: 340, borderRadius: 14, padding: "20px 20px 16px",
+              background: "var(--bg-secondary)", border: "1px solid var(--border-subtle)",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.5)",
+              display: "flex", flexDirection: "column", gap: 14,
+            }}
+          >
+            <h3 style={{ fontSize: 14, fontWeight: 600, margin: 0, color: "var(--text-primary)" }}>
+              Save to Library
+            </h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <label style={{ fontSize: 11, fontWeight: 500, color: "var(--text-muted)" }}>Name</label>
+              <input
+                autoFocus
+                value={saveName}
+                onChange={(e) => setSaveName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && saveName.trim()) handleSave(); }}
+                placeholder={saveMode === "clip" ? "My saved clip" : "My intro sequence"}
+                style={{
+                  padding: "8px 10px", borderRadius: 8, fontSize: 13,
+                  border: "1px solid var(--border-subtle)", background: "var(--bg-tertiary)",
+                  color: "var(--text-primary)", outline: "none",
+                }}
+              />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <label style={{ fontSize: 11, fontWeight: 500, color: "var(--text-muted)" }}>Category</label>
+              <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                {["Intros", "Outros", "Custom"].map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setSaveCategory(cat)}
+                    style={{
+                      padding: "4px 12px", borderRadius: 6, fontSize: 11, fontWeight: 500,
+                      border: "none", cursor: "pointer",
+                      background: saveCategory === cat ? "var(--accent-muted)" : "var(--bg-tertiary)",
+                      color: saveCategory === cat ? "var(--accent)" : "var(--text-muted)",
+                    }}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 4 }}>
+              <button
+                onClick={() => setShowSaveDialog(false)}
+                style={{
+                  padding: "8px 16px", borderRadius: 8, fontSize: 12, fontWeight: 500,
+                  border: "1px solid var(--border-subtle)", background: "var(--bg-tertiary)",
+                  color: "var(--text-secondary)", cursor: "pointer",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={!saveName.trim()}
+                style={{
+                  padding: "8px 20px", borderRadius: 8, fontSize: 12, fontWeight: 500,
+                  border: "none", background: "var(--accent-gradient)", color: "white",
+                  cursor: saveName.trim() ? "pointer" : "default",
+                  opacity: saveName.trim() ? 1 : 0.5,
+                  boxShadow: "0 2px 8px var(--accent-glow)",
+                }}
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

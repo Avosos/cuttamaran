@@ -7,6 +7,7 @@ import PreviewPanel from "@/components/editor/panels/preview-panel";
 import TimelinePanel from "@/components/editor/panels/timeline-panel";
 import PropertiesPanel from "@/components/editor/panels/properties-panel";
 import KeyboardShortcuts from "@/components/editor/keyboard-shortcuts";
+import UnsavedDialog from "@/components/editor/unsaved-dialog";
 import { useEditorStore } from "@/stores/editor-store";
 import { useGlobalShortcuts } from "@/hooks/use-global-shortcuts";
 import { useSettings } from "@/hooks/use-settings";
@@ -26,8 +27,41 @@ export default function EditorLayout() {
   );
   const [isDraggingLeft, setIsDraggingLeft] = useState(false);
   const [isDraggingTimeline, setIsDraggingTimeline] = useState(false);
+  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // ─── Listen for close-confirmation from Electron main ──
+  useEffect(() => {
+    const api = window.electronAPI;
+    if (!api?.onConfirmClose) return;
+    const cleanup = api.onConfirmClose(() => {
+      const { dirty } = useEditorStore.getState();
+      if (dirty) {
+        setShowUnsavedDialog(true);
+      } else {
+        api.forceClose();
+      }
+    });
+    return cleanup;
+  }, []);
+
+  const handleSaveAndClose = useCallback(async () => {
+    setShowUnsavedDialog(false);
+    const saved = await useEditorStore.getState().saveProject();
+    if (saved) {
+      window.electronAPI?.forceClose();
+    }
+  }, []);
+
+  const handleDiscardAndClose = useCallback(() => {
+    setShowUnsavedDialog(false);
+    window.electronAPI?.forceClose();
+  }, []);
+
+  const handleCancelClose = useCallback(() => {
+    setShowUnsavedDialog(false);
+  }, []);
 
   // ─── Auto-save (every 30 s if dirty & has a file path & setting enabled) ──
   useEffect(() => {
@@ -223,6 +257,15 @@ export default function EditorLayout() {
 
       {/* Keyboard shortcuts overlay */}
       <KeyboardShortcuts />
+
+      {/* Unsaved changes dialog */}
+      {showUnsavedDialog && (
+        <UnsavedDialog
+          onSave={handleSaveAndClose}
+          onDiscard={handleDiscardAndClose}
+          onCancel={handleCancelClose}
+        />
+      )}
     </div>
   );
 }

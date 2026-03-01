@@ -667,6 +667,18 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
 }
 
 // ─── Main Component ──────────────────────────────────────
+type LauncherView = "recent" | "all";
+
+interface DiskProject {
+  filePath: string;
+  projectName: string;
+  resolution: string;
+  trackCount: number;
+  clipCount: number;
+  savedAt: string;
+  updatedAt: number;
+}
+
 export default function ProjectLauncher({ onOpenProject, onCreateProject, onOpenFromDisk }: ProjectLauncherProps) {
   const [projects, setProjects] = useState<ProjectMeta[]>([]);
   const [showSettings, setShowSettings] = useState(false);
@@ -674,6 +686,9 @@ export default function ProjectLauncher({ onOpenProject, onCreateProject, onOpen
   const [showSetup, setShowSetup] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [view, setView] = useState<LauncherView>("recent");
+  const [diskProjects, setDiskProjects] = useState<DiskProject[]>([]);
+  const [loadingDisk, setLoadingDisk] = useState(false);
 
   useEffect(() => {
     setProjects(loadProjects());
@@ -683,6 +698,19 @@ export default function ProjectLauncher({ onOpenProject, onCreateProject, onOpen
       setShowSetup(true);
     }
   }, []);
+
+  // Scan disk for .cutta files when switching to "All Projects"
+  useEffect(() => {
+    if (view !== "all") return;
+    const settings = loadSettings();
+    if (!settings.projectsPath) { setDiskProjects([]); return; }
+    setLoadingDisk(true);
+    window.electronAPI?.listProjects({ folderPath: settings.projectsPath }).then((res) => {
+      if (res?.ok) {
+        setDiskProjects(res.projects.sort((a, b) => b.updatedAt - a.updatedAt));
+      }
+    }).finally(() => setLoadingDisk(false));
+  }, [view]);
 
   useEffect(() => {
     const api = window.electronAPI;
@@ -818,8 +846,8 @@ export default function ProjectLauncher({ onOpenProject, onCreateProject, onOpen
             </button>
           )}
 
-          <NavItem icon={<Clock size={16} />} label="Recent" active />
-          <NavItem icon={<FolderOpen size={16} />} label="All Projects" />
+          <NavItem icon={<Clock size={16} />} label="Recent" active={view === "recent"} onClick={() => setView("recent")} />
+          <NavItem icon={<FolderOpen size={16} />} label="All Projects" active={view === "all"} onClick={() => setView("all")} />
 
           <div style={{ flex: 1 }} />
 
@@ -828,127 +856,248 @@ export default function ProjectLauncher({ onOpenProject, onCreateProject, onOpen
 
         {/* Main area */}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", padding: 28 }}>
-          {/* Hero section */}
-          <div style={{ marginBottom: 20 }}>
-            <h1 style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.01em", marginBottom: 4, color: "var(--text-primary)" }}>
-              Welcome back
-            </h1>
-            <p style={{ fontSize: 13, margin: 0, color: "var(--text-muted)" }}>
-              {recentProjects.length > 0
-                ? `You have ${recentProjects.length} project${recentProjects.length === 1 ? "" : "s"}. Pick up where you left off.`
-                : "Create your first project to get started."}
-            </p>
-          </div>
+          {view === "recent" ? (
+            <>
+              {/* Hero section */}
+              <div style={{ marginBottom: 20 }}>
+                <h1 style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.01em", marginBottom: 4, color: "var(--text-primary)" }}>
+                  Welcome back
+                </h1>
+                <p style={{ fontSize: 13, margin: 0, color: "var(--text-muted)" }}>
+                  {recentProjects.length > 0
+                    ? `You have ${recentProjects.length} project${recentProjects.length === 1 ? "" : "s"}. Pick up where you left off.`
+                    : "Create your first project to get started."}
+                </p>
+              </div>
 
-          {/* Project list */}
-          {recentProjects.length > 0 ? (
-            <div style={{ flex: 1, overflowY: "auto", marginLeft: -8, marginRight: -8 }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                {recentProjects.map((project) => (
+              {/* Project list */}
+              {recentProjects.length > 0 ? (
+                <div style={{ flex: 1, overflowY: "auto", marginLeft: -8, marginRight: -8 }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                    {recentProjects.map((project) => (
+                      <div
+                        key={project.id}
+                        onClick={() => onOpenProject(project)}
+                        onMouseEnter={() => setHoveredId(project.id)}
+                        onMouseLeave={() => setHoveredId(null)}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 14,
+                          padding: "10px 14px",
+                          borderRadius: 10,
+                          cursor: "pointer",
+                          transition: "background 0.15s",
+                          background: hoveredId === project.id ? "var(--hover-overlay)" : "transparent",
+                        }}
+                      >
+                        {/* Project icon */}
+                        <div
+                          style={{
+                            width: 38,
+                            height: 38,
+                            borderRadius: 10,
+                            flexShrink: 0,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            background: seededGradient(project.id),
+                            opacity: 0.85,
+                          }}
+                        >
+                          <Film size={15} style={{ color: "rgba(255,255,255,0.6)" }} />
+                        </div>
+
+                        {/* Info */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <h3 style={{ fontSize: 13, fontWeight: 500, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--text-primary)" }}>{project.name}</h3>
+                          <p style={{ fontSize: 11, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--text-muted)" }}>
+                            {project.resolution} · {project.trackCount} tracks · {project.clipCount} clips
+                          </p>
+                        </div>
+
+                        {/* Time + actions */}
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                          <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{formatDate(project.updatedAt)}</span>
+                          {hoveredId === project.id && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleDelete(project.id); }}
+                              style={{ padding: 4, borderRadius: 6, background: "transparent", border: "none", cursor: "pointer" }}
+                              onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.1)"; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                            >
+                              <Trash2 size={13} style={{ color: "var(--error)" }} />
+                            </button>
+                          )}
+                          <ChevronRight size={14} style={{ color: "var(--accent)", opacity: hoveredId === project.id ? 1 : 0, transition: "opacity 0.15s" }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                /* Empty state */
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
                   <div
-                    key={project.id}
-                    onClick={() => onOpenProject(project)}
-                    onMouseEnter={() => setHoveredId(project.id)}
-                    onMouseLeave={() => setHoveredId(null)}
+                    style={{
+                      width: 64,
+                      height: 64,
+                      borderRadius: 16,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginBottom: 16,
+                      background: "var(--bg-tertiary)",
+                      border: "1px solid var(--border-subtle)",
+                    }}
+                  >
+                    <Film size={28} style={{ color: "var(--text-muted)" }} />
+                  </div>
+                  <h2 style={{ fontSize: 15, fontWeight: 600, marginBottom: 6, color: "var(--text-primary)" }}>No projects yet</h2>
+                  <p style={{ fontSize: 13, marginBottom: 20, textAlign: "center", maxWidth: 280, color: "var(--text-muted)" }}>
+                    Create your first project and start editing amazing videos.
+                  </p>
+                  <button
+                    onClick={() => setShowNewProject(true)}
                     style={{
                       display: "flex",
                       alignItems: "center",
-                      gap: 14,
-                      padding: "10px 14px",
-                      borderRadius: 10,
+                      gap: 8,
+                      padding: "10px 24px",
+                      borderRadius: 12,
+                      fontSize: 13,
+                      fontWeight: 500,
+                      border: "none",
                       cursor: "pointer",
-                      transition: "background 0.15s",
-                      background: hoveredId === project.id ? "var(--hover-overlay)" : "transparent",
+                      whiteSpace: "nowrap",
+                      background: "var(--accent-gradient)",
+                      color: "white",
+                      boxShadow: "0 2px 16px var(--accent-glow)",
                     }}
                   >
-                    {/* Project icon */}
-                    <div
-                      style={{
-                        width: 38,
-                        height: 38,
-                        borderRadius: 10,
-                        flexShrink: 0,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        background: seededGradient(project.id),
-                        opacity: 0.85,
-                      }}
-                    >
-                      <Film size={15} style={{ color: "rgba(255,255,255,0.6)" }} />
-                    </div>
-
-                    {/* Info */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <h3 style={{ fontSize: 13, fontWeight: 500, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--text-primary)" }}>{project.name}</h3>
-                      <p style={{ fontSize: 11, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--text-muted)" }}>
-                        {project.resolution} · {project.trackCount} tracks · {project.clipCount} clips
-                      </p>
-                    </div>
-
-                    {/* Time + actions */}
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                      <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{formatDate(project.updatedAt)}</span>
-                      {hoveredId === project.id && (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleDelete(project.id); }}
-                          style={{ padding: 4, borderRadius: 6, background: "transparent", border: "none", cursor: "pointer" }}
-                          onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.1)"; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-                        >
-                          <Trash2 size={13} style={{ color: "var(--error)" }} />
-                        </button>
-                      )}
-                      <ChevronRight size={14} style={{ color: "var(--accent)", opacity: hoveredId === project.id ? 1 : 0, transition: "opacity 0.15s" }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+                    <Plus size={15} style={{ flexShrink: 0 }} />
+                    Create Project
+                  </button>
+                </div>
+              )}
+            </>
           ) : (
-            /* Empty state */
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-              <div
-                style={{
-                  width: 64,
-                  height: 64,
-                  borderRadius: 16,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginBottom: 16,
-                  background: "var(--bg-tertiary)",
-                  border: "1px solid var(--border-subtle)",
-                }}
-              >
-                <Film size={28} style={{ color: "var(--text-muted)" }} />
+            /* ─── All Projects (disk scan) ─── */
+            <>
+              <div style={{ marginBottom: 20 }}>
+                <h1 style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.01em", marginBottom: 4, color: "var(--text-primary)" }}>
+                  All Projects
+                </h1>
+                <p style={{ fontSize: 13, margin: 0, color: "var(--text-muted)" }}>
+                  {loadingDisk
+                    ? "Scanning for projects…"
+                    : diskProjects.length > 0
+                      ? `Found ${diskProjects.length} project${diskProjects.length === 1 ? "" : "s"} on disk.`
+                      : "No .cutta files found in your projects folder."}
+                </p>
               </div>
-              <h2 style={{ fontSize: 15, fontWeight: 600, marginBottom: 6, color: "var(--text-primary)" }}>No projects yet</h2>
-              <p style={{ fontSize: 13, marginBottom: 20, textAlign: "center", maxWidth: 280, color: "var(--text-muted)" }}>
-                Create your first project and start editing amazing videos.
-              </p>
-              <button
-                onClick={() => setShowNewProject(true)}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  padding: "10px 24px",
-                  borderRadius: 12,
-                  fontSize: 13,
-                  fontWeight: 500,
-                  border: "none",
-                  cursor: "pointer",
-                  whiteSpace: "nowrap",
-                  background: "var(--accent-gradient)",
-                  color: "white",
-                  boxShadow: "0 2px 16px var(--accent-glow)",
-                }}
-              >
-                <Plus size={15} style={{ flexShrink: 0 }} />
-                Create Project
-              </button>
-            </div>
+
+              {loadingDisk ? (
+                <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+                    <div style={{
+                      width: 28, height: 28, border: "3px solid var(--border-subtle)",
+                      borderTopColor: "var(--accent)", borderRadius: "50%",
+                      animation: "spin 0.8s linear infinite",
+                    }} />
+                    <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Scanning…</span>
+                    <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+                  </div>
+                </div>
+              ) : diskProjects.length > 0 ? (
+                <div style={{ flex: 1, overflowY: "auto", marginLeft: -8, marginRight: -8 }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                    {diskProjects.map((dp) => (
+                      <div
+                        key={dp.filePath}
+                        onClick={() => {
+                          const meta: ProjectMeta = {
+                            id: dp.filePath,
+                            name: dp.projectName,
+                            createdAt: Date.now(),
+                            updatedAt: dp.updatedAt,
+                            resolution: dp.resolution,
+                            trackCount: dp.trackCount,
+                            clipCount: dp.clipCount,
+                            filePath: dp.filePath,
+                          };
+                          onOpenProject(meta);
+                        }}
+                        onMouseEnter={() => setHoveredId(dp.filePath)}
+                        onMouseLeave={() => setHoveredId(null)}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 14,
+                          padding: "10px 14px",
+                          borderRadius: 10,
+                          cursor: "pointer",
+                          transition: "background 0.15s",
+                          background: hoveredId === dp.filePath ? "var(--hover-overlay)" : "transparent",
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            background: seededGradient(dp.filePath), opacity: 0.85,
+                          }}
+                        >
+                          <HardDrive size={15} style={{ color: "rgba(255,255,255,0.6)" }} />
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <h3 style={{ fontSize: 13, fontWeight: 500, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--text-primary)" }}>
+                            {dp.projectName}
+                          </h3>
+                          <p style={{ fontSize: 11, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--text-muted)" }}>
+                            {dp.resolution} · {dp.trackCount} tracks · {dp.clipCount} clips
+                          </p>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                          <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{formatDate(dp.updatedAt)}</span>
+                          <ChevronRight size={14} style={{ color: "var(--accent)", opacity: hoveredId === dp.filePath ? 1 : 0, transition: "opacity 0.15s" }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                  <div
+                    style={{
+                      width: 64, height: 64, borderRadius: 16,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      marginBottom: 16, background: "var(--bg-tertiary)",
+                      border: "1px solid var(--border-subtle)",
+                    }}
+                  >
+                    <FolderOpen size={28} style={{ color: "var(--text-muted)" }} />
+                  </div>
+                  <h2 style={{ fontSize: 15, fontWeight: 600, marginBottom: 6, color: "var(--text-primary)" }}>No projects found</h2>
+                  <p style={{ fontSize: 13, marginBottom: 20, textAlign: "center", maxWidth: 280, color: "var(--text-muted)" }}>
+                    Make sure your projects folder is set correctly in Settings.
+                  </p>
+                  <button
+                    onClick={() => setShowSettings(true)}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 8,
+                      padding: "10px 24px", borderRadius: 12, fontSize: 13,
+                      fontWeight: 500, border: "1px solid var(--border-subtle)",
+                      cursor: "pointer", whiteSpace: "nowrap",
+                      background: "var(--bg-tertiary)", color: "var(--text-secondary)",
+                    }}
+                  >
+                    <Settings size={15} style={{ flexShrink: 0 }} />
+                    Open Settings
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

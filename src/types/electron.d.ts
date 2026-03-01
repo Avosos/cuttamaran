@@ -3,6 +3,7 @@ export interface ElectronAPI {
   minimize: () => Promise<void>;
   maximize: () => Promise<void>;
   close: () => Promise<void>;
+  forceClose: () => Promise<void>;
   isMaximized: () => Promise<boolean>;
   enterEditor: () => Promise<void>;
   enterLauncher: () => Promise<void>;
@@ -19,6 +20,7 @@ export interface ElectronAPI {
     filePaths: string[];
   }>;
   onMaximizedChange: (callback: (isMaximized: boolean) => void) => () => void;
+  onConfirmClose: (callback: () => void) => () => void;
 
   // Export pipeline
   exportStart: (opts: {
@@ -52,6 +54,17 @@ export interface ElectronAPI {
   loadProject: (opts?: {
     filePath?: string;
   }) => Promise<{ ok: boolean; canceled?: boolean; filePath?: string; data?: Record<string, unknown>; error?: string }>;
+  listProjects: (opts?: {
+    folderPath?: string;
+  }) => Promise<{ ok: boolean; projects: Array<{
+    filePath: string;
+    projectName: string;
+    resolution: string;
+    trackCount: number;
+    clipCount: number;
+    savedAt: string;
+    updatedAt: number;
+  }>; error?: string }>;
 
   // Media file management
   importMediaFile: (opts: {
@@ -65,6 +78,21 @@ export interface ElectronAPI {
   }) => Promise<{ ok: boolean; destPath?: string; fileName?: string; fileSize?: number; error?: string }>;
   pathToMediaUrl: (absolutePath: string) => Promise<string>;
   mediaFileExists: (filePath: string) => Promise<boolean>;
+
+  // Library management
+  libraryList: (opts: { folderPath: string }) => Promise<{
+    ok: boolean;
+    items?: import("./editor").LibraryItem[];
+    error?: string;
+  }>;
+  librarySave: (opts: { folderPath: string; item: import("./editor").LibraryItem }) => Promise<{
+    ok: boolean;
+    error?: string;
+  }>;
+  libraryDelete: (opts: { folderPath: string; itemId: string }) => Promise<{
+    ok: boolean;
+    error?: string;
+  }>;
 
   // Accent icon
   setAccentIcon: (pngDataUrl: string) => Promise<void>;

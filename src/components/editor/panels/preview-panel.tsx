@@ -190,20 +190,44 @@ export default function PreviewPanel() {
       if (clip.type === "text") {
         // Render text clips
         const fontSize = clip.fontSize || 48;
-        ctx.font = `bold ${fontSize}px ${clip.fontFamily || "Inter"}, sans-serif`;
-        ctx.textAlign = "center";
+        const weight = clip.fontWeight || "bold";
+        const style = clip.fontStyle === "italic" ? "italic " : "";
+        const family = clip.fontFamily || "Inter";
+        ctx.font = `${style}${weight} ${fontSize}px ${family}, sans-serif`;
+        const align = clip.textAlign || "center";
+        ctx.textAlign = align;
         ctx.textBaseline = "middle";
 
+        // Compute anchor x
+        const anchorX = align === "left" ? fontSize : align === "right" ? canvas.width - fontSize : canvas.width / 2;
+
+        // Letter spacing (apply via letterSpacing property on canvas — 2D spec)
+        if (clip.letterSpacing && "letterSpacing" in ctx) {
+          (ctx as CanvasRenderingContext2D & { letterSpacing: string }).letterSpacing = `${clip.letterSpacing}px`;
+        }
+
+        // Multi-line support via lineHeight
+        const lh = (clip.lineHeight ?? 1.2) * fontSize;
+        const lines = (clip.text || "").split("\\n");
+        const totalTextHeight = lines.length * lh;
+        const startY = canvas.height / 2 - totalTextHeight / 2 + lh / 2;
+
         if (clip.backgroundColor) {
-          const textMetrics = ctx.measureText(clip.text || "");
+          // Measure widest line
+          let maxW = 0;
+          for (const line of lines) {
+            const m = ctx.measureText(line);
+            if (m.width > maxW) maxW = m.width;
+          }
           const padding = 16;
+          const bgX = align === "left" ? anchorX - padding : align === "right" ? anchorX - maxW - padding : anchorX - maxW / 2 - padding;
           ctx.fillStyle = clip.backgroundColor;
           ctx.beginPath();
           ctx.roundRect(
-            canvas.width / 2 - textMetrics.width / 2 - padding,
-            canvas.height / 2 - fontSize / 2 - padding / 2,
-            textMetrics.width + padding * 2,
-            fontSize + padding,
+            bgX,
+            startY - lh / 2 - padding / 2,
+            maxW + padding * 2,
+            totalTextHeight + padding,
             8
           );
           ctx.fill();
@@ -216,16 +240,34 @@ export default function PreviewPanel() {
         ctx.shadowOffsetY = 2;
 
         ctx.globalAlpha = fadeAlpha;
-        ctx.fillStyle = clip.color || "#ffffff";
-        ctx.fillText(
-          clip.text || "",
-          canvas.width / 2,
-          canvas.height / 2
-        );
+
+        for (let i = 0; i < lines.length; i++) {
+          const ly = startY + i * lh;
+          // Stroke
+          if (clip.strokeWidth && clip.strokeWidth > 0) {
+            ctx.strokeStyle = clip.strokeColor || "#000000";
+            ctx.lineWidth = clip.strokeWidth;
+            ctx.lineJoin = "round";
+            ctx.strokeText(lines[i], anchorX, ly);
+          }
+          // Fill
+          ctx.fillStyle = clip.color || "#ffffff";
+          ctx.fillText(lines[i], anchorX, ly);
+          // Underline
+          if (clip.textDecoration === "underline") {
+            const m = ctx.measureText(lines[i]);
+            const ux = align === "left" ? anchorX : align === "right" ? anchorX - m.width : anchorX - m.width / 2;
+            ctx.fillRect(ux, ly + fontSize * 0.35, m.width, Math.max(2, fontSize / 20));
+          }
+        }
 
         ctx.shadowColor = "transparent";
         ctx.shadowBlur = 0;
         ctx.globalAlpha = 1;
+        // Reset letter spacing
+        if ("letterSpacing" in ctx) {
+          (ctx as CanvasRenderingContext2D & { letterSpacing: string }).letterSpacing = "0px";
+        }
       } else if (clip.type === "image") {
         // Draw decoded image (cached by media manager)
         const imgEl = getImageElement(clip.id);

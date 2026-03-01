@@ -96,6 +96,21 @@ function createWindow() {
   mainWindow.on("closed", () => {
     mainWindow = null;
   });
+
+  // Intercept native close (Alt+F4, taskbar close, etc.) — let renderer decide
+  let forceClose = false;
+  mainWindow.on("close", (e) => {
+    if (!forceClose) {
+      e.preventDefault();
+      mainWindow?.webContents.send("window:confirm-close");
+    }
+  });
+
+  // Force-close bypasses the confirmation
+  ipcMain.handle("window:force-close", () => {
+    forceClose = true;
+    mainWindow?.close();
+  });
 }
 
 // ─── IPC Handlers ─────────────────────────────────────────
@@ -124,6 +139,7 @@ ipcMain.handle("window:maximize", () => {
 });
 
 ipcMain.handle("window:close", () => {
+  // Trigger the close event which will be intercepted for confirmation
   mainWindow?.close();
 });
 
@@ -191,6 +207,47 @@ ipcMain.handle("dialog:openFolder", async (_event, options) => {
 });
 
 // ─── Project Save / Load ──────────────────────────────────
+
+// List all .cutta files in a given directory (recursive)
+ipcMain.handle("project:list", async (_event, { folderPath }) => {
+  try {
+    if (!folderPath || !fs.existsSync(folderPath)) {
+      return { ok: true, projects: [] };
+    }
+    const results = [];
+    const walk = (dir) => {
+      let entries;
+      try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
+      for (const entry of entries) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          // Skip node_modules-style deep trees
+          if (entry.name === "node_modules" || entry.name === ".git" || entry.name === "media") continue;
+          walk(full);
+        } else if (entry.name.endsWith(".cutta")) {
+          try {
+            const raw = fs.readFileSync(full, "utf-8");
+            const data = JSON.parse(raw);
+            const stat = fs.statSync(full);
+            results.push({
+              filePath: full,
+              projectName: data.projectName || entry.name.replace(".cutta", ""),
+              resolution: data.canvasSize ? `${data.canvasSize.width}×${data.canvasSize.height}` : "1920×1080",
+              trackCount: (data.tracks || []).length,
+              clipCount: (data.tracks || []).reduce((s, t) => s + (t.clips || []).length, 0),
+              savedAt: data.savedAt || stat.mtime.toISOString(),
+              updatedAt: stat.mtimeMs,
+            });
+          } catch { /* skip unreadable files */ }
+        }
+      }
+    };
+    walk(folderPath);
+    return { ok: true, projects: results };
+  } catch (err) {
+    return { ok: false, error: err.message, projects: [] };
+  }
+});
 ipcMain.handle("project:save", async (_event, { filePath, data }) => {
   try {
     // If no filePath provided, show Save-As dialog
@@ -433,6 +490,71 @@ app.whenReady().then(() => {
       setupWindowEvents();
     }
   });
+});
+
+// ─── Library CRUD ─────────────────────────────────────────
+
+function getLibraryPath(projectsPath) {
+  return path.join(projectsPath, "library.json");
+}
+
+function readLibrary(projectsPath) {
+  const libPath = getLibraryPath(projectsPath);
+  try {
+    if (fs.existsSync(libPath)) {
+      return JSON.parse(fs.readFileSync(libPath, "utf-8"));
+    }
+  } catch { /* ignore */ }
+  return [];
+}
+
+function writeLibrary(projectsPath, items) {
+  const libPath = getLibraryPath(projectsPath);
+  fs.mkdirSync(path.dirname(libPath), { recursive: true });
+  fs.writeFileSync(libPath, JSON.stringify(items, null, 2), "utf-8");
+}
+
+ipcMain.handle("library:list", (_event, opts) => {
+  try {
+    const projectsPath = opts?.folderPath;
+    if (!projectsPath) return { ok: false, error: "No projects path" };
+    const items = readLibrary(projectsPath);
+    return { ok: true, items };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+});
+
+ipcMain.handle("library:save", (_event, opts) => {
+  try {
+    const { folderPath, item } = opts;
+    if (!folderPath || !item) return { ok: false, error: "Missing parameters" };
+    const items = readLibrary(folderPath);
+    // Upsert by id
+    const idx = items.findIndex((i) => i.id === item.id);
+    if (idx >= 0) {
+      items[idx] = item;
+    } else {
+      items.push(item);
+    }
+    writeLibrary(folderPath, items);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+});
+
+ipcMain.handle("library:delete", (_event, opts) => {
+  try {
+    const { folderPath, itemId } = opts;
+    if (!folderPath || !itemId) return { ok: false, error: "Missing parameters" };
+    let items = readLibrary(folderPath);
+    items = items.filter((i) => i.id !== itemId);
+    writeLibrary(folderPath, items);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
 });
 
 app.on("window-all-closed", () => {

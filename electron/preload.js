@@ -5,6 +5,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   minimize: () => ipcRenderer.invoke("window:minimize"),
   maximize: () => ipcRenderer.invoke("window:maximize"),
   close: () => ipcRenderer.invoke("window:close"),
+  forceClose: () => ipcRenderer.invoke("window:force-close"),
   isMaximized: () => ipcRenderer.invoke("window:isMaximized"),
 
   // Window sizing
@@ -21,6 +22,13 @@ contextBridge.exposeInMainWorld("electronAPI", {
     const handler = (_event, isMaximized) => callback(isMaximized);
     ipcRenderer.on("window:maximized", handler);
     return () => ipcRenderer.removeListener("window:maximized", handler);
+  },
+
+  // Listen for close-confirmation request from main process
+  onConfirmClose: (callback) => {
+    const handler = () => callback();
+    ipcRenderer.on("window:confirm-close", handler);
+    return () => ipcRenderer.removeListener("window:confirm-close", handler);
   },
 
   // ─── Export pipeline ─────────────────────────────────
@@ -48,12 +56,18 @@ contextBridge.exposeInMainWorld("electronAPI", {
   // Project save / load
   saveProject: (opts) => ipcRenderer.invoke("project:save", opts),
   loadProject: (opts) => ipcRenderer.invoke("project:load", opts || {}),
+  listProjects: (opts) => ipcRenderer.invoke("project:list", opts || {}),
 
   // Media file management
   importMediaFile: (opts) => ipcRenderer.invoke("media:import-file", opts),
   writeMediaFile: (opts) => ipcRenderer.invoke("media:write-file", opts),
   pathToMediaUrl: (absolutePath) => ipcRenderer.invoke("media:path-to-url", absolutePath),
   mediaFileExists: (filePath) => ipcRenderer.invoke("media:file-exists", filePath),
+
+  // Library management
+  libraryList: (opts) => ipcRenderer.invoke("library:list", opts),
+  librarySave: (opts) => ipcRenderer.invoke("library:save", opts),
+  libraryDelete: (opts) => ipcRenderer.invoke("library:delete", opts),
 
   // Accent icon
   setAccentIcon: (pngDataUrl) => ipcRenderer.invoke("app:set-accent-icon", pngDataUrl),
