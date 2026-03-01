@@ -208,7 +208,7 @@ ipcMain.handle("dialog:openFolder", async (_event, options) => {
 
 // ─── Project Save / Load ──────────────────────────────────
 
-// List all .cutta files in a given directory (recursive)
+// List all .cmp files in a given directory (recursive)
 ipcMain.handle("project:list", async (_event, { folderPath }) => {
   try {
     if (!folderPath || !fs.existsSync(folderPath)) {
@@ -224,14 +224,14 @@ ipcMain.handle("project:list", async (_event, { folderPath }) => {
           // Skip node_modules-style deep trees
           if (entry.name === "node_modules" || entry.name === ".git" || entry.name === "media") continue;
           walk(full);
-        } else if (entry.name.endsWith(".cutta")) {
+        } else if (entry.name.endsWith(".cmp")) {
           try {
             const raw = fs.readFileSync(full, "utf-8");
             const data = JSON.parse(raw);
             const stat = fs.statSync(full);
             results.push({
               filePath: full,
-              projectName: data.projectName || entry.name.replace(".cutta", ""),
+              projectName: data.projectName || entry.name.replace(".cmp", ""),
               resolution: data.canvasSize ? `${data.canvasSize.width}×${data.canvasSize.height}` : "1920×1080",
               trackCount: (data.tracks || []).length,
               clipCount: (data.tracks || []).reduce((s, t) => s + (t.clips || []).length, 0),
@@ -255,9 +255,9 @@ ipcMain.handle("project:save", async (_event, { filePath, data }) => {
     if (!targetPath) {
       const result = await dialog.showSaveDialog(mainWindow, {
         title: "Save Project",
-        defaultPath: `${data.projectName || "Untitled"}.cutta`,
+        defaultPath: `${data.projectName || "Untitled"}.cmp`,
         filters: [
-          { name: "Cuttamaran Project", extensions: ["cutta"] },
+          { name: "Cuttamaran Project", extensions: ["cmp"] },
           { name: "All Files", extensions: ["*"] },
         ],
       });
@@ -281,7 +281,7 @@ ipcMain.handle("project:load", async (_event, { filePath }) => {
         title: "Open Project",
         properties: ["openFile"],
         filters: [
-          { name: "Cuttamaran Project", extensions: ["cutta"] },
+          { name: "Cuttamaran Project", extensions: ["cmp"] },
           { name: "All Files", extensions: ["*"] },
         ],
       });
@@ -302,7 +302,7 @@ ipcMain.handle("project:load", async (_event, { filePath }) => {
 
 /**
  * Resolve the "media" directory for the current project.
- * If projectDir is given (directory containing the .cutta file), puts media/ next to it.
+ * If projectDir is given (directory containing the .cmp file), puts media/ next to it.
  * Otherwise falls back to a shared location in appData.
  */
 function resolveMediaDir(projectDir) {
@@ -317,7 +317,7 @@ function resolveMediaDir(projectDir) {
  * Returns { ok, destPath, fileName }.
  *
  * @param {string} sourcePath  – absolute source path
- * @param {string|null} projectFilePath – path to .cutta file (may be null for unsaved projects)
+ * @param {string|null} projectFilePath – path to .cmp file (may be null for unsaved projects)
  */
 ipcMain.handle("media:import-file", async (_event, { sourcePath, projectFilePath }) => {
   try {

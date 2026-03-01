@@ -108,7 +108,7 @@ export interface ProjectMeta {
   trackCount: number;
   clipCount: number;
   thumbnail?: string; // base64 or color
-  filePath?: string;  // path to .cutta file on disk
+  filePath?: string;  // path to .cmp file on disk
 }
 
 interface ProjectLauncherProps {
@@ -699,7 +699,7 @@ export default function ProjectLauncher({ onOpenProject, onCreateProject, onOpen
     }
   }, []);
 
-  // Scan disk for .cutta files when switching to "All Projects"
+  // Scan disk for .cmp files when switching to "All Projects"
   useEffect(() => {
     if (view !== "all") return;
     const settings = loadSettings();
@@ -993,7 +993,7 @@ export default function ProjectLauncher({ onOpenProject, onCreateProject, onOpen
                     ? "Scanning for projects…"
                     : diskProjects.length > 0
                       ? `Found ${diskProjects.length} project${diskProjects.length === 1 ? "" : "s"} on disk.`
-                      : "No .cutta files found in your projects folder."}
+                      : "No .cmp files found in your projects folder."}
                 </p>
               </div>
 

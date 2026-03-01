@@ -94,9 +94,30 @@ export default function Home() {
       if (w && h) {
         setCanvasSize({ name: `${w}×${h}`, width: w, height: h });
       }
-      // Reset to empty tracks for a new project
+      // Reset to default tracks for a new project
       useEditorStore.setState({
-        tracks: [],
+        tracks: [
+          {
+            id: uuidv4(),
+            name: "Video 1",
+            type: "video" as const,
+            clips: [],
+            muted: false,
+            locked: false,
+            height: 64,
+            visible: true,
+          },
+          {
+            id: uuidv4(),
+            name: "Audio 1",
+            type: "audio" as const,
+            clips: [],
+            muted: false,
+            locked: false,
+            height: 48,
+            visible: true,
+          },
+        ],
         mediaFiles: [],
         projectFilePath: null,
         dirty: false,
