@@ -30,8 +30,14 @@ export default function PreviewPanel() {
   const containerRef = useRef<HTMLDivElement>(null);
   const animationRef = useRef<number>(0);
   const lastTimeRef = useRef<number>(0);
+  const currentTimeRef = useRef(currentTime);
+  const durationRef = useRef(duration);
   const [volume, setVolume] = useState(80);
   const { getVideoElement, getImageElement } = useMediaManager(volume / 100);
+
+  // Keep refs in sync with store values
+  useEffect(() => { currentTimeRef.current = currentTime; }, [currentTime]);
+  useEffect(() => { durationRef.current = duration; }, [duration]);
 
   // Get active clips at current time
   const getActiveClips = useCallback(() => {
@@ -312,6 +318,8 @@ export default function PreviewPanel() {
   }, [getActiveClips, currentTime, canvasSize, getVideoElement, getImageElement]);
 
   // Playback animation loop
+  // Only re-run when isPlaying toggles — reads currentTime from ref to avoid
+  // a dependency cycle that would tear down/recreate the RAF every frame.
   useEffect(() => {
     if (isPlaying) {
       lastTimeRef.current = performance.now();
@@ -320,21 +328,25 @@ export default function PreviewPanel() {
         const delta = (time - lastTimeRef.current) / 1000;
         lastTimeRef.current = time;
 
-        const newTime = currentTime + delta;
-        if (newTime >= duration) {
+        const newTime = currentTimeRef.current + delta;
+        if (newTime >= durationRef.current) {
+          // Update ref immediately so next RAF (if any) reads correct value
+          currentTimeRef.current = 0;
           setCurrentTime(0);
           setIsPlaying(false);
-        } else {
-          setCurrentTime(newTime);
+          return; // stop the loop – the isPlaying=false will prevent restart
         }
 
+        // Keep ref in lockstep with store to avoid stale reads
+        currentTimeRef.current = newTime;
+        setCurrentTime(newTime);
         animationRef.current = requestAnimationFrame(animate);
       };
 
       animationRef.current = requestAnimationFrame(animate);
       return () => cancelAnimationFrame(animationRef.current);
     }
-  }, [isPlaying, currentTime, duration, setCurrentTime, setIsPlaying]);
+  }, [isPlaying, setCurrentTime, setIsPlaying]);
 
   // Render on state changes
   useEffect(() => {

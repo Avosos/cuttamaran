@@ -335,11 +335,30 @@ function setupWindowEvents() {
   });
 }
 
+// ─── MIME type lookup ─────────────────────────────────────
+const MIME_TYPES = {
+  ".mp4": "video/mp4", ".webm": "video/webm", ".mov": "video/quicktime",
+  ".avi": "video/x-msvideo", ".mkv": "video/x-matroska",
+  ".mp3": "audio/mpeg", ".wav": "audio/wav", ".ogg": "audio/ogg",
+  ".aac": "audio/aac", ".flac": "audio/flac",
+  ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+  ".gif": "image/gif", ".webp": "image/webp", ".svg": "image/svg+xml",
+};
+
+function getMimeType(filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  return MIME_TYPES[ext] || "application/octet-stream";
+}
+
 // ─── App lifecycle ────────────────────────────────────────
 app.whenReady().then(() => {
   // Register local-media:// protocol handler.
   // URLs look like: local-media://media/C%3A%5Cusers%5C...%5Cfile.mp4
   // We decode the pathname to get the absolute file path.
+  //
+  // IMPORTANT: We handle HTTP Range requests manually so that <audio> and
+  // <video> elements can seek and stream the full file.  Without this,
+  // the browser only gets the initial buffered chunk (~2 s of audio).
   protocol.handle("local-media", (request) => {
     // Strip the scheme + host ("local-media://media/")
     let filePath = decodeURIComponent(
@@ -349,7 +368,48 @@ app.whenReady().then(() => {
     if (process.platform === "win32" && filePath.startsWith("/")) {
       filePath = filePath.slice(1);
     }
-    return net.fetch(url.pathToFileURL(filePath).toString());
+
+    // Make sure the file actually exists
+    if (!fs.existsSync(filePath)) {
+      return new Response("Not found", { status: 404 });
+    }
+
+    const stat = fs.statSync(filePath);
+    const totalSize = stat.size;
+    const mimeType = getMimeType(filePath);
+    const rangeHeader = request.headers.get("Range");
+
+    if (rangeHeader) {
+      // Parse "bytes=START-END"
+      const match = rangeHeader.match(/bytes=(\d+)-(\d*)/);
+      if (match) {
+        const start = parseInt(match[1], 10);
+        const end = match[2] ? parseInt(match[2], 10) : totalSize - 1;
+        const chunkSize = end - start + 1;
+
+        const stream = fs.createReadStream(filePath, { start, end });
+        return new Response(stream, {
+          status: 206,
+          headers: {
+            "Content-Type": mimeType,
+            "Content-Length": String(chunkSize),
+            "Content-Range": `bytes ${start}-${end}/${totalSize}`,
+            "Accept-Ranges": "bytes",
+          },
+        });
+      }
+    }
+
+    // Full file response
+    const stream = fs.createReadStream(filePath);
+    return new Response(stream, {
+      status: 200,
+      headers: {
+        "Content-Type": mimeType,
+        "Content-Length": String(totalSize),
+        "Accept-Ranges": "bytes",
+      },
+    });
   });
 
   createWindow();
@@ -370,6 +430,28 @@ app.on("window-all-closed", () => {
 });
 
 // ─── Export Pipeline ──────────────────────────────────────
+
+/**
+ * Convert a local-media:// URL back to an absolute file path.
+ * e.g. "local-media://media/C:/Users/foo/bar.mp3" → "C:/Users/foo/bar.mp3"
+ */
+function localMediaUrlToPath(src) {
+  if (!src) return null;
+  if (!src.startsWith("local-media://")) {
+    // Already a plain file path
+    return src;
+  }
+  try {
+    let filePath = decodeURIComponent(new URL(src).pathname);
+    // On Windows the pathname starts with / before drive letter
+    if (process.platform === "win32" && filePath.startsWith("/")) {
+      filePath = filePath.slice(1);
+    }
+    return filePath;
+  } catch {
+    return null;
+  }
+}
 
 /** Active export state — only one export at a time */
 let activeExport = null;
@@ -418,18 +500,20 @@ ipcMain.handle("export:start", async (_event, opts) => {
     "-i", "pipe:0"                    // stdin
   );
 
-  // Input 1…N: audio files
-  const validAudioClips = audioClips.filter((a) => a.src && fs.existsSync(a.src));
-  for (const audio of validAudioClips) {
-    args.push("-i", audio.src);
+  // Input 1…N: audio files — resolve local-media:// URLs to real paths
+  const resolvedAudioClips = audioClips
+    .map((a) => ({ ...a, filePath: localMediaUrlToPath(a.src) }))
+    .filter((a) => a.filePath && fs.existsSync(a.filePath));
+  for (const audio of resolvedAudioClips) {
+    args.push("-i", audio.filePath);
   }
 
   // ── Filter: map audio clips onto the timeline ─────────
-  if (validAudioClips.length > 0) {
+  if (resolvedAudioClips.length > 0) {
     const filterParts = [];
     const mixLabels = [];
 
-    validAudioClips.forEach((audio, idx) => {
+    resolvedAudioClips.forEach((audio, idx) => {
       const inputIdx = idx + 1; // input 0 is the video pipe
       const label = `a${idx}`;
       const delay = Math.round(audio.startTime * 1000);
@@ -443,7 +527,7 @@ ipcMain.handle("export:start", async (_event, opts) => {
     });
 
     filterParts.push(
-      `${mixLabels.join("")}amix=inputs=${validAudioClips.length}:normalize=0[aout]`
+      `${mixLabels.join("")}amix=inputs=${resolvedAudioClips.length}:normalize=0[aout]`
     );
     args.push("-filter_complex", filterParts.join(";"));
     args.push("-map", "0:v");
@@ -457,17 +541,17 @@ ipcMain.handle("export:start", async (_event, opts) => {
     case "mp4":
       args.push("-c:v", "libx264", "-preset", "medium", "-crf", crf,
                 "-pix_fmt", "yuv420p", "-movflags", "+faststart");
-      if (validAudioClips.length > 0) args.push("-c:a", "aac", "-b:a", "192k");
+      if (resolvedAudioClips.length > 0) args.push("-c:a", "aac", "-b:a", "192k");
       break;
     case "webm":
       args.push("-c:v", "libvpx-vp9", "-crf", crf, "-b:v", "0",
                 "-pix_fmt", "yuv420p");
-      if (validAudioClips.length > 0) args.push("-c:a", "libopus", "-b:a", "128k");
+      if (resolvedAudioClips.length > 0) args.push("-c:a", "libopus", "-b:a", "128k");
       break;
     case "mov":
       args.push("-c:v", "libx264", "-preset", "medium", "-crf", crf,
                 "-pix_fmt", "yuv420p");
-      if (validAudioClips.length > 0) args.push("-c:a", "aac", "-b:a", "192k");
+      if (resolvedAudioClips.length > 0) args.push("-c:a", "aac", "-b:a", "192k");
       break;
     case "gif":
       // Two-pass palette for high-quality GIF
