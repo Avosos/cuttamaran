@@ -49,15 +49,18 @@ export default function TimelinePanel() {
     setSelectedClipId,
     removeClip,
     updateClip,
+    moveClip,
     addTrack,
     isPlaying,
     splitClip,
     duplicateClip,
     setPropertiesPanelOpen,
+    pushHistory,
   } = useEditorStore();
 
   const timelineRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const trackLanesRef = useRef<HTMLDivElement>(null);
   const [isDraggingClip, setIsDraggingClip] = useState(false);
   const [isDraggingPlayhead, setIsDraggingPlayhead] = useState(false);
   const [isResizing, setIsResizing] = useState<{
@@ -158,7 +161,7 @@ export default function TimelinePanel() {
     }
   }, [isDraggingPlayhead, handlePlayheadDrag]);
 
-  // ─── Clip Drag ────────────────────────────────────────
+  // ─── Clip Drag (horizontal + cross-track) ─────────────
   const handleClipDrag = useCallback(
     (
       e: React.MouseEvent,
@@ -168,9 +171,29 @@ export default function TimelinePanel() {
       e.stopPropagation();
       setSelectedClipId(clip.id);
       setIsDraggingClip(true);
+      pushHistory(); // snapshot once before any mutations
 
       const startX = e.clientX;
+      const startY = e.clientY;
       const startTime = clip.startTime;
+      let currentTrackId = trackId;
+
+      // Build a map of track Y-ranges from the DOM
+      const getTrackAtY = (clientY: number): string | null => {
+        const lanesEl = trackLanesRef.current;
+        if (!lanesEl) return null;
+        const children = lanesEl.children;
+        for (let i = 0; i < children.length; i++) {
+          const child = children[i] as HTMLElement;
+          const tid = child.getAttribute("data-track-id");
+          if (!tid) continue;
+          const rect = child.getBoundingClientRect();
+          if (clientY >= rect.top && clientY < rect.bottom) {
+            return tid;
+          }
+        }
+        return null;
+      };
 
       const handleMove = (ev: MouseEvent) => {
         const dx = ev.clientX - startX;
@@ -203,7 +226,17 @@ export default function TimelinePanel() {
           }
         }
 
-        updateClip(trackId, clip.id, { startTime: newTime });
+        // Detect target track from vertical position
+        const targetTrackId = getTrackAtY(ev.clientY);
+
+        if (targetTrackId && targetTrackId !== currentTrackId) {
+          // Cross-track move
+          moveClip(currentTrackId, targetTrackId, clip.id, newTime);
+          currentTrackId = targetTrackId;
+        } else {
+          // Same-track horizontal move
+          updateClip(currentTrackId, clip.id, { startTime: newTime });
+        }
       };
 
       const handleUp = () => {
@@ -222,6 +255,8 @@ export default function TimelinePanel() {
       tracks,
       setSelectedClipId,
       updateClip,
+      moveClip,
+      pushHistory,
     ]
   );
 
@@ -609,6 +644,7 @@ export default function TimelinePanel() {
 
           {/* Track lanes */}
           <div
+            ref={trackLanesRef}
             style={{
               position: "relative",
               width: Math.max(timelineWidth, 2000),
@@ -618,6 +654,7 @@ export default function TimelinePanel() {
             {tracks.map((track) => (
               <div
                 key={track.id}
+                data-track-id={track.id}
                 style={{
                   position: "relative",
                   height: track.height,

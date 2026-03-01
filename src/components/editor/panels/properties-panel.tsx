@@ -16,6 +16,7 @@ import {
   Eye,
   Sparkles,
   Trash2,
+  Scissors,
 } from "lucide-react";
 import { formatDuration } from "@/lib/utils";
 
@@ -28,6 +29,7 @@ export default function PropertiesPanel() {
     updateClip,
     removeEffect,
     updateEffect,
+    mediaFiles,
   } = useEditorStore();
 
   if (!propertiesPanelOpen || !selectedClipId) return null;
@@ -48,6 +50,37 @@ export default function PropertiesPanel() {
 
   const handleUpdate = (updates: Record<string, unknown>) => {
     updateClip(trackId, selectedClip!.id, updates);
+  };
+
+  // Source media duration (for enforcing trim constraints)
+  const sourceMedia = mediaFiles.find((m) => m.id === selectedClip.mediaId);
+  const sourceDuration = sourceMedia?.duration ?? selectedClip.duration;
+  const hasTrim = selectedClip.type === "video" || selectedClip.type === "audio";
+
+  // Trim-aware update helpers
+  const handleTrimStartChange = (newTrimStart: number) => {
+    const ts = Math.max(0, Math.min(newTrimStart, sourceDuration - selectedClip.trimEnd - 0.1));
+    const maxDur = sourceDuration - ts - selectedClip.trimEnd;
+    handleUpdate({
+      trimStart: ts,
+      duration: Math.min(selectedClip.duration, Math.max(0.1, maxDur)),
+    });
+  };
+
+  const handleTrimEndChange = (newTrimEnd: number) => {
+    const te = Math.max(0, Math.min(newTrimEnd, sourceDuration - selectedClip.trimStart - 0.1));
+    const maxDur = sourceDuration - selectedClip.trimStart - te;
+    handleUpdate({
+      trimEnd: te,
+      duration: Math.min(selectedClip.duration, Math.max(0.1, maxDur)),
+    });
+  };
+
+  const handleDurationChange = (newDuration: number) => {
+    const maxDur = hasTrim ? sourceDuration - selectedClip.trimStart - selectedClip.trimEnd : Infinity;
+    handleUpdate({
+      duration: Math.max(0.1, Math.min(newDuration, maxDur)),
+    });
   };
 
   const getTypeIcon = () => {
@@ -160,23 +193,84 @@ export default function PropertiesPanel() {
               type="number"
               value={selectedClip.duration.toFixed(2)}
               onChange={(v) =>
-                handleUpdate({
-                  duration: Math.max(0.1, parseFloat(v) || 0.1),
-                })
+                handleDurationChange(parseFloat(v) || 0.1)
               }
               suffix="s"
             />
           </PropertyRow>
-          {selectedClip.trimStart > 0 && (
-            <PropertyRow label="Trim Start">
-              <span
-                style={{ fontSize: 11, color: "var(--text-secondary)" }}
-              >
-                {formatDuration(selectedClip.trimStart)}
+          {hasTrim && (
+            <PropertyRow label="Source">
+              <span style={{ fontSize: 10, color: "var(--text-muted)" }}>
+                {sourceDuration.toFixed(2)}s
               </span>
             </PropertyRow>
           )}
         </PropertySection>
+
+        {/* Trim (video/audio only) */}
+        {hasTrim && (
+          <PropertySection icon={<Scissors size={13} />} title="Trim">
+            <PropertyRow label="Trim Start">
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <input
+                  type="range"
+                  min={0}
+                  max={Math.max(0, sourceDuration - selectedClip.trimEnd - 0.1)}
+                  step={0.01}
+                  value={selectedClip.trimStart}
+                  onChange={(e) => handleTrimStartChange(parseFloat(e.target.value))}
+                  style={{ width: 72, accentColor: "var(--accent)" }}
+                />
+                <span style={{ fontSize: 10, fontFamily: "monospace", color: "var(--text-secondary)", width: 36, textAlign: "right" }}>
+                  {selectedClip.trimStart.toFixed(2)}s
+                </span>
+              </div>
+            </PropertyRow>
+            <PropertyRow label="Trim End">
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <input
+                  type="range"
+                  min={0}
+                  max={Math.max(0, sourceDuration - selectedClip.trimStart - 0.1)}
+                  step={0.01}
+                  value={selectedClip.trimEnd}
+                  onChange={(e) => handleTrimEndChange(parseFloat(e.target.value))}
+                  style={{ width: 72, accentColor: "var(--accent)" }}
+                />
+                <span style={{ fontSize: 10, fontFamily: "monospace", color: "var(--text-secondary)", width: 36, textAlign: "right" }}>
+                  {selectedClip.trimEnd.toFixed(2)}s
+                </span>
+              </div>
+            </PropertyRow>
+            {/* Visual range bar */}
+            <div style={{ marginTop: 2 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 2 }}>
+                <span style={{ fontSize: 9, color: "var(--text-muted)" }}>Source range</span>
+                <span style={{ fontSize: 9, color: "var(--text-muted)" }}>
+                  {selectedClip.trimStart.toFixed(1)}s – {(sourceDuration - selectedClip.trimEnd).toFixed(1)}s
+                </span>
+              </div>
+              <div style={{
+                height: 6,
+                borderRadius: 3,
+                background: "var(--bg-primary)",
+                position: "relative",
+                overflow: "hidden",
+              }}>
+                <div style={{
+                  position: "absolute",
+                  left: `${(selectedClip.trimStart / sourceDuration) * 100}%`,
+                  right: `${(selectedClip.trimEnd / sourceDuration) * 100}%`,
+                  top: 0,
+                  bottom: 0,
+                  borderRadius: 3,
+                  background: "var(--accent)",
+                  opacity: 0.6,
+                }} />
+              </div>
+            </div>
+          </PropertySection>
+        )}
 
         {/* Appearance */}
         <PropertySection icon={<Eye size={13} />} title="Appearance">

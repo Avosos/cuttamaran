@@ -561,7 +561,6 @@ export const useEditorStore = create<EditorStore>()((set, get) => ({
     })),
   moveClip: (fromTrackId, toTrackId, clipId, newStartTime) =>
     set((state) => {
-      get().pushHistory();
       const fromTrack = state.tracks.find((t) => t.id === fromTrackId);
       const clip = fromTrack?.clips.find((c) => c.id === clipId);
       if (!clip) return state;
@@ -586,6 +585,7 @@ export const useEditorStore = create<EditorStore>()((set, get) => ({
           }
           return t;
         }),
+        dirty: true,
       };
     }),
   splitClip: (trackId, clipId, splitTime) =>
@@ -603,6 +603,7 @@ export const useEditorStore = create<EditorStore>()((set, get) => ({
           const leftClip: TimelineClip = {
             ...clip,
             duration: relativeTime,
+            trimEnd: clip.trimEnd + (clip.duration - relativeTime),
           };
           const rightClip: TimelineClip = {
             ...clip,
