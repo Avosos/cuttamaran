@@ -639,7 +639,7 @@ function TextPanel() {
       text: "BOLD TEXT",
       fontSize: 72,
       fontFamily: "Inter",
-      color: "#7c5cfc",
+      color: "#ffffff",
     },
   ];
 

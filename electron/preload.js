@@ -55,6 +55,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
   pathToMediaUrl: (absolutePath) => ipcRenderer.invoke("media:path-to-url", absolutePath),
   mediaFileExists: (filePath) => ipcRenderer.invoke("media:file-exists", filePath),
 
+  // Accent icon
+  setAccentIcon: (pngDataUrl) => ipcRenderer.invoke("app:set-accent-icon", pngDataUrl),
+
   // Platform info
   platform: process.platform,
 });

@@ -18,6 +18,7 @@ import {
   Minus,
   Square,
   Copy,
+  Palette,
 } from "lucide-react";
 
 // ─── Custom Dropdown ─────────────────────────────────────
@@ -226,7 +227,7 @@ function FirstTimeSetup({ onComplete }: { onComplete: () => void }) {
       >
         {/* Header with icon */}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 32, paddingBottom: 8, paddingLeft: 40, paddingRight: 40 }}>
-          <div style={{ width: 56, height: 56, borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16, background: "linear-gradient(135deg, #7c5cfc, #e879f9)" }}>
+          <div style={{ width: 56, height: 56, borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16, background: "var(--accent-gradient-vibrant)" }}>
             <Scissors size={24} className="text-white" />
           </div>
           <h2 style={{ fontSize: 18, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>Welcome to Cuttamaran</h2>
@@ -289,9 +290,9 @@ function FirstTimeSetup({ onComplete }: { onComplete: () => void }) {
               whiteSpace: "nowrap" as const,
               cursor: "pointer",
               border: folderPath ? "none" : "1px solid var(--border-subtle)",
-              background: folderPath ? "linear-gradient(135deg, #7c5cfc, #6344e0)" : "var(--bg-tertiary)",
+              background: folderPath ? "var(--accent-gradient)" : "var(--bg-tertiary)",
               color: folderPath ? "white" : "var(--text-secondary)",
-              boxShadow: folderPath ? "0 2px 12px rgba(124, 92, 252, 0.3)" : "none",
+              boxShadow: folderPath ? "0 2px 12px var(--accent-glow)" : "none",
             }}
           >
             {folderPath ? "Get Started" : "Skip for Now"}
@@ -464,6 +465,42 @@ function SettingsPanel({ onClose }: { onClose: () => void }) {
                   onChange={(v) => updateSetting("theme", v as "dark" | "light")}
                 />
               </div>
+
+              {/* Accent Color */}
+              <div
+                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", borderRadius: 8 }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <Palette size={15} style={{ color: "var(--text-muted)" }} />
+                  <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>Accent Color</span>
+                </div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  {([
+                    { value: "purple" as const, colors: ["#7c5cfc", "#e879f9"] },
+                    { value: "orange" as const, colors: ["#f97316", "#facc15"] },
+                    { value: "green" as const, colors: ["#22c55e", "#a3e635"] },
+                  ]).map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => updateSetting("accentColor", opt.value)}
+                      style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: 8,
+                        border: settings.accentColor === opt.value ? "2px solid var(--text-primary)" : "2px solid transparent",
+                        background: `linear-gradient(135deg, ${opt.colors[0]}, ${opt.colors[1]})`,
+                        cursor: "pointer",
+                        boxShadow: settings.accentColor === opt.value ? `0 0 10px ${opt.colors[0]}80` : "none",
+                        transition: "all 0.15s",
+                        padding: 0,
+                      }}
+                      title={opt.value.charAt(0).toUpperCase() + opt.value.slice(1)}
+                    />
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -492,7 +529,7 @@ function SettingsPanel({ onClose }: { onClose: () => void }) {
           {/* About */}
           <div style={{ paddingTop: 8, borderTop: "1px solid var(--border-subtle)" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <div style={{ width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg, #7c5cfc, #e879f9)" }}>
+              <div style={{ width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--accent-gradient-vibrant)" }}>
                 <Scissors size={14} className="text-white" />
               </div>
               <div>
@@ -616,9 +653,9 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
               cursor: name.trim() ? "pointer" : "default",
               whiteSpace: "nowrap",
               opacity: name.trim() ? 1 : 0.4,
-              background: "linear-gradient(135deg, #7c5cfc, #6344e0)",
+              background: "var(--accent-gradient)",
               color: "white",
-              boxShadow: "0 2px 12px rgba(124, 92, 252, 0.3)",
+              boxShadow: "0 2px 12px var(--accent-glow)",
             }}
           >
             Create Project
@@ -684,7 +721,7 @@ export default function ProjectLauncher({ onOpenProject, onCreateProject, onOpen
         } as React.CSSProperties}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 8, WebkitAppRegion: "no-drag" } as React.CSSProperties}>
-          <div style={{ width: 20, height: 20, borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg, #7c5cfc, #e879f9)" }}>
+          <div style={{ width: 20, height: 20, borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--accent-gradient-vibrant)" }}>
             <Scissors size={10} className="text-white" />
           </div>
           <span style={{ fontSize: 12, fontWeight: 500, color: "var(--text-muted)" }}>Cuttamaran</span>
@@ -747,9 +784,9 @@ export default function ProjectLauncher({ onOpenProject, onCreateProject, onOpen
               cursor: "pointer",
               marginBottom: 12,
               whiteSpace: "nowrap",
-              background: "linear-gradient(135deg, #7c5cfc, #6344e0)",
+              background: "var(--accent-gradient)",
               color: "white",
-              boxShadow: "0 2px 16px rgba(124, 92, 252, 0.3)",
+              boxShadow: "0 2px 16px var(--accent-glow)",
             }}
           >
             <Plus size={15} style={{ flexShrink: 0 }} />
@@ -903,9 +940,9 @@ export default function ProjectLauncher({ onOpenProject, onCreateProject, onOpen
                   border: "none",
                   cursor: "pointer",
                   whiteSpace: "nowrap",
-                  background: "linear-gradient(135deg, #7c5cfc, #6344e0)",
+                  background: "var(--accent-gradient)",
                   color: "white",
-                  boxShadow: "0 2px 16px rgba(124, 92, 252, 0.3)",
+                  boxShadow: "0 2px 16px var(--accent-glow)",
                 }}
               >
                 <Plus size={15} style={{ flexShrink: 0 }} />

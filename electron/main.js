@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, shell, protocol, net } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog, shell, protocol, net, nativeImage } = require("electron");
 const path = require("path");
 const url = require("url");
 const { spawn } = require("child_process");
@@ -99,6 +99,18 @@ function createWindow() {
 }
 
 // ─── IPC Handlers ─────────────────────────────────────────
+
+// Accent-coloured window icon
+ipcMain.handle("app:set-accent-icon", (_event, pngDataUrl) => {
+  if (!mainWindow || !pngDataUrl) return;
+  try {
+    const img = nativeImage.createFromDataURL(pngDataUrl);
+    mainWindow.setIcon(img);
+  } catch (e) {
+    console.error("Failed to set accent icon:", e);
+  }
+});
+
 ipcMain.handle("window:minimize", () => {
   mainWindow?.minimize();
 });

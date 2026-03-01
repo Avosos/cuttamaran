@@ -15,6 +15,7 @@ const themeInitScript = `
   try {
     var s = JSON.parse(localStorage.getItem("cuttamaran_settings") || "{}");
     if (s.theme === "light") document.documentElement.setAttribute("data-theme","light");
+    if (s.accentColor && s.accentColor !== "purple") document.documentElement.setAttribute("data-accent", s.accentColor);
   } catch(e){}
 })();
 `;

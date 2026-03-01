@@ -75,8 +75,8 @@ export default function SplashScreen({ onFinished }: SplashScreenProps) {
         <div
           className="w-20 h-20 rounded-2xl flex items-center justify-center"
           style={{
-            background: "linear-gradient(135deg, #7c5cfc, #e879f9)",
-            boxShadow: "0 0 60px rgba(124, 92, 252, 0.35), 0 0 120px rgba(124, 92, 252, 0.15)",
+            background: "var(--accent-gradient-vibrant)",
+            boxShadow: "0 0 60px var(--accent-glow), 0 0 120px var(--accent-muted)",
           }}
         >
           <Scissors size={36} className="text-white" />
@@ -119,8 +119,8 @@ export default function SplashScreen({ onFinished }: SplashScreenProps) {
           className="absolute inset-y-0 left-0 rounded-full transition-all"
           style={{
             width: `${progress}%`,
-            background: "linear-gradient(90deg, #7c5cfc, #e879f9)",
-            boxShadow: "0 0 12px rgba(124, 92, 252, 0.5)",
+            background: "var(--accent-gradient-bar)",
+            boxShadow: "0 0 12px var(--accent-glow)",
             transition: "width 0.15s ease-out",
           }}
         />

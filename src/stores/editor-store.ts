@@ -318,7 +318,7 @@ export const useEditorStore = create<EditorStore>()((set, get) => ({
           text: "CUTTAMARAN",
           fontSize: 72,
           fontFamily: "Inter",
-          color: "#7c5cfc",
+          color: "#ffffff",
           volume: 1,
           opacity: 1,
         },

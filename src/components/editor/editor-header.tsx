@@ -17,6 +17,7 @@ import {
   Film,
   FolderOpen,
   Check,
+  Palette,
 } from "lucide-react";
 import WindowControls from "./window-controls";
 import MenuBar from "./menu-bar";
@@ -121,7 +122,7 @@ export default function EditorHeader() {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              background: "linear-gradient(135deg, #7c5cfc, #e879f9)",
+              background: "var(--accent-gradient-vibrant)",
             }}
           >
             <Scissors size={14} style={{ color: "#ffffff" }} />
@@ -131,7 +132,7 @@ export default function EditorHeader() {
               fontSize: 14,
               fontWeight: 600,
               letterSpacing: "-0.02em",
-              background: "linear-gradient(135deg, #7c5cfc, #e879f9)",
+              background: "var(--accent-gradient-vibrant)",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
               backgroundClip: "text",
@@ -319,13 +320,13 @@ export default function EditorHeader() {
             fontSize: 14,
             fontWeight: 500,
             padding: "6px 16px",
-            background: "linear-gradient(135deg, #7c5cfc, #6344e0)",
+            background: "var(--accent-gradient)",
             color: "#ffffff",
             border: "none",
             cursor: "pointer",
             boxShadow: exportHovered
-              ? "0 4px 20px rgba(124, 92, 252, 0.5)"
-              : "0 2px 12px rgba(124, 92, 252, 0.3)",
+              ? "0 4px 20px var(--accent-glow)"
+              : "0 2px 12px var(--accent-glow)",
             transform: exportHovered ? "translateY(-1px)" : "translateY(0)",
             transition: "all 0.15s",
           }}
@@ -505,6 +506,42 @@ function EditorSettingsModal({ onClose }: { onClose: () => void }) {
                   onChange={(v) => updateSetting("theme", v as "dark" | "light")}
                 />
               </div>
+
+              {/* Accent Color */}
+              <div
+                style={rowStyle("accent")}
+                onMouseEnter={() => setHoveredRow("accent")}
+                onMouseLeave={() => setHoveredRow(null)}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <Palette size={15} style={{ color: "var(--text-muted)" }} />
+                  <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>Accent Color</span>
+                </div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  {([
+                    { value: "purple" as const, colors: ["#7c5cfc", "#e879f9"] },
+                    { value: "orange" as const, colors: ["#f97316", "#facc15"] },
+                    { value: "green" as const, colors: ["#22c55e", "#a3e635"] },
+                  ]).map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => updateSetting("accentColor", opt.value)}
+                      style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: 8,
+                        border: settings.accentColor === opt.value ? "2px solid var(--text-primary)" : "2px solid transparent",
+                        background: `linear-gradient(135deg, ${opt.colors[0]}, ${opt.colors[1]})`,
+                        cursor: "pointer",
+                        boxShadow: settings.accentColor === opt.value ? `0 0 10px ${opt.colors[0]}80` : "none",
+                        transition: "all 0.15s",
+                        padding: 0,
+                      }}
+                      title={opt.value.charAt(0).toUpperCase() + opt.value.slice(1)}
+                    />
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -533,7 +570,7 @@ function EditorSettingsModal({ onClose }: { onClose: () => void }) {
           {/* About */}
           <div style={{ paddingTop: 8, borderTop: "1px solid var(--border-subtle)" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <div style={{ width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg, #7c5cfc, #e879f9)" }}>
+              <div style={{ width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--accent-gradient-vibrant)" }}>
                 <Scissors size={14} style={{ color: "#ffffff" }} />
               </div>
               <div>
@@ -976,7 +1013,7 @@ function ExportModal({ onClose }: { onClose: () => void }) {
         <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 20 }}>
           {/* Project info */}
           <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 8, background: "var(--bg-tertiary)" }}>
-            <div style={{ width: 36, height: 36, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg, #7c5cfc, #e879f9)" }}>
+            <div style={{ width: 36, height: 36, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--accent-gradient-vibrant)" }}>
               <Film size={16} style={{ color: "#ffffff" }} />
             </div>
             <div>
@@ -1070,7 +1107,7 @@ function ExportModal({ onClose }: { onClose: () => void }) {
                     height: "100%",
                     borderRadius: 3,
                     width: `${Math.min(progress, 100)}%`,
-                    background: errorMsg ? "#ef4444" : done ? "var(--success)" : "linear-gradient(90deg, #7c5cfc, #e879f9)",
+                    background: errorMsg ? "#ef4444" : done ? "var(--success)" : "var(--accent-gradient-bar)",
                     transition: "width 0.2s ease-out",
                   }}
                 />
@@ -1149,10 +1186,10 @@ function ExportModal({ onClose }: { onClose: () => void }) {
                   borderRadius: 8,
                   border: "none",
                   cursor: exporting ? "default" : "pointer",
-                  background: "linear-gradient(135deg, #7c5cfc, #6344e0)",
+                  background: "var(--accent-gradient)",
                   color: "#ffffff",
                   opacity: exporting ? 0.6 : 1,
-                  boxShadow: exportBtnHovered && !exporting ? "0 4px 20px rgba(124, 92, 252, 0.5)" : "0 2px 12px rgba(124, 92, 252, 0.3)",
+                  boxShadow: exportBtnHovered && !exporting ? "0 4px 20px var(--accent-glow)" : "0 2px 12px var(--accent-glow)",
                   transition: "all 0.15s",
                 }}
               >

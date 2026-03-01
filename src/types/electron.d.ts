@@ -66,6 +66,9 @@ export interface ElectronAPI {
   pathToMediaUrl: (absolutePath: string) => Promise<string>;
   mediaFileExists: (filePath: string) => Promise<boolean>;
 
+  // Accent icon
+  setAccentIcon: (pngDataUrl: string) => Promise<void>;
+
   platform: string;
 }
 

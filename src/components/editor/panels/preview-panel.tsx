@@ -518,10 +518,10 @@ export default function PreviewPanel() {
                 transition: "all 0.15s",
                 background: isPlaying
                   ? "var(--bg-hover)"
-                  : "linear-gradient(135deg, #7c5cfc, #6344e0)",
+                  : "var(--accent-gradient)",
                 boxShadow: isPlaying
                   ? "none"
-                  : "0 4px 16px rgba(124, 92, 252, 0.4)",
+                  : "0 4px 16px var(--accent-glow)",
               }}
               title={isPlaying ? "Pause (Space)" : "Play (Space)"}
             >

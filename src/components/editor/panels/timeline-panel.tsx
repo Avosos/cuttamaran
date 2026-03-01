@@ -675,7 +675,7 @@ export default function TimelinePanel() {
                     inset: 0,
                     background:
                       track.type === "video"
-                        ? "rgba(124, 92, 252, 0.02)"
+                        ? "var(--accent-muted)"
                         : "rgba(6, 182, 212, 0.02)",
                   }}
                 />

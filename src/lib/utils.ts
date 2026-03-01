@@ -40,7 +40,7 @@ export function getClipColor(type: string): string {
 export function getClipGradient(type: string): string {
   switch (type) {
     case "video":
-      return "linear-gradient(135deg, #7c5cfc, #6344e0)";
+      return "var(--accent-gradient)";
     case "audio":
       return "linear-gradient(135deg, #06b6d4, #0891b2)";
     case "image":
@@ -48,7 +48,7 @@ export function getClipGradient(type: string): string {
     case "text":
       return "linear-gradient(135deg, #ec4899, #db2777)";
     default:
-      return "linear-gradient(135deg, #7c5cfc, #6344e0)";
+      return "var(--accent-gradient)";
   }
 }
 
