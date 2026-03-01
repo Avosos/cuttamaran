@@ -1364,50 +1364,62 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10 }}>
                 <div style={{ flex: 1 }}>
                   <label style={{ fontSize: 10, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Width</label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={7680}
-                    value={customWidth}
-                    onChange={(e) => handleCustomWidth(parseInt(e.target.value) || 1)}
-                    style={{
-                      width: "100%",
-                      padding: "8px 10px",
-                      borderRadius: 6,
-                      fontSize: 13,
-                      outline: "none",
-                      background: "var(--bg-tertiary)",
-                      border: "1px solid var(--border-default)",
-                      color: "var(--text-primary)",
-                      boxSizing: "border-box",
-                    }}
-                    onFocus={(e) => { e.currentTarget.style.borderColor = "var(--accent)"; }}
-                    onBlur={(e) => { e.currentTarget.style.borderColor = "var(--border-default)"; }}
-                  />
+                  <div style={{ display: "flex", alignItems: "center", borderRadius: 8, border: "1px solid var(--border-default)", background: "var(--bg-tertiary)", overflow: "hidden" }}>
+                    <button
+                      onClick={() => handleCustomWidth(customWidth - 10)}
+                      style={{ width: 30, height: 34, display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "none", borderRight: "1px solid var(--border-subtle)", cursor: "pointer", color: "var(--text-muted)", fontSize: 14, flexShrink: 0 }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = "var(--hover-subtle)"; e.currentTarget.style.color = "var(--text-primary)"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-muted)"; }}
+                    >
+                      <Minus size={12} />
+                    </button>
+                    <input
+                      type="number"
+                      min={1}
+                      max={7680}
+                      value={customWidth}
+                      onChange={(e) => handleCustomWidth(parseInt(e.target.value) || 1)}
+                      style={{ flex: 1, padding: "7px 4px", fontSize: 13, outline: "none", background: "transparent", border: "none", color: "var(--text-primary)", textAlign: "center", minWidth: 0 }}
+                    />
+                    <button
+                      onClick={() => handleCustomWidth(customWidth + 10)}
+                      style={{ width: 30, height: 34, display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "none", borderLeft: "1px solid var(--border-subtle)", cursor: "pointer", color: "var(--text-muted)", fontSize: 14, flexShrink: 0 }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = "var(--hover-subtle)"; e.currentTarget.style.color = "var(--text-primary)"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-muted)"; }}
+                    >
+                      <Plus size={12} />
+                    </button>
+                  </div>
                 </div>
                 <span style={{ fontSize: 16, color: "var(--text-muted)", marginTop: 18 }}>×</span>
                 <div style={{ flex: 1 }}>
                   <label style={{ fontSize: 10, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Height</label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={4320}
-                    value={customHeight}
-                    onChange={(e) => handleCustomHeight(parseInt(e.target.value) || 1)}
-                    style={{
-                      width: "100%",
-                      padding: "8px 10px",
-                      borderRadius: 6,
-                      fontSize: 13,
-                      outline: "none",
-                      background: "var(--bg-tertiary)",
-                      border: "1px solid var(--border-default)",
-                      color: "var(--text-primary)",
-                      boxSizing: "border-box",
-                    }}
-                    onFocus={(e) => { e.currentTarget.style.borderColor = "var(--accent)"; }}
-                    onBlur={(e) => { e.currentTarget.style.borderColor = "var(--border-default)"; }}
-                  />
+                  <div style={{ display: "flex", alignItems: "center", borderRadius: 8, border: "1px solid var(--border-default)", background: "var(--bg-tertiary)", overflow: "hidden" }}>
+                    <button
+                      onClick={() => handleCustomHeight(customHeight - 10)}
+                      style={{ width: 30, height: 34, display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "none", borderRight: "1px solid var(--border-subtle)", cursor: "pointer", color: "var(--text-muted)", fontSize: 14, flexShrink: 0 }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = "var(--hover-subtle)"; e.currentTarget.style.color = "var(--text-primary)"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-muted)"; }}
+                    >
+                      <Minus size={12} />
+                    </button>
+                    <input
+                      type="number"
+                      min={1}
+                      max={4320}
+                      value={customHeight}
+                      onChange={(e) => handleCustomHeight(parseInt(e.target.value) || 1)}
+                      style={{ flex: 1, padding: "7px 4px", fontSize: 13, outline: "none", background: "transparent", border: "none", color: "var(--text-primary)", textAlign: "center", minWidth: 0 }}
+                    />
+                    <button
+                      onClick={() => handleCustomHeight(customHeight + 10)}
+                      style={{ width: 30, height: 34, display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "none", borderLeft: "1px solid var(--border-subtle)", cursor: "pointer", color: "var(--text-muted)", fontSize: 14, flexShrink: 0 }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = "var(--hover-subtle)"; e.currentTarget.style.color = "var(--text-primary)"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-muted)"; }}
+                    >
+                      <Plus size={12} />
+                    </button>
+                  </div>
                 </div>
                 <span style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 18 }}>px</span>
               </div>
