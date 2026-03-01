@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import dynamic from "next/dynamic";
 import SplashScreen from "@/components/splash-screen";
 import ProjectLauncher, {
@@ -23,6 +23,18 @@ export default function Home() {
   const [screen, setScreen] = useState<AppScreen>("splash");
   const [activeProject, setActiveProject] = useState<ProjectMeta | null>(null);
   const { setProjectName, setCanvasSize, loadProject } = useEditorStore();
+
+  // ─── Handle window close on non-editor screens ──
+  // EditorLayout registers its own onConfirmClose (with dirty-check).
+  // For splash / launcher there's nothing to save, so just force-close.
+  useEffect(() => {
+    if (screen === "editor") return; // EditorLayout handles it
+    const api = window.electronAPI;
+    if (!api?.onConfirmClose) return;
+    return api.onConfirmClose(() => {
+      api.forceClose();
+    });
+  }, [screen]);
 
   const handleSplashFinished = useCallback(() => {
     setScreen("launcher");
