@@ -259,40 +259,7 @@ export default function PreviewPanel() {
     renderFrame();
   }, [renderFrame]);
 
-  // Handle keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement) return;
 
-      switch (e.key) {
-        case " ":
-          e.preventDefault();
-          togglePlayback();
-          break;
-        case "ArrowLeft":
-          e.preventDefault();
-          setCurrentTime(Math.max(0, currentTime - (e.shiftKey ? 5 : 1)));
-          break;
-        case "ArrowRight":
-          e.preventDefault();
-          setCurrentTime(
-            Math.min(duration, currentTime + (e.shiftKey ? 5 : 1))
-          );
-          break;
-        case "Home":
-          e.preventDefault();
-          setCurrentTime(0);
-          break;
-        case "End":
-          e.preventDefault();
-          setCurrentTime(duration);
-          break;
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [togglePlayback, setCurrentTime, currentTime, duration]);
 
   // Calculate canvas display size
   const aspectRatio = canvasSize.width / canvasSize.height;

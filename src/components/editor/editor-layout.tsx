@@ -8,6 +8,7 @@ import TimelinePanel from "@/components/editor/panels/timeline-panel";
 import PropertiesPanel from "@/components/editor/panels/properties-panel";
 import KeyboardShortcuts from "@/components/editor/keyboard-shortcuts";
 import { useEditorStore } from "@/stores/editor-store";
+import { useGlobalShortcuts } from "@/hooks/use-global-shortcuts";
 
 const MIN_PANEL_WIDTH = 200;
 const MIN_TIMELINE_HEIGHT = 150;
@@ -15,6 +16,7 @@ const DEFAULT_LEFT_WIDTH = 280;
 const DEFAULT_TIMELINE_HEIGHT = 260;
 
 export default function EditorLayout() {
+  useGlobalShortcuts();
   const { propertiesPanelOpen } = useEditorStore();
   const [leftWidth, setLeftWidth] = useState(DEFAULT_LEFT_WIDTH);
   const [timelineHeight, setTimelineHeight] = useState(

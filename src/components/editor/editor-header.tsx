@@ -19,6 +19,7 @@ import {
   Check,
 } from "lucide-react";
 import WindowControls from "./window-controls";
+import MenuBar from "./menu-bar";
 
 export default function EditorHeader() {
   const {
@@ -31,7 +32,6 @@ export default function EditorHeader() {
     canvasSize,
     setCanvasSize,
     saveProject,
-    loadProject,
   } = useEditorStore();
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -56,32 +56,19 @@ export default function EditorHeader() {
     }
   }, [saveProject]);
 
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "z") {
-        e.preventDefault();
-        if (e.shiftKey) {
-          redo();
-        } else {
-          undo();
-        }
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
-        e.preventDefault();
-        handleSave(e.shiftKey); // Shift+Ctrl+S = Save As
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === "o") {
-        e.preventDefault();
-        loadProject();
-      }
-    },
-    [undo, redo, handleSave, loadProject]
-  );
 
+
+  // Listen for custom events from MenuBar to open modals
   useEffect(() => {
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleKeyDown]);
+    const onExport = () => setShowExport(true);
+    const onSettings = () => setShowSettings(true);
+    window.addEventListener("cuttamaran:open-export", onExport);
+    window.addEventListener("cuttamaran:open-settings", onSettings);
+    return () => {
+      window.removeEventListener("cuttamaran:open-export", onExport);
+      window.removeEventListener("cuttamaran:open-settings", onSettings);
+    };
+  }, []);
 
   // Close resolution dropdown on click outside
   useEffect(() => {
@@ -153,6 +140,10 @@ export default function EditorHeader() {
             Cuttamaran
           </span>
         </div>
+
+        <div style={{ width: 1, height: 20, background: "var(--border-default)" }} />
+
+        <MenuBar />
 
         <div style={{ width: 1, height: 20, background: "var(--border-default)" }} />
 
@@ -313,18 +304,8 @@ export default function EditorHeader() {
         </div>
       </div>
 
-      {/* Right section - Export, Settings & Window Controls */}
+      {/* Right section - Export & Window Controls */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, WebkitAppRegion: "no-drag" } as React.CSSProperties}>
-        <button
-          onClick={() => setShowSettings(true)}
-          onMouseEnter={() => setHoveredBtn("settings")}
-          onMouseLeave={() => setHoveredBtn(null)}
-          style={iconBtnStyle("settings")}
-          title="Settings"
-        >
-          <Settings size={16} style={{ color: "var(--text-secondary)" }} />
-        </button>
-
         <button
           onClick={() => setShowExport(true)}
           onMouseEnter={() => setExportHovered(true)}

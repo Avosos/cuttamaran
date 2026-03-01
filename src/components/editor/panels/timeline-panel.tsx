@@ -433,6 +433,18 @@ export default function TimelinePanel() {
           </button>
 
           <button
+            onClick={() => {
+              if (!selectedClipId) return;
+              const track = tracks.find(
+                (t) => t.clips.find((c) => c.id === selectedClipId)
+              );
+              if (track) {
+                const clip = track.clips.find((c) => c.id === selectedClipId);
+                if (clip && currentTime > clip.startTime && currentTime < clip.startTime + clip.duration) {
+                  splitClip(track.id, selectedClipId, currentTime);
+                }
+              }
+            }}
             disabled={!selectedClipId}
             style={{
               padding: 6,
@@ -445,7 +457,7 @@ export default function TimelinePanel() {
             }}
             onMouseEnter={(e) => { if (selectedClipId) e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-            title="Split clip"
+            title="Split clip (Ctrl+B)"
           >
             <Scissors
               size={13}
