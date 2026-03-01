@@ -1,5 +1,25 @@
 export type ClipType = "video" | "audio" | "image" | "text";
 
+// ─── Clip Effects ────────────────────────────────────────
+export type EffectType =
+  | "fade_in"
+  | "fade_out"
+  | "cross_dissolve"
+  | "blur"
+  | "brightness"
+  | "contrast"
+  | "saturation"
+  | "vignette";
+
+export interface ClipEffect {
+  id: string;
+  type: EffectType;
+  /** 0-1 normalized value (meaning depends on effect type) */
+  value: number;
+  /** Duration in seconds — only used by transitions (fade_in, fade_out, cross_dissolve) */
+  duration?: number;
+}
+
 export interface MediaFile {
   id: string;
   name: string;
@@ -34,6 +54,8 @@ export interface TimelineClip {
   fontFamily?: string;
   color?: string;
   backgroundColor?: string;
+  // Effects
+  effects?: ClipEffect[];
 }
 
 export interface Track {

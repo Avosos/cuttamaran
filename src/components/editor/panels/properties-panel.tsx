@@ -14,6 +14,8 @@ import {
   Move,
   Layers,
   Eye,
+  Sparkles,
+  Trash2,
 } from "lucide-react";
 import { formatDuration } from "@/lib/utils";
 
@@ -24,6 +26,8 @@ export default function PropertiesPanel() {
     selectedClipId,
     tracks,
     updateClip,
+    removeEffect,
+    updateEffect,
   } = useEditorStore();
 
   if (!propertiesPanelOpen || !selectedClipId) return null;
@@ -306,9 +310,106 @@ export default function PropertiesPanel() {
             </PropertyRow>
           </PropertySection>
         )}
+
+        {/* ─── Effects ─────────────────────────────── */}
+        {selectedClip.effects && selectedClip.effects.length > 0 && (
+          <PropertySection
+            icon={<Sparkles size={12} />}
+            title="Effects"
+          >
+            {selectedClip.effects.map((effect) => {
+              const label = effectLabel(effect.type);
+              const isTransition = ["fade_in", "fade_out", "cross_dissolve"].includes(effect.type);
+              return (
+                <div key={effect.id} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span style={{ fontSize: 11, color: "var(--text-primary)", fontWeight: 500 }}>{label}</span>
+                    <button
+                      onClick={() => removeEffect(trackId, selectedClip!.id, effect.id)}
+                      style={{
+                        background: "transparent",
+                        border: "none",
+                        color: "var(--text-muted)",
+                        cursor: "pointer",
+                        padding: 2,
+                        borderRadius: 4,
+                        display: "flex",
+                        alignItems: "center",
+                      }}
+                      title="Remove effect"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                  {/* Value slider */}
+                  <PropertyRow label="Intensity">
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <input
+                        type="range"
+                        min={0}
+                        max={1}
+                        step={0.01}
+                        value={effect.value}
+                        onChange={(e) =>
+                          updateEffect(trackId, selectedClip!.id, effect.id, {
+                            value: parseFloat(e.target.value),
+                          })
+                        }
+                        style={{ width: 80, accentColor: "var(--accent)" }}
+                      />
+                      <span style={{ fontSize: 10, color: "var(--text-muted)", width: 28, textAlign: "right" }}>
+                        {Math.round(effect.value * 100)}%
+                      </span>
+                    </div>
+                  </PropertyRow>
+                  {/* Duration slider for transitions */}
+                  {isTransition && (
+                    <PropertyRow label="Duration">
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <input
+                          type="range"
+                          min={0.1}
+                          max={5}
+                          step={0.1}
+                          value={effect.duration ?? 1}
+                          onChange={(e) =>
+                            updateEffect(trackId, selectedClip!.id, effect.id, {
+                              duration: parseFloat(e.target.value),
+                            })
+                          }
+                          style={{ width: 80, accentColor: "var(--accent)" }}
+                        />
+                        <span style={{ fontSize: 10, color: "var(--text-muted)", width: 28, textAlign: "right" }}>
+                          {(effect.duration ?? 1).toFixed(1)}s
+                        </span>
+                      </div>
+                    </PropertyRow>
+                  )}
+                  {/* Divider between effects */}
+                  <div style={{ borderBottom: "1px solid var(--border-subtle)", marginTop: 2 }} />
+                </div>
+              );
+            })}
+          </PropertySection>
+        )}
       </div>
     </div>
   );
+}
+
+// ─── Effect label helper ────────────────────────────────
+function effectLabel(type: string): string {
+  const labels: Record<string, string> = {
+    fade_in: "Fade In",
+    fade_out: "Fade Out",
+    cross_dissolve: "Cross Dissolve",
+    blur: "Blur",
+    brightness: "Brightness",
+    contrast: "Contrast",
+    saturation: "Saturation",
+    vignette: "Vignette",
+  };
+  return labels[type] || type;
 }
 
 // ─── Property Section ───────────────────────────────────

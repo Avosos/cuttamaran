@@ -5,6 +5,7 @@ import type {
   TimelineClip,
   MediaFile,
   ClipType,
+  ClipEffect,
   CanvasSize,
   PanelTab,
 } from "@/types/editor";
@@ -86,6 +87,11 @@ interface EditorStore {
   selectedClipId: string | null;
   setSelectedClipId: (id: string | null) => void;
   getSelectedClip: () => TimelineClip | null;
+
+  // Effects
+  addEffect: (trackId: string, clipId: string, effect: ClipEffect) => void;
+  removeEffect: (trackId: string, clipId: string, effectId: string) => void;
+  updateEffect: (trackId: string, clipId: string, effectId: string, updates: Partial<ClipEffect>) => void;
 
   // Playback
   isPlaying: boolean;
@@ -493,6 +499,65 @@ export const useEditorStore = create<EditorStore>()((set, get) => ({
             }
           : t
       ),
+    })),
+  addEffect: (trackId, clipId, effect) =>
+    set((state) => {
+      get().pushHistory();
+      return {
+        tracks: state.tracks.map((t) =>
+          t.id === trackId
+            ? {
+                ...t,
+                clips: t.clips.map((c) =>
+                  c.id === clipId
+                    ? { ...c, effects: [...(c.effects || []), effect] }
+                    : c
+                ),
+              }
+            : t
+        ),
+        dirty: true,
+      };
+    }),
+  removeEffect: (trackId, clipId, effectId) =>
+    set((state) => {
+      get().pushHistory();
+      return {
+        tracks: state.tracks.map((t) =>
+          t.id === trackId
+            ? {
+                ...t,
+                clips: t.clips.map((c) =>
+                  c.id === clipId
+                    ? { ...c, effects: (c.effects || []).filter((e) => e.id !== effectId) }
+                    : c
+                ),
+              }
+            : t
+        ),
+        dirty: true,
+      };
+    }),
+  updateEffect: (trackId, clipId, effectId, updates) =>
+    set((state) => ({
+      tracks: state.tracks.map((t) =>
+        t.id === trackId
+          ? {
+              ...t,
+              clips: t.clips.map((c) =>
+                c.id === clipId
+                  ? {
+                      ...c,
+                      effects: (c.effects || []).map((e) =>
+                        e.id === effectId ? { ...e, ...updates } : e
+                      ),
+                    }
+                  : c
+              ),
+            }
+          : t
+      ),
+      dirty: true,
     })),
   moveClip: (fromTrackId, toTrackId, clipId, newStartTime) =>
     set((state) => {

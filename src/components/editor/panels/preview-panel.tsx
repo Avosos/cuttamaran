@@ -104,6 +104,68 @@ export default function PreviewPanel() {
 
     // Render active clips
     for (const clip of activeClips) {
+      // ── Build CSS filter string from clip effects ──
+      const effects = clip.effects || [];
+      const clipTime = currentTime - clip.startTime; // time within this clip
+      const filterParts: string[] = [];
+      let fadeAlpha = 1;
+
+      for (const fx of effects) {
+        switch (fx.type) {
+          case "blur":
+            // value 0→1 maps to 0→20px
+            filterParts.push(`blur(${(fx.value * 20).toFixed(1)}px)`);
+            break;
+          case "brightness":
+            // value 0→1 maps to 0.2→2.0
+            filterParts.push(`brightness(${(0.2 + fx.value * 1.8).toFixed(2)})`);
+            break;
+          case "contrast":
+            // value 0→1 maps to 0.2→2.0
+            filterParts.push(`contrast(${(0.2 + fx.value * 1.8).toFixed(2)})`);
+            break;
+          case "saturation":
+            // value 0→1 maps to 0→2
+            filterParts.push(`saturate(${(fx.value * 2).toFixed(2)})`);
+            break;
+          case "fade_in": {
+            const dur = fx.duration ?? 1;
+            if (clipTime < dur) {
+              fadeAlpha *= clipTime / dur;
+            }
+            break;
+          }
+          case "fade_out": {
+            const dur = fx.duration ?? 1;
+            const timeFromEnd = clip.duration - clipTime;
+            if (timeFromEnd < dur) {
+              fadeAlpha *= timeFromEnd / dur;
+            }
+            break;
+          }
+          case "cross_dissolve": {
+            const dur = fx.duration ?? 1;
+            if (clipTime < dur) {
+              fadeAlpha *= clipTime / dur;
+            }
+            const timeFromEnd = clip.duration - clipTime;
+            if (timeFromEnd < dur) {
+              fadeAlpha *= timeFromEnd / dur;
+            }
+            break;
+          }
+        }
+      }
+
+      // Clamp
+      fadeAlpha = Math.max(0, Math.min(1, fadeAlpha));
+      const hasVignette = effects.find((e) => e.type === "vignette");
+
+      // Apply CSS filters
+      if (filterParts.length > 0) {
+        ctx.filter = filterParts.join(" ");
+      }
+
       if (clip.type === "text") {
         // Render text clips
         const fontSize = clip.fontSize || 48;
@@ -132,6 +194,7 @@ export default function PreviewPanel() {
         ctx.shadowOffsetX = 2;
         ctx.shadowOffsetY = 2;
 
+        ctx.globalAlpha = fadeAlpha;
         ctx.fillStyle = clip.color || "#ffffff";
         ctx.fillText(
           clip.text || "",
@@ -141,6 +204,7 @@ export default function PreviewPanel() {
 
         ctx.shadowColor = "transparent";
         ctx.shadowBlur = 0;
+        ctx.globalAlpha = 1;
       } else if (clip.type === "image") {
         // Draw decoded image (cached by media manager)
         const imgEl = getImageElement(clip.id);
@@ -159,7 +223,7 @@ export default function PreviewPanel() {
             dx = (canvas.width - dw) / 2;
             dy = 0;
           }
-          ctx.globalAlpha = clip.opacity ?? 1;
+          ctx.globalAlpha = (clip.opacity ?? 1) * fadeAlpha;
           ctx.drawImage(imgEl, dx, dy, dw, dh);
           ctx.globalAlpha = 1;
         } else if (clip.thumbnail) {
@@ -167,7 +231,9 @@ export default function PreviewPanel() {
           const img = new window.Image();
           img.src = clip.thumbnail;
           try {
+            ctx.globalAlpha = fadeAlpha;
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            ctx.globalAlpha = 1;
           } catch {
             /* not loaded yet */
           }
@@ -190,7 +256,7 @@ export default function PreviewPanel() {
             dx = (canvas.width - dw) / 2;
             dy = 0;
           }
-          ctx.globalAlpha = clip.opacity ?? 1;
+          ctx.globalAlpha = (clip.opacity ?? 1) * fadeAlpha;
           ctx.drawImage(videoEl, dx, dy, dw, dh);
           ctx.globalAlpha = 1;
         } else {
@@ -225,6 +291,22 @@ export default function PreviewPanel() {
             ctx.fillText("Loading\u2026", cx, cy + 68);
           }
         }
+      }
+
+      // Reset CSS filter after each clip
+      ctx.filter = "none";
+
+      // ── Vignette: radial gradient overlay ──
+      if (hasVignette) {
+        const strength = hasVignette.value;
+        const cx = canvas.width / 2;
+        const cy = canvas.height / 2;
+        const radius = Math.max(cx, cy);
+        const grad = ctx.createRadialGradient(cx, cy, radius * (1 - strength * 0.6), cx, cy, radius);
+        grad.addColorStop(0, "rgba(0,0,0,0)");
+        grad.addColorStop(1, `rgba(0,0,0,${(strength * 0.85).toFixed(2)})`);
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
     }
   }, [getActiveClips, currentTime, canvasSize, getVideoElement, getImageElement]);

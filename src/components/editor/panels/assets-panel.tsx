@@ -734,16 +734,40 @@ function AudioPanel() {
 }
 
 function EffectsPanel() {
+  const { selectedClipId, tracks, addEffect } = useEditorStore();
+
+  const selectedClip = selectedClipId
+    ? tracks.flatMap((t) => t.clips).find((c) => c.id === selectedClipId)
+    : null;
+  const trackId = selectedClipId
+    ? tracks.find((t) => t.clips.some((c) => c.id === selectedClipId))?.id
+    : null;
+
   const effects = [
-    { name: "Fade In", icon: "↗", category: "Transition" },
-    { name: "Fade Out", icon: "↘", category: "Transition" },
-    { name: "Cross Dissolve", icon: "⇄", category: "Transition" },
-    { name: "Blur", icon: "◎", category: "Filter" },
-    { name: "Brightness", icon: "☀", category: "Adjustment" },
-    { name: "Contrast", icon: "◐", category: "Adjustment" },
-    { name: "Saturation", icon: "🎨", category: "Adjustment" },
-    { name: "Vignette", icon: "⬟", category: "Filter" },
+    { name: "Fade In", icon: "↗", type: "fade_in" as const, category: "Transition", defaultValue: 1, defaultDuration: 1 },
+    { name: "Fade Out", icon: "↘", type: "fade_out" as const, category: "Transition", defaultValue: 1, defaultDuration: 1 },
+    { name: "Cross Dissolve", icon: "⇄", type: "cross_dissolve" as const, category: "Transition", defaultValue: 1, defaultDuration: 1 },
+    { name: "Blur", icon: "◎", type: "blur" as const, category: "Filter", defaultValue: 0.5 },
+    { name: "Brightness", icon: "☀", type: "brightness" as const, category: "Adjustment", defaultValue: 0.5 },
+    { name: "Contrast", icon: "◐", type: "contrast" as const, category: "Adjustment", defaultValue: 0.5 },
+    { name: "Saturation", icon: "🎨", type: "saturation" as const, category: "Adjustment", defaultValue: 0.5 },
+    { name: "Vignette", icon: "⬟", type: "vignette" as const, category: "Filter", defaultValue: 0.5 },
   ];
+
+  const handleApply = (effect: typeof effects[number]) => {
+    if (!selectedClip || !trackId) return;
+    // Don't add duplicate effect types
+    if (selectedClip.effects?.some((e) => e.type === effect.type)) return;
+    addEffect(trackId, selectedClip.id, {
+      id: crypto.randomUUID(),
+      type: effect.type,
+      value: effect.defaultValue,
+      duration: effect.defaultDuration,
+    });
+  };
+
+  const hasEffect = (type: string) =>
+    selectedClip?.effects?.some((e) => e.type === type) ?? false;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -752,36 +776,52 @@ function EffectsPanel() {
       >
         Effects & Transitions
       </p>
+      {!selectedClip && (
+        <p style={{ fontSize: 11, color: "var(--text-muted)", textAlign: "center", padding: "12px 0" }}>
+          Select a clip on the timeline to apply effects
+        </p>
+      )}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-        {effects.map((effect) => (
-          <button
-            key={effect.name}
-            style={{
-              padding: 12,
-              borderRadius: 8,
-              textAlign: "center",
-              background: "var(--bg-tertiary)",
-              border: "1px solid var(--border-subtle)",
-              cursor: "pointer",
-              transition: "all 0.15s",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "var(--bg-hover)";
-              e.currentTarget.style.borderColor = "var(--accent)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "var(--bg-tertiary)";
-              e.currentTarget.style.borderColor = "var(--border-subtle)";
-            }}
-          >
-            <span style={{ fontSize: 18, display: "block" }}>{effect.icon}</span>
-            <span
-              style={{ fontSize: 10, display: "block", marginTop: 4, color: "var(--text-secondary)" }}
+        {effects.map((effect) => {
+          const applied = hasEffect(effect.type);
+          const disabled = !selectedClip || applied;
+          return (
+            <button
+              key={effect.name}
+              onClick={() => handleApply(effect)}
+              disabled={disabled}
+              style={{
+                padding: 12,
+                borderRadius: 8,
+                textAlign: "center",
+                background: applied ? "var(--accent-muted)" : "var(--bg-tertiary)",
+                border: applied ? "1px solid var(--accent)" : "1px solid var(--border-subtle)",
+                cursor: disabled ? "default" : "pointer",
+                opacity: !selectedClip ? 0.4 : 1,
+                transition: "all 0.15s",
+              }}
+              onMouseEnter={(e) => {
+                if (!disabled) {
+                  e.currentTarget.style.background = "var(--bg-hover)";
+                  e.currentTarget.style.borderColor = "var(--accent)";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!disabled) {
+                  e.currentTarget.style.background = applied ? "var(--accent-muted)" : "var(--bg-tertiary)";
+                  e.currentTarget.style.borderColor = applied ? "var(--accent)" : "var(--border-subtle)";
+                }
+              }}
             >
-              {effect.name}
-            </span>
-          </button>
-        ))}
+              <span style={{ fontSize: 18, display: "block" }}>{effect.icon}</span>
+              <span
+                style={{ fontSize: 10, display: "block", marginTop: 4, color: applied ? "var(--accent-hover)" : "var(--text-secondary)" }}
+              >
+                {applied ? `✓ ${effect.name}` : effect.name}
+              </span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
