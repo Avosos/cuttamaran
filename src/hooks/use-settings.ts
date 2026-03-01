@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useSyncExternalStore } from "react";
 
 // ── Types ────────────────────────────────────────────────
 export type AccentColor = "purple" | "orange" | "green";
@@ -35,6 +35,7 @@ function notify() {
 
 export function loadSettings(): AppSettings {
   if (cached) return cached;
+  if (typeof window === "undefined") return DEFAULT_SETTINGS;
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
     cached = raw
@@ -43,8 +44,6 @@ export function loadSettings(): AppSettings {
   } catch {
     cached = { ...DEFAULT_SETTINGS };
   }
-  // Apply accent icon on first load (CSS is already set by inline script)
-  queueMicrotask(() => applyAccentColor(cached!.accentColor));
   return cached!;
 }
 
@@ -163,6 +162,13 @@ export function useSettings(): [AppSettings, typeof updateSetting] {
     loadSettings,
     () => DEFAULT_SETTINGS
   );
+
+  // Apply theme + accent icon on first client mount
+  useEffect(() => {
+    applyTheme(settings.theme);
+    applyAccentColor(settings.accentColor);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return [settings, updateSetting];
 }
