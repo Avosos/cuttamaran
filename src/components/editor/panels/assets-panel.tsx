@@ -130,7 +130,7 @@ export default function AssetsPanel() {
       let diskPath: string | undefined;
       let fileSize = file.size;
 
-      if (api) {
+      if (api?.writeMediaFile) {
         // Electron path: write raw bytes to project media/ folder
         const buf = await file.arrayBuffer();
         const result = await api.writeMediaFile({
@@ -173,7 +173,13 @@ export default function AssetsPanel() {
   const processFilePath = useCallback(
     async (absolutePath: string) => {
       const api = window.electronAPI;
-      if (!api) return;
+      if (!api?.importMediaFile) {
+        console.warn(
+          "[Cuttamaran] electronAPI.importMediaFile is not available. " +
+          "Please restart the Electron process so the latest preload script is loaded."
+        );
+        return;
+      }
 
       const fileName = absolutePath.split(/[\\/]/).pop() ?? "file";
       const type = getFileTypeFromName(fileName);
@@ -223,7 +229,7 @@ export default function AssetsPanel() {
   /** Import via Electron's native file dialog (uses file paths, not File objects) */
   const handleNativeImport = useCallback(async () => {
     const api = window.electronAPI;
-    if (!api) return;
+    if (!api?.openFileDialog) return;
     const result = await api.openFileDialog();
     if (result.canceled || !result.filePaths.length) return;
     for (const filePath of result.filePaths) {
