@@ -801,8 +801,52 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
   const [hoveredPresetId, setHoveredPresetId] = useState<string | null>(null);
   const [customWidth, setCustomWidth] = useState(1920);
   const [customHeight, setCustomHeight] = useState(1080);
+  const [isCustomRes, setIsCustomRes] = useState(false);
   const [customTemplates, setCustomTemplates] = useState<CustomTemplate[]>(() => loadCustomTemplates());
-  const isCustom = !RESOLUTIONS.some((r) => r.value === resolution);
+
+  // Template creation mode
+  const [creatingTemplate, setCreatingTemplate] = useState(false);
+  const [tplName, setTplName] = useState("");
+  const [tplDesc, setTplDesc] = useState("");
+  const [tplTracks, setTplTracks] = useState<PresetTrack[]>([
+    { name: "Video 1", type: "video", height: 64 },
+    { name: "Audio 1", type: "audio", height: 48 },
+  ]);
+  const [tplResolution, setTplResolution] = useState("1920x1080");
+
+  const handleAddTplTrack = (type: "video" | "audio") => {
+    const count = tplTracks.filter((t) => t.type === type).length + 1;
+    setTplTracks([...tplTracks, { name: `${type === "video" ? "Video" : "Audio"} ${count}`, type, height: type === "video" ? 64 : 48 }]);
+  };
+
+  const handleRemoveTplTrack = (index: number) => {
+    if (tplTracks.length <= 1) return;
+    setTplTracks(tplTracks.filter((_, i) => i !== index));
+  };
+
+  const handleSaveTemplate = () => {
+    if (!tplName.trim()) return;
+    const tpl: CustomTemplate = {
+      id: crypto.randomUUID(),
+      name: tplName.trim(),
+      description: tplDesc.trim(),
+      resolution: tplResolution,
+      tracks: tplTracks,
+      createdAt: Date.now(),
+      gradient: pickTemplateGradient(),
+    };
+    const updated = addCustomTemplate(tpl);
+    setCustomTemplates(updated);
+    // Select the newly created template
+    setSelectedPreset(customToPreset(tpl));
+    setResolution(tpl.resolution);
+    // Reset creation state
+    setCreatingTemplate(false);
+    setTplName("");
+    setTplDesc("");
+    setTplTracks([{ name: "Video 1", type: "video", height: 64 }, { name: "Audio 1", type: "audio", height: 48 }]);
+    setTplResolution("1920x1080");
+  };
 
   // Convert a CustomTemplate to a ProjectPreset for unified handling
   const customToPreset = (ct: CustomTemplate): ProjectPreset => ({
@@ -829,6 +873,7 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
   const handlePresetSelect = (preset: ProjectPreset) => {
     setSelectedPreset(preset);
     setResolution(preset.resolution);
+    setIsCustomRes(false);
   };
 
   const handleCustomWidth = (w: number) => {
@@ -952,6 +997,50 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
                   </button>
                 );
               })}
+
+              {/* "+" card for custom templates */}
+              <button
+                onClick={() => setCreatingTemplate(true)}
+                onMouseEnter={() => setHoveredPresetId("__add_template")}
+                onMouseLeave={() => setHoveredPresetId(null)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  padding: "10px 12px",
+                  borderRadius: 10,
+                  textAlign: "left",
+                  cursor: "pointer",
+                  transition: "border-color 0.15s, background 0.15s",
+                  background: hoveredPresetId === "__add_template" ? "var(--hover-subtle)" : "var(--bg-tertiary)",
+                  border: "1.5px dashed var(--border-default)",
+                }}
+              >
+                <div
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 9,
+                    flexShrink: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: "var(--bg-primary)",
+                    color: "var(--text-muted)",
+                    border: "1px dashed var(--border-default)",
+                  }}
+                >
+                  <Plus size={18} />
+                </div>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, display: "block", color: "var(--text-muted)" }}>
+                    Custom Template
+                  </span>
+                  <span style={{ fontSize: 10, display: "block", color: "var(--text-muted)", opacity: 0.7 }}>
+                    Create your own
+                  </span>
+                </div>
+              </button>
             </div>
 
             {/* Custom user templates */}
@@ -1042,7 +1131,136 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
             )}
           </div>
 
+          {/* Template Creator */}
+          {creatingTemplate && (
+            <div style={{ padding: 16, borderRadius: 10, background: "var(--bg-tertiary)", border: "1px solid var(--accent)", boxShadow: "0 0 12px var(--accent-glow)" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", color: "var(--accent-hover)" }}>New Template</span>
+                <button
+                  onClick={() => setCreatingTemplate(false)}
+                  style={{ padding: 4, borderRadius: 6, background: "transparent", border: "none", cursor: "pointer", color: "var(--text-muted)" }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = "var(--hover-overlay)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                >
+                  <X size={14} />
+                </button>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <input
+                  type="text"
+                  value={tplName}
+                  onChange={(e) => setTplName(e.target.value)}
+                  placeholder="Template name"
+                  autoFocus
+                  style={{ width: "100%", padding: "8px 10px", borderRadius: 6, fontSize: 12, outline: "none", background: "var(--bg-primary)", border: "1px solid var(--border-default)", color: "var(--text-primary)", boxSizing: "border-box" }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = "var(--accent)"; }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = "var(--border-default)"; }}
+                />
+                <input
+                  type="text"
+                  value={tplDesc}
+                  onChange={(e) => setTplDesc(e.target.value)}
+                  placeholder="Description (optional)"
+                  style={{ width: "100%", padding: "8px 10px", borderRadius: 6, fontSize: 12, outline: "none", background: "var(--bg-primary)", border: "1px solid var(--border-default)", color: "var(--text-primary)", boxSizing: "border-box" }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = "var(--accent)"; }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = "var(--border-default)"; }}
+                />
+                {/* Resolution */}
+                <div>
+                  <label style={{ fontSize: 10, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Resolution</label>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                    {RESOLUTIONS.map((r) => (
+                      <button
+                        key={r.value}
+                        onClick={() => setTplResolution(r.value)}
+                        style={{
+                          padding: "4px 8px",
+                          borderRadius: 5,
+                          fontSize: 10,
+                          cursor: "pointer",
+                          border: `1px solid ${tplResolution === r.value ? "var(--accent)" : "var(--border-subtle)"}`,
+                          background: tplResolution === r.value ? "var(--accent-muted)" : "var(--bg-secondary)",
+                          color: tplResolution === r.value ? "var(--accent-hover)" : "var(--text-secondary)",
+                        }}
+                      >
+                        {r.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {/* Tracks */}
+                <div>
+                  <label style={{ fontSize: 10, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Tracks</label>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                    {tplTracks.map((t, i) => (
+                      <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 8px", borderRadius: 5, background: "var(--bg-primary)" }}>
+                        <div style={{ width: 6, height: 6, borderRadius: 3, background: t.type === "video" ? "var(--clip-video)" : "var(--clip-audio)" }} />
+                        <input
+                          type="text"
+                          value={t.name}
+                          onChange={(e) => {
+                            const updated = [...tplTracks];
+                            updated[i] = { ...updated[i], name: e.target.value };
+                            setTplTracks(updated);
+                          }}
+                          style={{ flex: 1, padding: "2px 4px", borderRadius: 3, fontSize: 11, background: "transparent", border: "none", outline: "none", color: "var(--text-secondary)" }}
+                        />
+                        <span style={{ fontSize: 9, textTransform: "uppercase", fontWeight: 600, color: "var(--text-muted)" }}>{t.type}</span>
+                        <button
+                          onClick={() => handleRemoveTplTrack(i)}
+                          style={{ padding: 2, borderRadius: 3, border: "none", background: "transparent", cursor: tplTracks.length > 1 ? "pointer" : "default", opacity: tplTracks.length > 1 ? 0.6 : 0.2, color: "var(--text-muted)" }}
+                          onMouseEnter={(e) => { if (tplTracks.length > 1) e.currentTarget.style.opacity = "1"; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.opacity = tplTracks.length > 1 ? "0.6" : "0.2"; }}
+                        >
+                          <Minus size={12} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+                    <button
+                      onClick={() => handleAddTplTrack("video")}
+                      style={{ flex: 1, padding: "5px 0", borderRadius: 5, fontSize: 10, fontWeight: 500, cursor: "pointer", border: "1px dashed var(--border-default)", background: "transparent", color: "var(--text-muted)" }}
+                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--clip-video)"; e.currentTarget.style.color = "var(--clip-video)"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border-default)"; e.currentTarget.style.color = "var(--text-muted)"; }}
+                    >
+                      + Video Track
+                    </button>
+                    <button
+                      onClick={() => handleAddTplTrack("audio")}
+                      style={{ flex: 1, padding: "5px 0", borderRadius: 5, fontSize: 10, fontWeight: 500, cursor: "pointer", border: "1px dashed var(--border-default)", background: "transparent", color: "var(--text-muted)" }}
+                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--clip-audio)"; e.currentTarget.style.color = "var(--clip-audio)"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border-default)"; e.currentTarget.style.color = "var(--text-muted)"; }}
+                    >
+                      + Audio Track
+                    </button>
+                  </div>
+                </div>
+                {/* Save button */}
+                <button
+                  onClick={handleSaveTemplate}
+                  disabled={!tplName.trim()}
+                  style={{
+                    padding: "8px 0",
+                    fontSize: 12,
+                    fontWeight: 500,
+                    borderRadius: 7,
+                    border: "none",
+                    cursor: tplName.trim() ? "pointer" : "default",
+                    opacity: tplName.trim() ? 1 : 0.4,
+                    background: "var(--accent-gradient)",
+                    color: "white",
+                    boxShadow: "0 2px 8px var(--accent-glow)",
+                  }}
+                >
+                  Save Template
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Preset details */}
+          {!creatingTemplate && (
           <div style={{ padding: 12, borderRadius: 10, background: "var(--bg-tertiary)", border: "1px solid var(--border-subtle)" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
               <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", color: "var(--text-muted)" }}>
@@ -1089,15 +1307,17 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
               </div>
             )}
           </div>
+          )}
 
           {/* Resolution override */}
+          {!creatingTemplate && (
           <div>
             <label style={{ fontSize: 11, fontWeight: 500, marginBottom: 6, display: "block", color: "var(--text-muted)" }}>Resolution</label>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
               {RESOLUTIONS.map((r) => (
                 <button
                   key={r.value}
-                  onClick={() => setResolution(r.value)}
+                  onClick={() => { setResolution(r.value); setIsCustomRes(false); }}
                   style={{
                     display: "flex",
                     flexDirection: "column",
@@ -1107,17 +1327,20 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
                     textAlign: "left",
                     cursor: "pointer",
                     transition: "border-color 0.15s, background 0.15s",
-                    background: resolution === r.value ? "var(--accent-muted)" : "var(--bg-tertiary)",
-                    border: `1px solid ${resolution === r.value ? "var(--accent)" : "var(--border-subtle)"}`,
+                    background: !isCustomRes && resolution === r.value ? "var(--accent-muted)" : "var(--bg-tertiary)",
+                    border: `1px solid ${!isCustomRes && resolution === r.value ? "var(--accent)" : "var(--border-subtle)"}`,
                   }}
                 >
-                  <span style={{ fontSize: 12, fontWeight: 500, color: resolution === r.value ? "var(--accent-hover)" : "var(--text-secondary)" }}>{r.label}</span>
+                  <span style={{ fontSize: 12, fontWeight: 500, color: !isCustomRes && resolution === r.value ? "var(--accent-hover)" : "var(--text-secondary)" }}>{r.label}</span>
                   <span style={{ fontSize: 10, color: "var(--text-muted)" }}>{r.desc}</span>
                 </button>
               ))}
               {/* Custom resolution */}
               <button
-                onClick={() => setResolution(`${customWidth}x${customHeight}`)}
+                onClick={() => {
+                  setIsCustomRes(true);
+                  setResolution(`${customWidth}x${customHeight}`);
+                }}
                 style={{
                   display: "flex",
                   flexDirection: "column",
@@ -1127,17 +1350,17 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
                   textAlign: "left",
                   cursor: "pointer",
                   transition: "border-color 0.15s, background 0.15s",
-                  background: isCustom ? "var(--accent-muted)" : "var(--bg-tertiary)",
-                  border: `1px solid ${isCustom ? "var(--accent)" : "var(--border-subtle)"}`,
+                  background: isCustomRes ? "var(--accent-muted)" : "var(--bg-tertiary)",
+                  border: `1px solid ${isCustomRes ? "var(--accent)" : "var(--border-subtle)"}`,
                 }}
               >
-                <span style={{ fontSize: 12, fontWeight: 500, color: isCustom ? "var(--accent-hover)" : "var(--text-secondary)" }}>Custom</span>
+                <span style={{ fontSize: 12, fontWeight: 500, color: isCustomRes ? "var(--accent-hover)" : "var(--text-secondary)" }}>Custom</span>
                 <span style={{ fontSize: 10, color: "var(--text-muted)" }}>Enter your own size</span>
               </button>
             </div>
 
             {/* Custom width × height inputs */}
-            {isCustom && (
+            {isCustomRes && (
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10 }}>
                 <div style={{ flex: 1 }}>
                   <label style={{ fontSize: 10, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Width</label>
@@ -1190,6 +1413,7 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
               </div>
             )}
           </div>
+          )}
         </div>
 
         {/* Footer */}
