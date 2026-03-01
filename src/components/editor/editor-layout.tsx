@@ -25,6 +25,17 @@ export default function EditorLayout() {
 
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // ─── Auto-save (every 30 s if dirty & has a file path) ──
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const { dirty, projectFilePath, saveProject } = useEditorStore.getState();
+      if (dirty && projectFilePath) {
+        saveProject();
+      }
+    }, 30_000);
+    return () => clearInterval(timer);
+  }, []);
+
   // ─── Left panel resize ────────────────────────────────
   const handleLeftResize = useCallback((e: MouseEvent) => {
     if (!containerRef.current) return;

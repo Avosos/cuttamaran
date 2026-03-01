@@ -1,8 +1,9 @@
-const { app, BrowserWindow, ipcMain, dialog, shell } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog, shell, protocol, net } = require("electron");
 const path = require("path");
 const url = require("url");
 const { spawn } = require("child_process");
 const fs = require("fs");
+const crypto = require("crypto");
 
 // Resolve the bundled ffmpeg binary
 let ffmpegPath;
@@ -24,6 +25,22 @@ try {
 const isDev = process.env.NODE_ENV === "development" || !app.isPackaged;
 
 let mainWindow = null;
+
+// ─── Custom protocol for serving local media files ─────────
+// Register the scheme as privileged before app is ready so
+// <video>/<audio>/<img> elements can stream from local paths.
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: "local-media",
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      stream: true,
+      bypassCSP: true,
+    },
+  },
+]);
 
 // Determine icon path based on platform
 function getIconPath() {
@@ -161,6 +178,153 @@ ipcMain.handle("dialog:openFolder", async (_event, options) => {
   return result;
 });
 
+// ─── Project Save / Load ──────────────────────────────────
+ipcMain.handle("project:save", async (_event, { filePath, data }) => {
+  try {
+    // If no filePath provided, show Save-As dialog
+    let targetPath = filePath;
+    if (!targetPath) {
+      const result = await dialog.showSaveDialog(mainWindow, {
+        title: "Save Project",
+        defaultPath: `${data.projectName || "Untitled"}.cutta`,
+        filters: [
+          { name: "Cuttamaran Project", extensions: ["cutta"] },
+          { name: "All Files", extensions: ["*"] },
+        ],
+      });
+      if (result.canceled || !result.filePath) {
+        return { ok: false, canceled: true };
+      }
+      targetPath = result.filePath;
+    }
+    fs.writeFileSync(targetPath, JSON.stringify(data, null, 2), "utf-8");
+    return { ok: true, filePath: targetPath };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle("project:load", async (_event, { filePath }) => {
+  try {
+    let targetPath = filePath;
+    if (!targetPath) {
+      const result = await dialog.showOpenDialog(mainWindow, {
+        title: "Open Project",
+        properties: ["openFile"],
+        filters: [
+          { name: "Cuttamaran Project", extensions: ["cutta"] },
+          { name: "All Files", extensions: ["*"] },
+        ],
+      });
+      if (result.canceled || !result.filePaths[0]) {
+        return { ok: false, canceled: true };
+      }
+      targetPath = result.filePaths[0];
+    }
+    const raw = fs.readFileSync(targetPath, "utf-8");
+    const data = JSON.parse(raw);
+    return { ok: true, filePath: targetPath, data };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+// ─── Media file management ────────────────────────────────
+
+/**
+ * Resolve the "media" directory for the current project.
+ * If projectDir is given (directory containing the .cutta file), puts media/ next to it.
+ * Otherwise falls back to a shared location in appData.
+ */
+function resolveMediaDir(projectDir) {
+  if (projectDir) {
+    return path.join(projectDir, "media");
+  }
+  return path.join(app.getPath("userData"), "media");
+}
+
+/**
+ * Copy (or move) source file into the project's media/ folder.
+ * Returns { ok, destPath, fileName }.
+ *
+ * @param {string} sourcePath  – absolute source path
+ * @param {string|null} projectFilePath – path to .cutta file (may be null for unsaved projects)
+ */
+ipcMain.handle("media:import-file", async (_event, { sourcePath, projectFilePath }) => {
+  try {
+    const projectDir = projectFilePath ? path.dirname(projectFilePath) : null;
+    const mediaDir = resolveMediaDir(projectDir);
+    if (!fs.existsSync(mediaDir)) {
+      fs.mkdirSync(mediaDir, { recursive: true });
+    }
+
+    // Unique filename: <8-char-hash>_<originalName> to avoid collisions
+    const originalName = path.basename(sourcePath);
+    const hash = crypto.randomBytes(4).toString("hex");
+    const destName = `${hash}_${originalName}`;
+    const destPath = path.join(mediaDir, destName);
+
+    // Copy (don't move — user might want the original)
+    fs.copyFileSync(sourcePath, destPath);
+    const stats = fs.statSync(destPath);
+
+    return {
+      ok: true,
+      destPath,
+      fileName: originalName,
+      fileSize: stats.size,
+    };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+/**
+ * Write raw file bytes (from a drag-dropped File in the renderer)
+ * into the project's media/ folder.
+ * Expects { buffer: ArrayBuffer, fileName: string, projectFilePath: string|null }
+ */
+ipcMain.handle("media:write-file", async (_event, { buffer, fileName, projectFilePath }) => {
+  try {
+    const projectDir = projectFilePath ? path.dirname(projectFilePath) : null;
+    const mediaDir = resolveMediaDir(projectDir);
+    if (!fs.existsSync(mediaDir)) {
+      fs.mkdirSync(mediaDir, { recursive: true });
+    }
+
+    const hash = crypto.randomBytes(4).toString("hex");
+    const destName = `${hash}_${fileName}`;
+    const destPath = path.join(mediaDir, destName);
+
+    fs.writeFileSync(destPath, Buffer.from(buffer));
+    const stats = fs.statSync(destPath);
+
+    return {
+      ok: true,
+      destPath,
+      fileName,
+      fileSize: stats.size,
+    };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+/**
+ * Convert an absolute file path to a local-media:// URL the renderer can load.
+ */
+ipcMain.handle("media:path-to-url", (_event, absolutePath) => {
+  const encoded = encodeURIComponent(absolutePath).replace(/%2F/gi, "/").replace(/%5C/gi, "/").replace(/%3A/gi, ":");
+  return `local-media://media/${encoded}`;
+});
+
+/**
+ * Check whether a file path exists on disk.
+ */
+ipcMain.handle("media:file-exists", (_event, filePath) => {
+  return fs.existsSync(filePath);
+});
+
 // Forward maximize/unmaximize events to the renderer
 function setupWindowEvents() {
   mainWindow.on("maximize", () => {
@@ -173,6 +337,21 @@ function setupWindowEvents() {
 
 // ─── App lifecycle ────────────────────────────────────────
 app.whenReady().then(() => {
+  // Register local-media:// protocol handler.
+  // URLs look like: local-media://media/C%3A%5Cusers%5C...%5Cfile.mp4
+  // We decode the pathname to get the absolute file path.
+  protocol.handle("local-media", (request) => {
+    // Strip the scheme + host ("local-media://media/")
+    let filePath = decodeURIComponent(
+      new URL(request.url).pathname
+    );
+    // On Windows the pathname starts with / before drive letter, e.g. /C:/foo
+    if (process.platform === "win32" && filePath.startsWith("/")) {
+      filePath = filePath.slice(1);
+    }
+    return net.fetch(url.pathToFileURL(filePath).toString());
+  });
+
   createWindow();
   setupWindowEvents();
 

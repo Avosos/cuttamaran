@@ -9,6 +9,19 @@ import type {
   PanelTab,
 } from "@/types/editor";
 
+// ─── Project File Schema ────────────────────────────────
+export interface ProjectFileData {
+  version: 1;
+  projectName: string;
+  canvasSize: CanvasSize;
+  tracks: Track[];
+  mediaFiles: MediaFile[];
+  duration: number;
+  zoom: number;
+  snapping: boolean;
+  savedAt: string; // ISO timestamp
+}
+
 // ─── Default Canvas Presets ─────────────────────────────
 export const CANVAS_PRESETS: CanvasSize[] = [
   { name: "16:9 Landscape", width: 1920, height: 1080 },
@@ -25,6 +38,15 @@ interface EditorStore {
   setProjectName: (name: string) => void;
   canvasSize: CanvasSize;
   setCanvasSize: (size: CanvasSize) => void;
+  projectFilePath: string | null;
+  setProjectFilePath: (path: string | null) => void;
+  dirty: boolean;
+  markDirty: () => void;
+
+  // Persistence
+  saveProject: (forceDialog?: boolean) => Promise<boolean>;
+  loadProject: (filePath?: string) => Promise<boolean>;
+  getSerializableState: () => ProjectFileData;
 
   // Panels
   activeTab: PanelTab;
@@ -92,9 +114,114 @@ interface EditorStore {
 export const useEditorStore = create<EditorStore>()((set, get) => ({
   // Project
   projectName: "Untitled Project",
-  setProjectName: (name) => set({ projectName: name }),
+  setProjectName: (name) => set({ projectName: name, dirty: true }),
   canvasSize: CANVAS_PRESETS[0],
-  setCanvasSize: (size) => set({ canvasSize: size }),
+  setCanvasSize: (size) => set({ canvasSize: size, dirty: true }),
+  projectFilePath: null,
+  setProjectFilePath: (path) => set({ projectFilePath: path }),
+  dirty: false,
+  markDirty: () => set({ dirty: true }),
+
+  // ── Persistence ────────────────────────────────────────
+  getSerializableState: () => {
+    const s = get();
+    return {
+      version: 1 as const,
+      projectName: s.projectName,
+      canvasSize: s.canvasSize,
+      tracks: s.tracks,
+      mediaFiles: s.mediaFiles,
+      duration: s.duration,
+      zoom: s.zoom,
+      snapping: s.snapping,
+      savedAt: new Date().toISOString(),
+    };
+  },
+
+  saveProject: async (forceDialog = false) => {
+    const state = get();
+    const data = state.getSerializableState();
+    const filePath = forceDialog ? undefined : state.projectFilePath ?? undefined;
+    try {
+      const result = await window.electronAPI?.saveProject({ filePath, data: data as unknown as Record<string, unknown> });
+      if (result?.ok && result.filePath) {
+        set({ projectFilePath: result.filePath, dirty: false });
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  },
+
+  loadProject: async (filePath?: string) => {
+    try {
+      const api = window.electronAPI;
+      const result = await api?.loadProject(
+        filePath ? { filePath } : undefined
+      );
+      if (result?.ok && result.data) {
+        const d = result.data as unknown as ProjectFileData;
+
+        // Restore persistent media URLs from diskPath
+        const mediaFiles = d.mediaFiles ?? [];
+        const tracks = d.tracks ?? [];
+
+        if (api) {
+          // Build a map of mediaId → restored src URL
+          const srcMap = new Map<string, string>();
+
+          for (const mf of mediaFiles) {
+            if (mf.diskPath) {
+              const exists = await api.mediaFileExists(mf.diskPath);
+              if (exists) {
+                mf.src = await api.pathToMediaUrl(mf.diskPath);
+                srcMap.set(mf.id, mf.src);
+                // Restore image thumbnails from src
+                if (mf.type === "image") {
+                  mf.thumbnail = mf.src;
+                }
+              }
+            }
+          }
+
+          // Also restore clip src references
+          for (const track of tracks) {
+            for (const clip of track.clips) {
+              const restored = srcMap.get(clip.mediaId);
+              if (restored) {
+                clip.src = restored;
+                if (clip.type === "image") {
+                  clip.thumbnail = restored;
+                }
+              }
+            }
+          }
+        }
+
+        set({
+          projectName: d.projectName ?? "Untitled Project",
+          canvasSize: d.canvasSize ?? CANVAS_PRESETS[0],
+          tracks,
+          mediaFiles,
+          duration: d.duration ?? 60,
+          zoom: d.zoom ?? 1,
+          snapping: d.snapping ?? true,
+          projectFilePath: result.filePath ?? null,
+          dirty: false,
+          history: [],
+          historyIndex: -1,
+          selectedClipId: null,
+          currentTime: 0,
+          isPlaying: false,
+        });
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  },
 
   // Panels
   activeTab: "assets",
@@ -478,7 +605,7 @@ export const useEditorStore = create<EditorStore>()((set, get) => ({
         ...state.history.slice(0, state.historyIndex + 1),
         state.tracks.map((t) => ({ ...t, clips: [...t.clips] })),
       ];
-      return { history: newHistory, historyIndex: newHistory.length - 1 };
+      return { history: newHistory, historyIndex: newHistory.length - 1, dirty: true };
     }),
   undo: () =>
     set((state) => {

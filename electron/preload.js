@@ -45,6 +45,16 @@ contextBridge.exposeInMainWorld("electronAPI", {
     return () => ipcRenderer.removeListener("export:error", handler);
   },
 
+  // Project save / load
+  saveProject: (opts) => ipcRenderer.invoke("project:save", opts),
+  loadProject: (opts) => ipcRenderer.invoke("project:load", opts || {}),
+
+  // Media file management
+  importMediaFile: (opts) => ipcRenderer.invoke("media:import-file", opts),
+  writeMediaFile: (opts) => ipcRenderer.invoke("media:write-file", opts),
+  pathToMediaUrl: (absolutePath) => ipcRenderer.invoke("media:path-to-url", absolutePath),
+  mediaFileExists: (filePath) => ipcRenderer.invoke("media:file-exists", filePath),
+
   // Platform info
   platform: process.platform,
 });

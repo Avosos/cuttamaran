@@ -107,11 +107,13 @@ export interface ProjectMeta {
   trackCount: number;
   clipCount: number;
   thumbnail?: string; // base64 or color
+  filePath?: string;  // path to .cutta file on disk
 }
 
 interface ProjectLauncherProps {
   onOpenProject: (project: ProjectMeta) => void;
   onCreateProject: (name: string, resolution: string) => void;
+  onOpenFromDisk?: () => void;
 }
 
 // ─── LocalStorage helpers ────────────────────────────────
@@ -655,7 +657,7 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
 }
 
 // ─── Main Component ──────────────────────────────────────
-export default function ProjectLauncher({ onOpenProject, onCreateProject }: ProjectLauncherProps) {
+export default function ProjectLauncher({ onOpenProject, onCreateProject, onOpenFromDisk }: ProjectLauncherProps) {
   const [projects, setProjects] = useState<ProjectMeta[]>([]);
   const [showSettings, setShowSettings] = useState(false);
   const [showNewProject, setShowNewProject] = useState(false);
@@ -780,6 +782,31 @@ export default function ProjectLauncher({ onOpenProject, onCreateProject }: Proj
             <Plus size={15} style={{ flexShrink: 0 }} />
             New Project
           </button>
+
+          {onOpenFromDisk && (
+            <button
+              onClick={onOpenFromDisk}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                width: "100%",
+                padding: "10px 14px",
+                borderRadius: 12,
+                fontSize: 13,
+                fontWeight: 500,
+                border: "1px solid var(--border-subtle)",
+                cursor: "pointer",
+                marginBottom: 12,
+                whiteSpace: "nowrap",
+                background: "var(--bg-tertiary)",
+                color: "var(--text-secondary)",
+              }}
+            >
+              <FolderOpen size={15} style={{ flexShrink: 0 }} />
+              Open File
+            </button>
+          )}
 
           <NavItem icon={<Clock size={16} />} label="Recent" active />
           <NavItem icon={<FolderOpen size={16} />} label="All Projects" />

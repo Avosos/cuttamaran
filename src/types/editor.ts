@@ -10,6 +10,8 @@ export interface MediaFile {
   width?: number;
   height?: number;
   fileSize?: number;
+  /** Absolute path on disk (inside project media/ folder) — persisted in .cutta */
+  diskPath?: string;
 }
 
 export interface TimelineClip {

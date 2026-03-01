@@ -19,6 +19,11 @@ const SHORTCUTS = [
     { keys: ["Delete"], desc: "Delete selected clip" },
     { keys: ["Ctrl", "Scroll"], desc: "Zoom timeline" },
   ]},
+  { category: "File", items: [
+    { keys: ["Ctrl", "S"], desc: "Save project" },
+    { keys: ["Ctrl", "Shift", "S"], desc: "Save As…" },
+    { keys: ["Ctrl", "O"], desc: "Open project" },
+  ]},
   { category: "General", items: [
     { keys: ["?"], desc: "Toggle shortcuts" },
   ]},

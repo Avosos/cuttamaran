@@ -30,6 +30,8 @@ export default function EditorHeader() {
     history,
     canvasSize,
     setCanvasSize,
+    saveProject,
+    loadProject,
   } = useEditorStore();
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -45,6 +47,15 @@ export default function EditorHeader() {
   const [saveFlash, setSaveFlash] = useState(false);
   const resRef = useRef<HTMLDivElement>(null);
 
+  // Actual save-to-disk handler
+  const handleSave = useCallback(async (forceDialog = false) => {
+    const ok = await saveProject(forceDialog);
+    if (ok) {
+      setSaveFlash(true);
+      setTimeout(() => setSaveFlash(false), 1500);
+    }
+  }, [saveProject]);
+
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "z") {
@@ -57,11 +68,14 @@ export default function EditorHeader() {
       }
       if ((e.ctrlKey || e.metaKey) && e.key === "s") {
         e.preventDefault();
-        setSaveFlash(true);
-        setTimeout(() => setSaveFlash(false), 1500);
+        handleSave(e.shiftKey); // Shift+Ctrl+S = Save As
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === "o") {
+        e.preventDefault();
+        loadProject();
       }
     },
-    [undo, redo]
+    [undo, redo, handleSave, loadProject]
   );
 
   useEffect(() => {
@@ -80,12 +94,6 @@ export default function EditorHeader() {
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [resDropdownOpen]);
-
-  // Save flash
-  const handleSave = useCallback(() => {
-    setSaveFlash(true);
-    setTimeout(() => setSaveFlash(false), 1500);
-  }, []);
 
   const iconBtnStyle = (id: string, disabled?: boolean): React.CSSProperties => ({
     display: "flex",
@@ -268,7 +276,7 @@ export default function EditorHeader() {
 
         <div style={{ position: "relative" }}>
           <button
-            onClick={handleSave}
+            onClick={() => handleSave()}
             onMouseEnter={() => setHoveredBtn("save")}
             onMouseLeave={() => setHoveredBtn(null)}
             style={iconBtnStyle("save")}

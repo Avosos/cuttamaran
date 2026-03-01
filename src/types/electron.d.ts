@@ -44,6 +44,28 @@ export interface ElectronAPI {
   onExportDone: (callback: (data: { outputPath: string }) => void) => () => void;
   onExportError: (callback: (message: string) => void) => () => void;
 
+  // Project save / load
+  saveProject: (opts: {
+    filePath?: string;
+    data: Record<string, unknown>;
+  }) => Promise<{ ok: boolean; canceled?: boolean; filePath?: string; error?: string }>;
+  loadProject: (opts?: {
+    filePath?: string;
+  }) => Promise<{ ok: boolean; canceled?: boolean; filePath?: string; data?: Record<string, unknown>; error?: string }>;
+
+  // Media file management
+  importMediaFile: (opts: {
+    sourcePath: string;
+    projectFilePath: string | null;
+  }) => Promise<{ ok: boolean; destPath?: string; fileName?: string; fileSize?: number; error?: string }>;
+  writeMediaFile: (opts: {
+    buffer: ArrayBuffer;
+    fileName: string;
+    projectFilePath: string | null;
+  }) => Promise<{ ok: boolean; destPath?: string; fileName?: string; fileSize?: number; error?: string }>;
+  pathToMediaUrl: (absolutePath: string) => Promise<string>;
+  mediaFileExists: (filePath: string) => Promise<boolean>;
+
   platform: string;
 }
 

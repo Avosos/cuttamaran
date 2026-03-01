@@ -39,6 +39,7 @@ export default function AssetsPanel() {
     removeMediaFile,
     tracks,
     addClipToTrack,
+    projectFilePath,
   } = useEditorStore();
 
   const [isDragging, setIsDragging] = useState(false);
@@ -52,24 +53,26 @@ export default function AssetsPanel() {
     return "video";
   };
 
-  const processFile = useCallback(
-    (file: File) => {
-      const type = getFileType(file);
-      const url = URL.createObjectURL(file);
+  /** Infer ClipType from file extension */
+  const getFileTypeFromName = (name: string): ClipType => {
+    const ext = name.split(".").pop()?.toLowerCase() ?? "";
+    if (["mp4", "webm", "mov", "avi", "mkv"].includes(ext)) return "video";
+    if (["mp3", "wav", "ogg", "aac", "flac"].includes(ext)) return "audio";
+    if (["png", "jpg", "jpeg", "gif", "webp", "svg"].includes(ext)) return "image";
+    return "video";
+  };
 
-      const mediaFile: MediaFile = {
-        id: uuidv4(),
-        name: file.name,
-        type,
-        src: url,
-        duration: type === "image" ? 5 : 0, // Default 5s for images
-        fileSize: file.size,
-      };
-
-      // Get duration for video/audio
+  /**
+   * Probe a media URL to extract duration, dimensions, and thumbnail.
+   * Mutates `mediaFile` in place, then calls addMediaFile when ready.
+   */
+  const probeAndAdd = useCallback(
+    (mediaFile: MediaFile, url: string) => {
+      const type = mediaFile.type;
       if (type === "video" || type === "audio") {
         const el = document.createElement(type === "video" ? "video" : "audio");
         el.src = url;
+        el.preload = "metadata";
         el.addEventListener("loadedmetadata", () => {
           mediaFile.duration = el.duration;
           if (type === "video") {
@@ -87,7 +90,6 @@ export default function AssetsPanel() {
                 canvas.height = 90;
                 canvas.getContext("2d")?.drawImage(video, 0, 0, 160, 90);
                 mediaFile.thumbnail = canvas.toDataURL("image/jpeg", 0.7);
-                // Force re-render by updating the media file
                 addMediaFile(mediaFile);
               },
               { once: true }
@@ -102,6 +104,7 @@ export default function AssetsPanel() {
         img.onload = () => {
           mediaFile.width = img.naturalWidth;
           mediaFile.height = img.naturalHeight;
+          // For images loaded from disk, thumbnail = the src URL itself
           mediaFile.thumbnail = url;
           addMediaFile(mediaFile);
         };
@@ -110,6 +113,92 @@ export default function AssetsPanel() {
       }
     },
     [addMediaFile]
+  );
+
+  /**
+   * Import a File object (from drag-drop or <input>).
+   * In Electron: writes the raw bytes to the project media/ folder,
+   * then uses a persistent local-media:// URL.
+   * In browser: falls back to transient blob URLs.
+   */
+  const processFile = useCallback(
+    async (file: File) => {
+      const type = getFileType(file);
+      const api = window.electronAPI;
+
+      let src: string;
+      let diskPath: string | undefined;
+      let fileSize = file.size;
+
+      if (api) {
+        // Electron path: write raw bytes to project media/ folder
+        const buf = await file.arrayBuffer();
+        const result = await api.writeMediaFile({
+          buffer: buf,
+          fileName: file.name,
+          projectFilePath: projectFilePath,
+        });
+        if (result.ok && result.destPath) {
+          diskPath = result.destPath;
+          fileSize = result.fileSize ?? file.size;
+          src = await api.pathToMediaUrl(diskPath);
+        } else {
+          // Fallback to blob URL if write fails
+          src = URL.createObjectURL(file);
+        }
+      } else {
+        // Browser-only fallback (dev mode without Electron)
+        src = URL.createObjectURL(file);
+      }
+
+      const mediaFile: MediaFile = {
+        id: uuidv4(),
+        name: file.name,
+        type,
+        src,
+        diskPath,
+        duration: type === "image" ? 5 : 0,
+        fileSize,
+      };
+
+      probeAndAdd(mediaFile, src);
+    },
+    [probeAndAdd, projectFilePath]
+  );
+
+  /**
+   * Import media by absolute file path (from Electron native file dialog).
+   * Copies the file into the project media/ folder for persistence.
+   */
+  const processFilePath = useCallback(
+    async (absolutePath: string) => {
+      const api = window.electronAPI;
+      if (!api) return;
+
+      const fileName = absolutePath.split(/[\\/]/).pop() ?? "file";
+      const type = getFileTypeFromName(fileName);
+
+      const result = await api.importMediaFile({
+        sourcePath: absolutePath,
+        projectFilePath: projectFilePath,
+      });
+
+      if (!result.ok || !result.destPath) return;
+
+      const src = await api.pathToMediaUrl(result.destPath);
+      const mediaFile: MediaFile = {
+        id: uuidv4(),
+        name: result.fileName ?? fileName,
+        type,
+        src,
+        diskPath: result.destPath,
+        duration: type === "image" ? 5 : 0,
+        fileSize: result.fileSize,
+      };
+
+      probeAndAdd(mediaFile, src);
+    },
+    [probeAndAdd, projectFilePath]
   );
 
   const handleDrop = useCallback(
@@ -130,6 +219,17 @@ export default function AssetsPanel() {
     },
     [processFile]
   );
+
+  /** Import via Electron's native file dialog (uses file paths, not File objects) */
+  const handleNativeImport = useCallback(async () => {
+    const api = window.electronAPI;
+    if (!api) return;
+    const result = await api.openFileDialog();
+    if (result.canceled || !result.filePaths.length) return;
+    for (const filePath of result.filePaths) {
+      await processFilePath(filePath);
+    }
+  }, [processFilePath]);
 
   const addToTimeline = useCallback(
     (media: MediaFile) => {
@@ -300,7 +400,13 @@ export default function AssetsPanel() {
                 }}
                 onDragLeave={() => setIsDragging(false)}
                 onDrop={handleDrop}
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => {
+                  if (window.electronAPI) {
+                    handleNativeImport();
+                  } else {
+                    fileInputRef.current?.click();
+                  }
+                }}
               >
                 <input
                   ref={fileInputRef}

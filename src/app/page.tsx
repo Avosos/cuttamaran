@@ -21,14 +21,30 @@ type AppScreen = "splash" | "launcher" | "editor";
 export default function Home() {
   const [screen, setScreen] = useState<AppScreen>("splash");
   const [activeProject, setActiveProject] = useState<ProjectMeta | null>(null);
-  const { setProjectName, setCanvasSize } = useEditorStore();
+  const { setProjectName, setCanvasSize, loadProject } = useEditorStore();
 
   const handleSplashFinished = useCallback(() => {
     setScreen("launcher");
   }, []);
 
   const handleOpenProject = useCallback(
-    (project: ProjectMeta) => {
+    async (project: ProjectMeta) => {
+      // If the project has a filePath stored, load from disk
+      if (project.filePath) {
+        const ok = await loadProject(project.filePath);
+        if (ok) {
+          setActiveProject(project);
+          const projects = loadProjects();
+          const updated = projects.map((p) =>
+            p.id === project.id ? { ...p, updatedAt: Date.now() } : p
+          );
+          saveProjects(updated);
+          window.electronAPI?.enterEditor();
+          setScreen("editor");
+          return;
+        }
+        // If file load failed (e.g. deleted), fall through to in-memory open
+      }
       setActiveProject(project);
       setProjectName(project.name);
       // Parse resolution
@@ -46,8 +62,16 @@ export default function Home() {
       window.electronAPI?.enterEditor();
       setScreen("editor");
     },
-    [setProjectName, setCanvasSize]
+    [setProjectName, setCanvasSize, loadProject]
   );
+
+  const handleOpenFromDisk = useCallback(async () => {
+    const ok = await loadProject();
+    if (ok) {
+      window.electronAPI?.enterEditor();
+      setScreen("editor");
+    }
+  }, [loadProject]);
 
   const handleCreateProject = useCallback(
     (name: string, resolution: string) => {
@@ -70,6 +94,15 @@ export default function Home() {
       if (w && h) {
         setCanvasSize({ name: `${w}×${h}`, width: w, height: h });
       }
+      // Reset to empty tracks for a new project
+      useEditorStore.setState({
+        tracks: [],
+        mediaFiles: [],
+        projectFilePath: null,
+        dirty: false,
+        history: [],
+        historyIndex: -1,
+      });
       // Expand window to editor size
       window.electronAPI?.enterEditor();
       setScreen("editor");
@@ -84,6 +117,7 @@ export default function Home() {
         <ProjectLauncher
           onOpenProject={handleOpenProject}
           onCreateProject={handleCreateProject}
+          onOpenFromDisk={handleOpenFromDisk}
         />
       )}
       {screen === "editor" && <EditorLayout />}
