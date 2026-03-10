@@ -2,6 +2,8 @@
 
 import React, { useEffect, useRef } from "react";
 import { AlertTriangle } from "lucide-react";
+import { useSettings } from "@/hooks/use-settings";
+import { getTranslations } from "@/lib/i18n";
 
 interface UnsavedDialogProps {
   onSave: () => void;
@@ -10,6 +12,8 @@ interface UnsavedDialogProps {
 }
 
 export default function UnsavedDialog({ onSave, onDiscard, onCancel }: UnsavedDialogProps) {
+  const [settings] = useSettings();
+  const t = getTranslations(settings.language);
   const overlayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -66,17 +70,17 @@ export default function UnsavedDialog({ onSave, onDiscard, onCancel }: UnsavedDi
           </div>
           <div>
             <h2 style={{ fontSize: 15, fontWeight: 600, margin: 0, color: "var(--text-primary)" }}>
-              Unsaved Changes
+              {t.common.unsavedChanges}
             </h2>
             <p style={{ fontSize: 12, margin: 0, marginTop: 2, color: "var(--text-muted)" }}>
-              Your project has unsaved changes.
+              {t.common.unsavedChangesDesc}
             </p>
           </div>
         </div>
 
         {/* Message */}
         <p style={{ fontSize: 13, margin: 0, color: "var(--text-secondary)", lineHeight: 1.5 }}>
-          Do you want to save your changes before closing? Any unsaved work will be lost.
+          {t.common.unsavedChangesMessage}
         </p>
 
         {/* Buttons */}
@@ -94,7 +98,7 @@ export default function UnsavedDialog({ onSave, onDiscard, onCancel }: UnsavedDi
               cursor: "pointer",
             }}
           >
-            Don&apos;t Save
+            {t.common.dontSave}
           </button>
           <button
             onClick={onCancel}
@@ -109,7 +113,7 @@ export default function UnsavedDialog({ onSave, onDiscard, onCancel }: UnsavedDi
               cursor: "pointer",
             }}
           >
-            Cancel
+            {t.common.cancel}
           </button>
           <button
             onClick={onSave}
@@ -125,7 +129,7 @@ export default function UnsavedDialog({ onSave, onDiscard, onCancel }: UnsavedDi
               boxShadow: "0 2px 8px var(--accent-glow)",
             }}
           >
-            Save
+            {t.common.save}
           </button>
         </div>
       </div>

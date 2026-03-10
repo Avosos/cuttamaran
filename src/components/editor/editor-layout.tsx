@@ -10,7 +10,7 @@ import KeyboardShortcuts from "@/components/editor/keyboard-shortcuts";
 import UnsavedDialog from "@/components/editor/unsaved-dialog";
 import { useEditorStore } from "@/stores/editor-store";
 import { useGlobalShortcuts } from "@/hooks/use-global-shortcuts";
-import { useSettings } from "@/hooks/use-settings";
+import { useSettings } from \"@/hooks/use-settings\";\nimport { getTranslations } from \"@/lib/i18n\";
 
 const MIN_PANEL_WIDTH = 200;
 const MIN_TIMELINE_HEIGHT = 150;
@@ -273,6 +273,8 @@ export default function EditorLayout() {
 function StatusBar() {
   const { tracks, zoom, currentTime, canvasSize, snapping } =
     useEditorStore();
+  const [settings] = useSettings();
+  const t = getTranslations(settings.language);
 
   const totalClips = tracks.reduce(
     (sum, t) => sum + t.clips.length,
@@ -297,15 +299,15 @@ function StatusBar() {
     >
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <span>
-          {tracks.length} tracks · {totalClips} clips
+          {t.common.tracksClips.replace("{tracks}", String(tracks.length)).replace("{clips}", String(totalClips))}
         </span>
         <span>
           {canvasSize.width}×{canvasSize.height}
         </span>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <span>Snap: {snapping ? "On" : "Off"}</span>
-        <span>Zoom: {(zoom * 100).toFixed(0)}%</span>
+        <span>{snapping ? t.common.snapOn : t.common.snapOff}</span>
+        <span>{t.common.zoom.replace("{value}", (zoom * 100).toFixed(0))}</span>
         <span style={{ fontFamily: "monospace" }}>{currentTime.toFixed(2)}s</span>
       </div>
     </div>

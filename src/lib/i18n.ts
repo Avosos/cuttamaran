@@ -416,6 +416,31 @@ export interface Translations {
     export: string;
     custom: string;
     reset: string;
+    close: string;
+    minimize: string;
+    maximize: string;
+    restore: string;
+    unsavedChanges: string;
+    unsavedChangesDesc: string;
+    unsavedChangesMessage: string;
+    dontSave: string;
+    // Splash
+    initializing: string;
+    loadingCoreModules: string;
+    preparingWorkspace: string;
+    loadingPlugins: string;
+    settingUpTimeline: string;
+    almostReady: string;
+    welcomeToCuttamaran: string;
+    videoEditor: string;
+    // Status bar
+    tracksClips: string;
+    snapOn: string;
+    snapOff: string;
+    zoom: string;
+    on: string;
+    off: string;
+    pressKeys: string;
   };
 }
 
@@ -818,6 +843,29 @@ const en: Translations = {
     export: "Export",
     custom: "Custom",
     reset: "Reset",
+    close: "Close",
+    minimize: "Minimize",
+    maximize: "Maximize",
+    restore: "Restore",
+    unsavedChanges: "Unsaved Changes",
+    unsavedChangesDesc: "Your project has unsaved changes.",
+    unsavedChangesMessage: "Do you want to save your changes before closing? Any unsaved work will be lost.",
+    dontSave: "Don't Save",
+    initializing: "Initializing...",
+    loadingCoreModules: "Loading core modules...",
+    preparingWorkspace: "Preparing workspace...",
+    loadingPlugins: "Loading plugins...",
+    settingUpTimeline: "Setting up timeline engine...",
+    almostReady: "Almost ready...",
+    welcomeToCuttamaran: "Welcome to Cuttamaran",
+    videoEditor: "Video Editor",
+    tracksClips: "{tracks} tracks · {clips} clips",
+    snapOn: "Snap: On",
+    snapOff: "Snap: Off",
+    zoom: "Zoom: {value}%",
+    on: "On",
+    off: "Off",
+    pressKeys: "Press keys…",
   },
 };
 
@@ -1220,6 +1268,29 @@ const de: Translations = {
     export: "Exportieren",
     custom: "Benutzerdefiniert",
     reset: "Zurücksetzen",
+    close: "Schließen",
+    minimize: "Minimieren",
+    maximize: "Maximieren",
+    restore: "Wiederherstellen",
+    unsavedChanges: "Ungespeicherte Änderungen",
+    unsavedChangesDesc: "Dein Projekt hat ungespeicherte Änderungen.",
+    unsavedChangesMessage: "Möchtest du deine Änderungen vor dem Schließen speichern? Ungespeicherte Arbeit geht verloren.",
+    dontSave: "Nicht speichern",
+    initializing: "Initialisierung...",
+    loadingCoreModules: "Kernmodule laden...",
+    preparingWorkspace: "Arbeitsbereich vorbereiten...",
+    loadingPlugins: "Plugins laden...",
+    settingUpTimeline: "Timeline-Engine einrichten...",
+    almostReady: "Fast bereit...",
+    welcomeToCuttamaran: "Willkommen bei Cuttamaran",
+    videoEditor: "Video-Editor",
+    tracksClips: "{tracks} Spuren · {clips} Clips",
+    snapOn: "Einrasten: An",
+    snapOff: "Einrasten: Aus",
+    zoom: "Zoom: {value}%",
+    on: "An",
+    off: "Aus",
+    pressKeys: "Tasten drücken…",
   },
 };
 

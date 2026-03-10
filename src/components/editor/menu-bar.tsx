@@ -3,6 +3,8 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useEditorStore } from "@/stores/editor-store";
 import { useShortcutStore, formatShortcut } from "@/stores/shortcut-store";
+import { useSettings } from "@/hooks/use-settings";
+import { getTranslations } from "@/lib/i18n";
 import {
   addCustomTemplate,
   pickTemplateGradient,
@@ -27,6 +29,8 @@ interface MenuDefinition {
 
 // ─── Menu Bar ────────────────────────────────────────────
 export default function MenuBar() {
+  const [settings] = useSettings();
+  const t = getTranslations(settings.language);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
   const [hoveredItem, setHoveredItem] = useState<number | null>(null);
@@ -107,13 +111,13 @@ export default function MenuBar() {
   }, [tracks, setSelectedClipId]);
 
   const handleSaveAsTemplate = useCallback(() => {
-    const name = window.prompt("Template name:");
+    const name = window.prompt(t.menu.templateNamePrompt);
     if (!name || !name.trim()) return;
-    const desc = window.prompt("Short description (optional):") ?? "";
-    const presetTracks: PresetTrack[] = tracks.map((t) => ({
-      name: t.name,
-      type: t.type,
-      height: t.height,
+    const desc = window.prompt(t.menu.templateDescPrompt) ?? "";
+    const presetTracks: PresetTrack[] = tracks.map((tr) => ({
+      name: tr.name,
+      type: tr.type,
+      height: tr.height,
     }));
     const tpl: CustomTemplate = {
       id: crypto.randomUUID(),
@@ -125,8 +129,8 @@ export default function MenuBar() {
       gradient: pickTemplateGradient(),
     };
     addCustomTemplate(tpl);
-    alert(`Template "${tpl.name}" saved!`);
-  }, [tracks, canvasSize]);
+    alert(t.menu.templateSaved);
+  }, [tracks, canvasSize, t]);
 
   // ── Gather all clips sorted by startTime for navigation ─
   const allClipsSorted = tracks
@@ -171,92 +175,92 @@ export default function MenuBar() {
   // ── Menu definitions ───────────────────────────────────
   const menus: MenuDefinition[] = [
     {
-      label: "File",
+      label: t.menu.file,
       items: [
-        { label: "New Project", shortcut: formatShortcut(shortcuts.new_project), action: () => {
-          if (confirm("Create a new project? Unsaved changes will be lost.")) {
+        { label: t.menu.newProject, shortcut: formatShortcut(shortcuts.new_project), action: () => {
+          if (confirm(t.launcher.unsavedChangesConfirm)) {
             window.location.reload();
           }
         }},
-        { label: "Open Project…", shortcut: formatShortcut(shortcuts.open_project), action: () => loadProject() },
+        { label: t.menu.openFile, shortcut: formatShortcut(shortcuts.open_project), action: () => loadProject() },
         { separator: true, label: "---" },
-        { label: "Save", shortcut: formatShortcut(shortcuts.save), action: () => handleSave(false) },
-        { label: "Save As…", shortcut: formatShortcut(shortcuts.save_as), action: () => handleSave(true) },
+        { label: t.menu.save, shortcut: formatShortcut(shortcuts.save), action: () => handleSave(false) },
+        { label: t.menu.saveAs, shortcut: formatShortcut(shortcuts.save_as), action: () => handleSave(true) },
         { separator: true, label: "---" },
-        { label: "Save as Template…", action: handleSaveAsTemplate },
+        { label: t.menu.saveAsTemplate, action: handleSaveAsTemplate },
         { separator: true, label: "---" },
-        { label: "Export…", shortcut: formatShortcut(shortcuts.export), action: () => {
+        { label: t.menu.export, shortcut: formatShortcut(shortcuts.export), action: () => {
           window.dispatchEvent(new CustomEvent("cuttamaran:open-export"));
         }},
         { separator: true, label: "---" },
-        { label: "Settings…", action: () => {
+        { label: t.menu.settings, action: () => {
           window.dispatchEvent(new CustomEvent("cuttamaran:open-settings"));
         }},
         { separator: true, label: "---" },
-        { label: "Quit", shortcut: "Alt+F4", action: () => {
+        { label: t.menu.quit, shortcut: "Alt+F4", action: () => {
           window.electronAPI?.close();
         }},
       ],
     },
     {
-      label: "Edit",
+      label: t.menu.edit,
       items: [
-        { label: "Undo", shortcut: formatShortcut(shortcuts.undo), action: undo, disabled: past.length === 0 },
-        { label: "Redo", shortcut: formatShortcut(shortcuts.redo), action: redo, disabled: future.length === 0 },
+        { label: t.menu.undo, shortcut: formatShortcut(shortcuts.undo), action: undo, disabled: past.length === 0 },
+        { label: t.menu.redo, shortcut: formatShortcut(shortcuts.redo), action: redo, disabled: future.length === 0 },
         { separator: true, label: "---" },
-        { label: "Split Clip", shortcut: formatShortcut(shortcuts.split_clip), action: handleSplit, disabled: !canSplit },
-        { label: "Duplicate Clip", shortcut: formatShortcut(shortcuts.duplicate_clip), action: handleDuplicate, disabled: !selectedClipId },
-        { label: "Delete Clip", shortcut: formatShortcut(shortcuts.delete_clip), action: handleDelete, disabled: !selectedClipId },
+        { label: t.menu.splitClip, shortcut: formatShortcut(shortcuts.split_clip), action: handleSplit, disabled: !canSplit },
+        { label: t.menu.duplicateClip, shortcut: formatShortcut(shortcuts.duplicate_clip), action: handleDuplicate, disabled: !selectedClipId },
+        { label: t.menu.deleteClip, shortcut: formatShortcut(shortcuts.delete_clip), action: handleDelete, disabled: !selectedClipId },
         { separator: true, label: "---" },
-        { label: "Select All", shortcut: formatShortcut(shortcuts.select_all), action: handleSelectAll },
-        { label: "Deselect", shortcut: formatShortcut(shortcuts.deselect), action: () => setSelectedClipId(null) },
+        { label: t.menu.selectAll, shortcut: formatShortcut(shortcuts.select_all), action: handleSelectAll },
+        { label: t.menu.deselectAll, shortcut: formatShortcut(shortcuts.deselect), action: () => setSelectedClipId(null) },
         { separator: true, label: "---" },
-        { label: "Add Video Track", action: () => addTrack("video") },
-        { label: "Add Audio Track", action: () => addTrack("audio") },
+        { label: t.menu.addVideoTrack, action: () => addTrack("video") },
+        { label: t.menu.addAudioTrack, action: () => addTrack("audio") },
       ],
     },
     {
-      label: "Playback",
+      label: t.menu.playback,
       items: [
-        { label: isPlaying ? "Pause" : "Play", shortcut: formatShortcut(shortcuts.play_pause), action: togglePlayback },
+        { label: isPlaying ? t.menu.pause : t.menu.play, shortcut: formatShortcut(shortcuts.play_pause), action: togglePlayback },
         { separator: true, label: "---" },
-        { label: "Back 1 Second", shortcut: formatShortcut(shortcuts.back_1s), action: () => setCurrentTime(Math.max(0, currentTime - 1)) },
-        { label: "Forward 1 Second", shortcut: formatShortcut(shortcuts.forward_1s), action: () => setCurrentTime(Math.min(duration, currentTime + 1)) },
-        { label: "Back 5 Seconds", shortcut: formatShortcut(shortcuts.back_5s), action: () => setCurrentTime(Math.max(0, currentTime - 5)) },
-        { label: "Forward 5 Seconds", shortcut: formatShortcut(shortcuts.forward_5s), action: () => setCurrentTime(Math.min(duration, currentTime + 5)) },
+        { label: t.menu.back1s, shortcut: formatShortcut(shortcuts.back_1s), action: () => setCurrentTime(Math.max(0, currentTime - 1)) },
+        { label: t.menu.forward1s, shortcut: formatShortcut(shortcuts.forward_1s), action: () => setCurrentTime(Math.min(duration, currentTime + 1)) },
+        { label: t.menu.back5s, shortcut: formatShortcut(shortcuts.back_5s), action: () => setCurrentTime(Math.max(0, currentTime - 5)) },
+        { label: t.menu.forward5s, shortcut: formatShortcut(shortcuts.forward_5s), action: () => setCurrentTime(Math.min(duration, currentTime + 5)) },
         { separator: true, label: "---" },
-        { label: "Go to Start", shortcut: formatShortcut(shortcuts.go_to_start), action: () => setCurrentTime(0) },
-        { label: "Go to End", shortcut: formatShortcut(shortcuts.go_to_end), action: () => setCurrentTime(duration) },
-        { label: "Next Clip", shortcut: formatShortcut(shortcuts.next_clip), action: navigateToNextClip, disabled: allClipsSorted.length === 0 },
-        { label: "Previous Clip", shortcut: formatShortcut(shortcuts.prev_clip), action: navigateToPrevClip, disabled: allClipsSorted.length === 0 },
-        { label: "Next Clip End", shortcut: formatShortcut(shortcuts.next_clip_end), action: navigateToNextClipEnd, disabled: allClipsSorted.length === 0 },
+        { label: t.menu.goToStart, shortcut: formatShortcut(shortcuts.go_to_start), action: () => setCurrentTime(0) },
+        { label: t.menu.goToEnd, shortcut: formatShortcut(shortcuts.go_to_end), action: () => setCurrentTime(duration) },
+        { label: t.menu.nextClip, shortcut: formatShortcut(shortcuts.next_clip), action: navigateToNextClip, disabled: allClipsSorted.length === 0 },
+        { label: t.menu.prevClip, shortcut: formatShortcut(shortcuts.prev_clip), action: navigateToPrevClip, disabled: allClipsSorted.length === 0 },
+        { label: t.menu.nextClipEnd, shortcut: formatShortcut(shortcuts.next_clip_end), action: navigateToNextClipEnd, disabled: allClipsSorted.length === 0 },
       ],
     },
     {
-      label: "View",
+      label: t.menu.view,
       items: [
-        { label: "Zoom In", shortcut: formatShortcut(shortcuts.zoom_in), action: () => setZoom(Math.min(zoom + 0.2, 5)) },
-        { label: "Zoom Out", shortcut: formatShortcut(shortcuts.zoom_out), action: () => setZoom(Math.max(zoom - 0.2, 0.2)) },
-        { label: "Reset Zoom", shortcut: formatShortcut(shortcuts.reset_zoom), action: () => setZoom(1) },
+        { label: t.menu.zoomIn, shortcut: formatShortcut(shortcuts.zoom_in), action: () => setZoom(Math.min(zoom + 0.2, 5)) },
+        { label: t.menu.zoomOut, shortcut: formatShortcut(shortcuts.zoom_out), action: () => setZoom(Math.max(zoom - 0.2, 0.2)) },
+        { label: t.menu.resetZoom, shortcut: formatShortcut(shortcuts.reset_zoom), action: () => setZoom(1) },
         { separator: true, label: "---" },
-        { label: "Snapping", action: toggleSnapping, checked: snapping },
-        { label: "Properties Panel", action: () => setPropertiesPanelOpen(!propertiesPanelOpen), checked: propertiesPanelOpen },
+        { label: t.menu.snapping, action: toggleSnapping, checked: snapping },
+        { label: t.menu.propertiesPanel, action: () => setPropertiesPanelOpen(!propertiesPanelOpen), checked: propertiesPanelOpen },
         { separator: true, label: "---" },
-        { label: "Assets", action: () => setActiveTab("assets"), checked: activeTab === "assets" },
-        { label: "Text", action: () => setActiveTab("text"), checked: activeTab === "text" },
-        { label: "Audio", action: () => setActiveTab("audio"), checked: activeTab === "audio" },
-        { label: "Transitions", action: () => setActiveTab("transitions"), checked: activeTab === "transitions" },
-        { label: "Effects", action: () => setActiveTab("effects"), checked: activeTab === "effects" },
+        { label: t.menu.tabAssets, action: () => setActiveTab("assets"), checked: activeTab === "assets" },
+        { label: t.menu.tabText, action: () => setActiveTab("text"), checked: activeTab === "text" },
+        { label: t.menu.tabAudio, action: () => setActiveTab("audio"), checked: activeTab === "audio" },
+        { label: t.menu.tabTransitions, action: () => setActiveTab("transitions"), checked: activeTab === "transitions" },
+        { label: t.menu.tabEffects, action: () => setActiveTab("effects"), checked: activeTab === "effects" },
       ],
     },
     {
-      label: "Help",
+      label: t.menu.help,
       items: [
-        { label: "Keyboard Shortcuts", shortcut: formatShortcut(shortcuts.toggle_shortcuts), action: () => {
+        { label: t.menu.keyboardShortcuts, shortcut: formatShortcut(shortcuts.toggle_shortcuts), action: () => {
           window.dispatchEvent(new CustomEvent("cuttamaran:toggle-shortcuts"));
         }},
         { separator: true, label: "---" },
-        { label: "About Cuttamaran", action: () => {
+        { label: t.menu.about, action: () => {
           window.dispatchEvent(new CustomEvent("cuttamaran:open-about"));
         }},
       ],

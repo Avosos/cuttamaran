@@ -2,23 +2,27 @@
 
 import React, { useEffect, useState } from "react";
 import { Scissors } from "lucide-react";
+import { useSettings } from "@/hooks/use-settings";
+import { getTranslations } from "@/lib/i18n";
 
 interface SplashScreenProps {
   onFinished: () => void;
 }
 
 export default function SplashScreen({ onFinished }: SplashScreenProps) {
+  const [settings] = useSettings();
+  const t = getTranslations(settings.language);
   const [progress, setProgress] = useState(0);
-  const [statusText, setStatusText] = useState("Initializing...");
+  const [statusText, setStatusText] = useState(t.common.initializing);
 
   useEffect(() => {
     const steps = [
-      { at: 15, text: "Loading core modules..." },
-      { at: 35, text: "Preparing workspace..." },
-      { at: 55, text: "Loading plugins..." },
-      { at: 75, text: "Setting up timeline engine..." },
-      { at: 90, text: "Almost ready..." },
-      { at: 100, text: "Welcome to Cuttamaran" },
+      { at: 15, text: t.common.loadingCoreModules },
+      { at: 35, text: t.common.preparingWorkspace },
+      { at: 55, text: t.common.loadingPlugins },
+      { at: 75, text: t.common.settingUpTimeline },
+      { at: 90, text: t.common.almostReady },
+      { at: 100, text: t.common.welcomeToCuttamaran },
     ];
 
     let frame: number;
@@ -102,7 +106,7 @@ export default function SplashScreen({ onFinished }: SplashScreenProps) {
           animation: "splashFadeUp 0.6s 0.35s ease-out both",
         }}
       >
-        Video Editor
+        {t.common.videoEditor}
       </p>
 
       {/* Progress bar */}

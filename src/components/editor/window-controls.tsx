@@ -2,8 +2,12 @@
 
 import React, { useState, useEffect } from "react";
 import { Minus, Square, X, Copy } from "lucide-react";
+import { useSettings } from "@/hooks/use-settings";
+import { getTranslations } from "@/lib/i18n";
 
 export default function WindowControls() {
+  const [settings] = useSettings();
+  const t = getTranslations(settings.language);
   const [isMaximized, setIsMaximized] = useState(false);
   const [hoveredBtn, setHoveredBtn] = useState<string | null>(null);
 
@@ -46,7 +50,7 @@ export default function WindowControls() {
           ...btnBase,
           background: hoveredBtn === "min" ? "rgba(255,255,255,0.1)" : "transparent",
         }}
-        title="Minimize"
+        title={t.common.minimize}
       >
         <Minus size={14} style={{ color: hoveredBtn === "min" ? "var(--text-primary)" : "var(--text-secondary)" }} />
       </button>
@@ -58,7 +62,7 @@ export default function WindowControls() {
           ...btnBase,
           background: hoveredBtn === "max" ? "rgba(255,255,255,0.1)" : "transparent",
         }}
-        title={isMaximized ? "Restore" : "Maximize"}
+        title={isMaximized ? t.common.restore : t.common.maximize}
       >
         {isMaximized ? (
           <Copy size={12} style={{ color: hoveredBtn === "max" ? "var(--text-primary)" : "var(--text-secondary)", transform: "rotate(180deg)" }} />
@@ -74,7 +78,7 @@ export default function WindowControls() {
           ...btnBase,
           background: hoveredBtn === "close" ? "rgba(239,68,68,0.9)" : "transparent",
         }}
-        title="Close"
+        title={t.common.close}
       >
         <X size={14} style={{ color: hoveredBtn === "close" ? "#ffffff" : "var(--text-secondary)" }} />
       </button>
