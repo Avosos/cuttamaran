@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useSyncExternalStore } from "react";
+import type { Language } from "@/lib/i18n";
 
 // ── Types ────────────────────────────────────────────────
 export type AccentColor = "purple" | "orange" | "green";
@@ -12,6 +13,7 @@ export interface AppSettings {
   theme: "dark" | "light";
   previewQuality: "low" | "medium" | "high";
   accentColor: AccentColor;
+  language: Language;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -21,6 +23,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   theme: "dark",
   previewQuality: "high",
   accentColor: "purple",
+  language: "en",
 };
 
 const SETTINGS_KEY = "cuttamaran_settings";
