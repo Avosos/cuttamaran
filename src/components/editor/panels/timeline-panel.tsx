@@ -1330,7 +1330,7 @@ function ClipContextMenu({
     setPropertiesPanelOpen,
     tracks,
   } = useEditorStore();
-  const settings = useSettings();
+  const [settings] = useSettings();
   const t = getTranslations(settings.language);
 
   const menuRef = useRef<HTMLDivElement>(null);

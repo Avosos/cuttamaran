@@ -49,7 +49,7 @@ export default function AssetsPanel() {
     projectFilePath,
   } = useEditorStore();
 
-  const settings = useSettings();
+  const [settings] = useSettings();
   const t = getTranslations(settings.language);
 
   const tabLabels: Record<string, string> = {
@@ -627,7 +627,7 @@ export default function AssetsPanel() {
 
 function TextPanel() {
   const { tracks, addClipToTrack, currentTime } = useEditorStore();
-  const settings = useSettings();
+  const [settings] = useSettings();
   const t = getTranslations(settings.language);
 
   const textPresets = [
@@ -757,7 +757,7 @@ function TextPanel() {
 }
 
 function AudioPanel() {
-  const settings = useSettings();
+  const [settings] = useSettings();
   const t = getTranslations(settings.language);
 
   return (
@@ -778,7 +778,7 @@ function AudioPanel() {
 
 function EffectsPanel() {
   const { selectedClipId, tracks, addEffect } = useEditorStore();
-  const settings = useSettings();
+  const [settings] = useSettings();
   const t = getTranslations(settings.language);
 
   const selectedClip = selectedClipId
@@ -890,7 +890,7 @@ function EffectsPanel() {
 }
 
 function StickersPanel() {
-  const settings = useSettings();
+  const [settings] = useSettings();
   const t = getTranslations(settings.language);
 
   return (
@@ -911,7 +911,7 @@ const LIBRARY_CATEGORIES = ["All", "Clips", "Segments", "Intros", "Outros", "Cus
 
 function LibraryPanel() {
   const { tracks, addClipToTrack, addTrack, selectedClipId, currentTime } = useEditorStore();
-  const settings = useSettings();
+  const [settings] = useSettings();
   const t = getTranslations(settings.language);
 
   const libCategoryLabels: Record<string, string> = {

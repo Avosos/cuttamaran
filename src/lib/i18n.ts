@@ -43,6 +43,24 @@ export interface Translations {
     toggleSnap: string;
     keyboardShortcuts: string;
     aboutCuttamaran: string;
+    settings: string;
+    quit: string;
+    duplicateClip: string;
+    addVideoTrack: string;
+    addAudioTrack: string;
+    play: string;
+    pause: string;
+    nextClip: string;
+    prevClip: string;
+    nextClipEnd: string;
+    snapping: string;
+    propertiesPanel: string;
+    tabAssets: string;
+    tabText: string;
+    tabAudio: string;
+    tabTransitions: string;
+    tabEffects: string;
+    about: string;
   };
   // ─── Editor Header ──────────────────────────
   header: {
@@ -548,6 +566,24 @@ const en: Translations = {
     toggleSnap: "Toggle Snap",
     keyboardShortcuts: "Keyboard Shortcuts…",
     aboutCuttamaran: "About Cuttamaran",
+    settings: "Settings",
+    quit: "Quit",
+    duplicateClip: "Duplicate Clip",
+    addVideoTrack: "Add Video Track",
+    addAudioTrack: "Add Audio Track",
+    play: "Play",
+    pause: "Pause",
+    nextClip: "Next Clip",
+    prevClip: "Previous Clip",
+    nextClipEnd: "Next Clip End",
+    snapping: "Snapping",
+    propertiesPanel: "Properties Panel",
+    tabAssets: "Assets",
+    tabText: "Text",
+    tabAudio: "Audio",
+    tabTransitions: "Transitions",
+    tabEffects: "Effects",
+    about: "About Cuttamaran",
   },
   header: {
     appName: "Cuttamaran",
@@ -1040,6 +1076,24 @@ const de: Translations = {
     toggleSnap: "Einrasten umschalten",
     keyboardShortcuts: "Tastenkürzel…",
     aboutCuttamaran: "Über Cuttamaran",
+    settings: "Einstellungen",
+    quit: "Beenden",
+    duplicateClip: "Clip duplizieren",
+    addVideoTrack: "Videospur hinzufügen",
+    addAudioTrack: "Audiospur hinzufügen",
+    play: "Abspielen",
+    pause: "Pause",
+    nextClip: "Nächster Clip",
+    prevClip: "Vorheriger Clip",
+    nextClipEnd: "Nächstes Clipende",
+    snapping: "Einrasten",
+    propertiesPanel: "Eigenschaftenpanel",
+    tabAssets: "Medien",
+    tabText: "Text",
+    tabAudio: "Audio",
+    tabTransitions: "Übergänge",
+    tabEffects: "Effekte",
+    about: "Über Cuttamaran",
   },
   header: {
     appName: "Cuttamaran",

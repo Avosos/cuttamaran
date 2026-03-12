@@ -10,7 +10,8 @@ import KeyboardShortcuts from "@/components/editor/keyboard-shortcuts";
 import UnsavedDialog from "@/components/editor/unsaved-dialog";
 import { useEditorStore } from "@/stores/editor-store";
 import { useGlobalShortcuts } from "@/hooks/use-global-shortcuts";
-import { useSettings } from \"@/hooks/use-settings\";\nimport { getTranslations } from \"@/lib/i18n\";
+import { useSettings } from "@/hooks/use-settings";
+import { getTranslations } from "@/lib/i18n";
 
 const MIN_PANEL_WIDTH = 200;
 const MIN_TIMELINE_HEIGHT = 150;
