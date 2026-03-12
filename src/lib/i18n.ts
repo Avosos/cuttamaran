@@ -94,6 +94,9 @@ export interface Translations {
     aboutDescription: string;
     language: string;
     languageDesc: string;
+    browse: string;
+    notSetClickBrowse: string;
+    defaultResolution: string;
   };
   // ─── Export Modal ───────────────────────────
   exportModal: {
@@ -144,6 +147,15 @@ export interface Translations {
     exportFailed: string;
     exportFailedDesc: string;
     tryAgain: string;
+    preparing: string;
+    loadingMedia: string;
+    rendering: string;
+    cancelled: string;
+    exportRequiresElectron: string;
+    close: string;
+    exportingFormat: string;
+    aac: string;
+    aacDesc: string;
   };
   // ─── Project Launcher ──────────────────────
   launcher: {
@@ -186,6 +198,27 @@ export interface Translations {
     square: string;
     uhd4k: string;
     social45: string;
+    skipForNow: string;
+    noFolderSelected: string;
+    changeLaterInSettings: string;
+    defaultResolution: string;
+    customResolution: string;
+    enterYourOwnSize: string;
+    width: string;
+    height: string;
+    tracks: string;
+    clips: string;
+    scanning: string;
+    scanningForProjects: string;
+    foundProjects: string;
+    noCmpFilesFound: string;
+    openSettings: string;
+    welcomeBackProject: string;
+    welcomeBackNoProjects: string;
+    createFirstProject: string;
+    createFirstProjectDesc: string;
+    noProjectsOnDisk: string;
+    noProjectsOnDiskDesc: string;
   };
   // ─── Templates ─────────────────────────────
   templates: {
@@ -206,10 +239,29 @@ export interface Translations {
     customTemplates: string;
     addTemplate: string;
     noCustomTemplates: string;
+    podcast: string;
+    podcastDesc: string;
+    newTemplate: string;
+    templateName: string;
+    templateDescription: string;
+    resolution: string;
+    tracks: string;
+    addVideoTrack: string;
+    addAudioTrack: string;
+    saveTemplate: string;
+    deleteTemplate: string;
+    trackLayout: string;
+    createYourOwn: string;
+    yourTemplates: string;
   };
   // ─── Timeline ──────────────────────────────
   timeline: {
     snap: string;
+    toggleSnapping: string;
+    deleteClip: string;
+    splitClip: string;
+    video: string;
+    audio: string;
     deleteSelected: string;
     splitAtPlayhead: string;
     zoomIn: string;
@@ -218,6 +270,15 @@ export interface Translations {
     addAudio: string;
     videoTrack: string;
     audioTrack: string;
+    doubleClickRename: string;
+    hideTrack: string;
+    showTrack: string;
+    unmute: string;
+    mute: string;
+    unsolo: string;
+    unlock: string;
+    lock: string;
+    removeTrack: string;
     toggleVisibility: string;
     toggleMute: string;
     solo: string;
@@ -362,6 +423,12 @@ export interface Translations {
     category: string;
     save: string;
     cancel: string;
+    textPresets: string;
+    effectTransition: string;
+    effectFilter: string;
+    effectAdjustment: string;
+    intros: string;
+    outros: string;
   };
   // ─── Keyboard Shortcuts ────────────────────
   shortcuts: {
@@ -530,6 +597,9 @@ const en: Translations = {
     aboutDescription: "A minimal, timeline-based video editor for desktop.",
     language: "Language",
     languageDesc: "Choose the interface language",
+    browse: "Browse",
+    notSetClickBrowse: "Not set — click Browse to choose",
+    defaultResolution: "Default Resolution",
   },
   exportModal: {
     title: "Export Project",
@@ -579,6 +649,15 @@ const en: Translations = {
     exportFailed: "Export Failed",
     exportFailedDesc: "Something went wrong during export.",
     tryAgain: "Try Again",
+    preparing: "Preparing…",
+    loadingMedia: "Loading media…",
+    rendering: "Rendering…",
+    cancelled: "Cancelled",
+    exportRequiresElectron: "Export requires the Electron desktop app.",
+    close: "Close",
+    exportingFormat: "Exporting {format}…",
+    aac: "AAC",
+    aacDesc: "Apple / streaming",
   },
   launcher: {
     welcomeTitle: "Welcome to Cuttamaran",
@@ -620,6 +699,27 @@ const en: Translations = {
     square: "Square",
     uhd4k: "4K UHD",
     social45: "Social (4:5)",
+    skipForNow: "Skip for Now",
+    noFolderSelected: "No folder selected…",
+    changeLaterInSettings: "You can change this later in Settings.",
+    defaultResolution: "Default Resolution",
+    customResolution: "Custom",
+    enterYourOwnSize: "Enter your own size",
+    width: "Width",
+    height: "Height",
+    tracks: "tracks",
+    clips: "clips",
+    scanning: "Scanning…",
+    scanningForProjects: "Scanning for projects…",
+    foundProjects: "Found {n} project(s) on disk.",
+    noCmpFilesFound: "No .cmp files found in your projects folder.",
+    openSettings: "Open Settings",
+    welcomeBackProject: "You have {n} project(s). Pick up where you left off.",
+    welcomeBackNoProjects: "Create your first project to get started.",
+    createFirstProject: "No projects yet",
+    createFirstProjectDesc: "Create your first project and start editing amazing videos.",
+    noProjectsOnDisk: "No projects found",
+    noProjectsOnDiskDesc: "Make sure your projects folder is set correctly in Settings.",
   },
   templates: {
     blank: "Blank",
@@ -639,9 +739,28 @@ const en: Translations = {
     customTemplates: "Custom Templates",
     addTemplate: "+ Add Template",
     noCustomTemplates: "No custom templates yet",
+    podcast: "Podcast",
+    podcastDesc: "Camera feed with separate host & guest audio",
+    newTemplate: "New Template",
+    templateName: "Template name",
+    templateDescription: "Description (optional)",
+    resolution: "Resolution",
+    tracks: "Tracks",
+    addVideoTrack: "+ Video Track",
+    addAudioTrack: "+ Audio Track",
+    saveTemplate: "Save Template",
+    deleteTemplate: "Delete template",
+    trackLayout: "Track Layout",
+    createYourOwn: "Create your own",
+    yourTemplates: "Your Templates",
   },
   timeline: {
     snap: "Snap",
+    toggleSnapping: "Toggle Snapping",
+    deleteClip: "Delete clip",
+    splitClip: "Split clip (Ctrl+B)",
+    video: "Video",
+    audio: "Audio",
     deleteSelected: "Delete selected clip",
     splitAtPlayhead: "Split clip at playhead",
     zoomIn: "Zoom in",
@@ -650,6 +769,15 @@ const en: Translations = {
     addAudio: "+ Audio",
     videoTrack: "Video {n}",
     audioTrack: "Audio {n}",
+    doubleClickRename: "Double-click to rename",
+    hideTrack: "Hide track",
+    showTrack: "Show track",
+    unmute: "Unmute",
+    mute: "Mute",
+    unsolo: "Unsolo",
+    unlock: "Unlock",
+    lock: "Lock",
+    removeTrack: "Remove track",
     toggleVisibility: "Toggle visibility",
     toggleMute: "Toggle mute",
     solo: "Solo",
@@ -791,6 +919,12 @@ const en: Translations = {
     category: "Category",
     save: "Save",
     cancel: "Cancel",
+    textPresets: "Text Presets",
+    effectTransition: "Transition",
+    effectFilter: "Filter",
+    effectAdjustment: "Adjustment",
+    intros: "Intros",
+    outros: "Outros",
   },
   shortcuts: {
     title: "Keyboard Shortcuts",
@@ -955,6 +1089,9 @@ const de: Translations = {
     aboutDescription: "Ein minimaler, zeitleistenbasierter Video-Editor für Desktop.",
     language: "Sprache",
     languageDesc: "Wähle die Sprache der Benutzeroberfläche",
+    browse: "Durchsuchen",
+    notSetClickBrowse: "Nicht festgelegt — klicke auf Durchsuchen",
+    defaultResolution: "Standardauflösung",
   },
   exportModal: {
     title: "Projekt exportieren",
@@ -1004,6 +1141,15 @@ const de: Translations = {
     exportFailed: "Export fehlgeschlagen",
     exportFailedDesc: "Beim Export ist ein Fehler aufgetreten.",
     tryAgain: "Erneut versuchen",
+    preparing: "Vorbereiten…",
+    loadingMedia: "Medien laden…",
+    rendering: "Rendern…",
+    cancelled: "Abgebrochen",
+    exportRequiresElectron: "Export erfordert die Electron-Desktop-App.",
+    close: "Schließen",
+    exportingFormat: "{format} wird exportiert…",
+    aac: "AAC",
+    aacDesc: "Apple / Streaming",
   },
   launcher: {
     welcomeTitle: "Willkommen bei Cuttamaran",
@@ -1045,6 +1191,27 @@ const de: Translations = {
     square: "Quadrat",
     uhd4k: "4K UHD",
     social45: "Social (4:5)",
+    skipForNow: "Vorerst überspringen",
+    noFolderSelected: "Kein Ordner ausgewählt…",
+    changeLaterInSettings: "Du kannst dies später in den Einstellungen ändern.",
+    defaultResolution: "Standardauflösung",
+    customResolution: "Benutzerdefiniert",
+    enterYourOwnSize: "Eigene Größe eingeben",
+    width: "Breite",
+    height: "Höhe",
+    tracks: "Spuren",
+    clips: "Clips",
+    scanning: "Suche…",
+    scanningForProjects: "Suche nach Projekten…",
+    foundProjects: "{n} Projekt(e) auf der Festplatte gefunden.",
+    noCmpFilesFound: "Keine .cmp-Dateien in deinem Projektordner gefunden.",
+    openSettings: "Einstellungen öffnen",
+    welcomeBackProject: "Du hast {n} Projekt(e). Mach weiter, wo du aufgehört hast.",
+    welcomeBackNoProjects: "Erstelle dein erstes Projekt, um loszulegen.",
+    createFirstProject: "Noch keine Projekte",
+    createFirstProjectDesc: "Erstelle dein erstes Projekt und beginne mit der Videobearbeitung.",
+    noProjectsOnDisk: "Keine Projekte gefunden",
+    noProjectsOnDiskDesc: "Stelle sicher, dass dein Projektordner in den Einstellungen richtig eingestellt ist.",
   },
   templates: {
     blank: "Leer",
@@ -1064,9 +1231,28 @@ const de: Translations = {
     customTemplates: "Eigene Vorlagen",
     addTemplate: "+ Vorlage hinzufügen",
     noCustomTemplates: "Noch keine eigenen Vorlagen",
+    podcast: "Podcast",
+    podcastDesc: "Kamera mit separater Host- & Gast-Audio",
+    newTemplate: "Neue Vorlage",
+    templateName: "Vorlagenname",
+    templateDescription: "Beschreibung (optional)",
+    resolution: "Auflösung",
+    tracks: "Spuren",
+    addVideoTrack: "+ Videospur",
+    addAudioTrack: "+ Audiospur",
+    saveTemplate: "Vorlage speichern",
+    deleteTemplate: "Vorlage löschen",
+    trackLayout: "Spurlayout",
+    createYourOwn: "Eigene erstellen",
+    yourTemplates: "Deine Vorlagen",
   },
   timeline: {
     snap: "Einrasten",
+    toggleSnapping: "Einrasten umschalten",
+    deleteClip: "Clip löschen",
+    splitClip: "Clip teilen (Strg+B)",
+    video: "Video",
+    audio: "Audio",
     deleteSelected: "Ausgewählten Clip löschen",
     splitAtPlayhead: "Clip an Abspielposition teilen",
     zoomIn: "Vergrößern",
@@ -1075,6 +1261,15 @@ const de: Translations = {
     addAudio: "+ Audio",
     videoTrack: "Video {n}",
     audioTrack: "Audio {n}",
+    doubleClickRename: "Doppelklick zum Umbenennen",
+    hideTrack: "Spur ausblenden",
+    showTrack: "Spur einblenden",
+    unmute: "Laut schalten",
+    mute: "Stummschalten",
+    unsolo: "Solo aufheben",
+    unlock: "Entsperren",
+    lock: "Sperren",
+    removeTrack: "Spur entfernen",
     toggleVisibility: "Sichtbarkeit umschalten",
     toggleMute: "Stumm umschalten",
     solo: "Solo",
@@ -1216,6 +1411,12 @@ const de: Translations = {
     category: "Kategorie",
     save: "Speichern",
     cancel: "Abbrechen",
+    textPresets: "Text-Vorlagen",
+    effectTransition: "Übergang",
+    effectFilter: "Filter",
+    effectAdjustment: "Anpassung",
+    intros: "Intros",
+    outros: "Outros",
   },
   shortcuts: {
     title: "Tastenkürzel",

@@ -418,17 +418,17 @@ function seededGradient(id: string): string {
   return GRADIENTS[Math.abs(hash) % GRADIENTS.length];
 }
 
-function formatDate(ts: number): string {
+function formatDate(ts: number, t: Translations["launcher"]): string {
   const d = new Date(ts);
   const now = new Date();
   const diff = now.getTime() - d.getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "Just now";
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 1) return t.justNow;
+  if (mins < 60) return t.minutesAgo.replace("{n}", String(mins));
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
+  if (hours < 24) return t.hoursAgo.replace("{n}", String(hours));
   const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d ago`;
+  if (days < 7) return t.daysAgo.replace("{n}", String(days));
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: d.getFullYear() !== now.getFullYear() ? "numeric" : undefined });
 }
 
@@ -440,9 +440,12 @@ import {
   updateSetting as updateSettingGlobal,
   type AppSettings,
 } from "@/hooks/use-settings";
+import { getTranslations, type Translations } from "@/lib/i18n";
 
 // ─── First-time Setup ────────────────────────────────────
 function FirstTimeSetup({ onComplete }: { onComplete: () => void }) {
+  const [settings] = useSettings();
+  const t = getTranslations(settings.language);
   const [folderPath, setFolderPath] = useState("");
 
   const handleBrowse = async () => {
@@ -479,15 +482,15 @@ function FirstTimeSetup({ onComplete }: { onComplete: () => void }) {
           <div style={{ width: 56, height: 56, borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16, background: "var(--accent-gradient-vibrant)" }}>
             <Scissors size={24} className="text-white" />
           </div>
-          <h2 style={{ fontSize: 18, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>Welcome to Cuttamaran</h2>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>{t.launcher.welcomeTitle}</h2>
           <p style={{ fontSize: 14, marginTop: 6, textAlign: "center", color: "var(--text-muted)" }}>
-            Choose where your projects will be stored.
+            {t.launcher.welcomeSubtitle}
           </p>
         </div>
 
         {/* Folder picker */}
         <div style={{ paddingLeft: 40, paddingRight: 40, paddingTop: 24, paddingBottom: 24 }}>
-          <label style={{ fontSize: 11, fontWeight: 500, marginBottom: 8, display: "block", color: "var(--text-muted)" }}>Projects Folder</label>
+          <label style={{ fontSize: 11, fontWeight: 500, marginBottom: 8, display: "block", color: "var(--text-muted)" }}>{t.launcher.projectsFolder}</label>
           <div style={{ display: "flex", gap: 8 }}>
             <div
               style={{
@@ -503,7 +506,7 @@ function FirstTimeSetup({ onComplete }: { onComplete: () => void }) {
                 color: folderPath ? "var(--text-primary)" : "var(--text-muted)",
               }}
             >
-              {folderPath || "No folder selected..."}
+              {folderPath || t.launcher.noFolderSelected}
             </div>
             <button
               onClick={handleBrowse}
@@ -523,7 +526,7 @@ function FirstTimeSetup({ onComplete }: { onComplete: () => void }) {
             </button>
           </div>
           <p style={{ fontSize: 11, marginTop: 8, color: "var(--text-muted)" }}>
-            You can change this later in Settings.
+            {t.launcher.changeLaterInSettings}
           </p>
         </div>
 
@@ -544,7 +547,7 @@ function FirstTimeSetup({ onComplete }: { onComplete: () => void }) {
               boxShadow: folderPath ? "0 2px 12px var(--accent-glow)" : "none",
             }}
           >
-            {folderPath ? "Get Started" : "Skip for Now"}
+            {folderPath ? t.launcher.getStarted : t.launcher.skipForNow}
           </button>
         </div>
       </div>
@@ -555,6 +558,7 @@ function FirstTimeSetup({ onComplete }: { onComplete: () => void }) {
 // ─── Settings Panel ──────────────────────────────────────
 function SettingsPanel({ onClose }: { onClose: () => void }) {
   const [settings] = useSettings();
+  const t = getTranslations(settings.language);
 
   const updateSetting = <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
     updateSettingGlobal(key, value);
@@ -583,7 +587,7 @@ function SettingsPanel({ onClose }: { onClose: () => void }) {
       >
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px", borderBottom: "1px solid var(--border-subtle)" }}>
-          <h2 style={{ fontSize: 16, fontWeight: 600, margin: 0, color: "var(--text-primary)" }}>Settings</h2>
+          <h2 style={{ fontSize: 16, fontWeight: 600, margin: 0, color: "var(--text-primary)" }}>{t.settings.title}</h2>
           <button
             onClick={onClose}
             style={{ padding: 6, borderRadius: 8, background: "transparent", border: "none", cursor: "pointer" }}
@@ -598,7 +602,7 @@ function SettingsPanel({ onClose }: { onClose: () => void }) {
         <div style={{ padding: "20px 24px", maxHeight: 420, overflowY: "auto", display: "flex", flexDirection: "column", gap: 20 }}>
           {/* Storage */}
           <div>
-            <h3 style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 12, color: "var(--text-muted)" }}>Storage</h3>
+            <h3 style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 12, color: "var(--text-muted)" }}>{t.settings.storage}</h3>
             <div
               style={{
                 display: "flex",
@@ -612,9 +616,9 @@ function SettingsPanel({ onClose }: { onClose: () => void }) {
               <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, flex: 1 }}>
                 <FolderOpen size={15} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
                 <div style={{ minWidth: 0, flex: 1 }}>
-                  <span style={{ fontSize: 13, display: "block", color: "var(--text-secondary)" }}>Projects Folder</span>
+                  <span style={{ fontSize: 13, display: "block", color: "var(--text-secondary)" }}>{t.settings.projectsFolder}</span>
                   <span style={{ fontSize: 11, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--text-muted)" }}>
-                    {settings.projectsPath || "Not set — click Browse to choose"}
+                    {settings.projectsPath || t.settings.notSetClickBrowse}
                   </span>
                 </div>
               </div>
@@ -634,14 +638,14 @@ function SettingsPanel({ onClose }: { onClose: () => void }) {
                 onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(124,92,252,0.2)"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = "var(--accent-muted)"; }}
               >
-                Browse
+                {t.settings.browse}
               </button>
             </div>
           </div>
 
           {/* General */}
           <div>
-            <h3 style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 12, color: "var(--text-muted)" }}>General</h3>
+            <h3 style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 12, color: "var(--text-muted)" }}>{t.settings.general}</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               {/* Default Resolution */}
               <div
@@ -651,7 +655,7 @@ function SettingsPanel({ onClose }: { onClose: () => void }) {
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <Monitor size={15} style={{ color: "var(--text-muted)" }} />
-                  <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>Default Resolution</span>
+                  <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>{t.settings.defaultResolution}</span>
                 </div>
                 <CustomDropdown
                   value={settings.defaultResolution}
@@ -668,7 +672,7 @@ function SettingsPanel({ onClose }: { onClose: () => void }) {
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <HardDrive size={15} style={{ color: "var(--text-muted)" }} />
-                  <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>Auto-Save</span>
+                  <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>{t.settings.autoSave}</span>
                 </div>
                 <button
                   onClick={() => updateSetting("autoSave", !settings.autoSave)}
@@ -706,11 +710,11 @@ function SettingsPanel({ onClose }: { onClose: () => void }) {
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <Moon size={15} style={{ color: "var(--text-muted)" }} />
-                  <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>Theme</span>
+                  <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>{t.settings.theme}</span>
                 </div>
                 <CustomDropdown
                   value={settings.theme}
-                  options={[{ label: "Dark", value: "dark" }, { label: "Light", value: "light" }]}
+                  options={[{ label: t.settings.dark, value: "dark" }, { label: t.settings.light, value: "light" }]}
                   onChange={(v) => updateSetting("theme", v as "dark" | "light")}
                 />
               </div>
@@ -723,7 +727,7 @@ function SettingsPanel({ onClose }: { onClose: () => void }) {
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <Palette size={15} style={{ color: "var(--text-muted)" }} />
-                  <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>Accent Color</span>
+                  <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>{t.settings.accentColor}</span>
                 </div>
                 <div style={{ display: "flex", gap: 6 }}>
                   {([
@@ -755,7 +759,7 @@ function SettingsPanel({ onClose }: { onClose: () => void }) {
 
           {/* Performance */}
           <div>
-            <h3 style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 12, color: "var(--text-muted)" }}>Performance</h3>
+            <h3 style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 12, color: "var(--text-muted)" }}>{t.settings.performance}</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               <div
                 style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", borderRadius: 8 }}
@@ -764,11 +768,11 @@ function SettingsPanel({ onClose }: { onClose: () => void }) {
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <Film size={15} style={{ color: "var(--text-muted)" }} />
-                  <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>Preview Quality</span>
+                  <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>{t.settings.previewQuality}</span>
                 </div>
                 <CustomDropdown
                   value={settings.previewQuality}
-                  options={[{ label: "Low", value: "low" }, { label: "Medium", value: "medium" }, { label: "High", value: "high" }]}
+                  options={[{ label: t.settings.low, value: "low" }, { label: t.settings.medium, value: "medium" }, { label: t.settings.high, value: "high" }]}
                   onChange={(v) => updateSetting("previewQuality", v as "low" | "medium" | "high")}
                 />
               </div>
@@ -782,8 +786,8 @@ function SettingsPanel({ onClose }: { onClose: () => void }) {
                 <Scissors size={14} className="text-white" />
               </div>
               <div>
-                <p style={{ fontSize: 13, fontWeight: 500, margin: 0, color: "var(--text-primary)" }}>Cuttamaran v0.1.0</p>
-                <p style={{ fontSize: 12, margin: 0, color: "var(--text-muted)" }}>Open-source desktop video editor</p>
+                <p style={{ fontSize: 13, fontWeight: 500, margin: 0, color: "var(--text-primary)" }}>{t.settings.aboutHeading}</p>
+                <p style={{ fontSize: 12, margin: 0, color: "var(--text-muted)" }}>{t.settings.aboutDescription}</p>
               </div>
             </div>
           </div>
@@ -795,6 +799,35 @@ function SettingsPanel({ onClose }: { onClose: () => void }) {
 
 // ─── New Project Modal ───────────────────────────────────
 function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate: (name: string, res: string, preset?: ProjectPreset) => void }) {
+  const [settings] = useSettings();
+  const t = getTranslations(settings.language);
+
+  const presetNameMap: Record<string, string> = {
+    blank: t.templates.blank,
+    "valorant-montage": t.templates.gaming,
+    "music-video": t.templates.musicVideo,
+    "youtube-video": t.templates.tutorial,
+    "tiktok-reels": t.templates.socialShort,
+    cinematic: t.templates.cinematic,
+    podcast: t.templates.podcast,
+  };
+  const presetDescMap: Record<string, string> = {
+    blank: t.templates.blankDesc,
+    "valorant-montage": t.templates.gamingDesc,
+    "music-video": t.templates.musicVideoDesc,
+    "youtube-video": t.templates.tutorialDesc,
+    "tiktok-reels": t.templates.socialShortDesc,
+    cinematic: t.templates.cinematicDesc,
+    podcast: t.templates.podcastDesc,
+  };
+  const resDescMap: Record<string, string> = {
+    "1920x1080": t.launcher.fullHDLandscape,
+    "1080x1920": t.launcher.fullHDPortrait,
+    "1080x1080": t.launcher.square,
+    "3840x2160": t.launcher.uhd4k,
+    "1080x1350": t.launcher.social45,
+  };
+
   const [name, setName] = useState("");
   const [resolution, setResolution] = useState("1920x1080");
   const [selectedPreset, setSelectedPreset] = useState<ProjectPreset>(PROJECT_PRESETS[0]);
@@ -905,7 +938,7 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
       >
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px", borderBottom: "1px solid var(--border-subtle)", flexShrink: 0 }}>
-          <h2 style={{ fontSize: 16, fontWeight: 600, margin: 0, color: "var(--text-primary)" }}>New Project</h2>
+          <h2 style={{ fontSize: 16, fontWeight: 600, margin: 0, color: "var(--text-primary)" }}>{t.launcher.newProjectTitle}</h2>
           <button
             onClick={onClose}
             style={{ padding: 6, borderRadius: 8, background: "transparent", border: "none", cursor: "pointer" }}
@@ -920,12 +953,12 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
         <div style={{ flex: 1, overflowY: "auto", padding: "20px 24px", display: "flex", flexDirection: "column", gap: 20 }}>
           {/* Project name */}
           <div>
-            <label style={{ fontSize: 11, fontWeight: 500, marginBottom: 6, display: "block", color: "var(--text-muted)" }}>Project Name</label>
+            <label style={{ fontSize: 11, fontWeight: 500, marginBottom: 6, display: "block", color: "var(--text-muted)" }}>{t.launcher.projectName}</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder={selectedPreset.id === "blank" ? "My Awesome Video" : selectedPreset.name}
+              placeholder={selectedPreset.id === "blank" ? t.launcher.projectNamePlaceholder : (presetNameMap[selectedPreset.id] || selectedPreset.name)}
               autoFocus
               style={{
                 width: "100%",
@@ -946,7 +979,7 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
 
           {/* Presets */}
           <div>
-            <label style={{ fontSize: 11, fontWeight: 500, marginBottom: 8, display: "block", color: "var(--text-muted)" }}>Template</label>
+            <label style={{ fontSize: 11, fontWeight: 500, marginBottom: 8, display: "block", color: "var(--text-muted)" }}>{t.launcher.template}</label>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
               {PROJECT_PRESETS.map((preset) => {
                 const isSelected = selectedPreset.id === preset.id;
@@ -988,10 +1021,10 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
                     </div>
                     <div style={{ minWidth: 0, flex: 1 }}>
                       <span style={{ fontSize: 12, fontWeight: 600, display: "block", color: isSelected ? "var(--accent-hover)" : "var(--text-primary)" }}>
-                        {preset.name}
+                        {presetNameMap[preset.id] || preset.name}
                       </span>
                       <span style={{ fontSize: 10, display: "block", color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {preset.description}
+                        {presetDescMap[preset.id] || preset.description}
                       </span>
                     </div>
                   </button>
@@ -1034,10 +1067,10 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
                 </div>
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <span style={{ fontSize: 12, fontWeight: 600, display: "block", color: "var(--text-muted)" }}>
-                    Custom Template
+                    {t.templates.customTemplates}
                   </span>
                   <span style={{ fontSize: 10, display: "block", color: "var(--text-muted)", opacity: 0.7 }}>
-                    Create your own
+                    {t.templates.createYourOwn}
                   </span>
                 </div>
               </button>
@@ -1047,7 +1080,7 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
             {customTemplates.length > 0 && (
               <>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 14, marginBottom: 8 }}>
-                  <span style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>Your Templates</span>
+                  <span style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>{t.templates.yourTemplates}</span>
                   <div style={{ flex: 1, height: 1, background: "var(--border-subtle)" }} />
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
@@ -1118,7 +1151,7 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
                               border: "1px solid var(--border-subtle)",
                               cursor: "pointer",
                             }}
-                            title="Delete template"
+                            title={t.templates.deleteTemplate}
                           >
                             <Trash2 size={10} style={{ color: "var(--error)" }} />
                           </div>
@@ -1135,7 +1168,7 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
           {creatingTemplate && (
             <div style={{ padding: 16, borderRadius: 10, background: "var(--bg-tertiary)", border: "1px solid var(--accent)", boxShadow: "0 0 12px var(--accent-glow)" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", color: "var(--accent-hover)" }}>New Template</span>
+                <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", color: "var(--accent-hover)" }}>{t.templates.newTemplate}</span>
                 <button
                   onClick={() => setCreatingTemplate(false)}
                   style={{ padding: 4, borderRadius: 6, background: "transparent", border: "none", cursor: "pointer", color: "var(--text-muted)" }}
@@ -1150,7 +1183,7 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
                   type="text"
                   value={tplName}
                   onChange={(e) => setTplName(e.target.value)}
-                  placeholder="Template name"
+                  placeholder={t.templates.templateName}
                   autoFocus
                   style={{ width: "100%", padding: "8px 10px", borderRadius: 6, fontSize: 12, outline: "none", background: "var(--bg-primary)", border: "1px solid var(--border-default)", color: "var(--text-primary)", boxSizing: "border-box" }}
                   onFocus={(e) => { e.currentTarget.style.borderColor = "var(--accent)"; }}
@@ -1160,14 +1193,14 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
                   type="text"
                   value={tplDesc}
                   onChange={(e) => setTplDesc(e.target.value)}
-                  placeholder="Description (optional)"
+                  placeholder={t.templates.templateDescription}
                   style={{ width: "100%", padding: "8px 10px", borderRadius: 6, fontSize: 12, outline: "none", background: "var(--bg-primary)", border: "1px solid var(--border-default)", color: "var(--text-primary)", boxSizing: "border-box" }}
                   onFocus={(e) => { e.currentTarget.style.borderColor = "var(--accent)"; }}
                   onBlur={(e) => { e.currentTarget.style.borderColor = "var(--border-default)"; }}
                 />
                 {/* Resolution */}
                 <div>
-                  <label style={{ fontSize: 10, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Resolution</label>
+                  <label style={{ fontSize: 10, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>{t.templates.resolution}</label>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
                     {RESOLUTIONS.map((r) => (
                       <button
@@ -1190,7 +1223,7 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
                 </div>
                 {/* Tracks */}
                 <div>
-                  <label style={{ fontSize: 10, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Tracks</label>
+                  <label style={{ fontSize: 10, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>{t.templates.tracks}</label>
                   <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
                     {tplTracks.map((t, i) => (
                       <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 8px", borderRadius: 5, background: "var(--bg-primary)" }}>
@@ -1224,7 +1257,7 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
                       onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--clip-video)"; e.currentTarget.style.color = "var(--clip-video)"; }}
                       onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border-default)"; e.currentTarget.style.color = "var(--text-muted)"; }}
                     >
-                      + Video Track
+                      {t.templates.addVideoTrack}
                     </button>
                     <button
                       onClick={() => handleAddTplTrack("audio")}
@@ -1232,7 +1265,7 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
                       onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--clip-audio)"; e.currentTarget.style.color = "var(--clip-audio)"; }}
                       onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border-default)"; e.currentTarget.style.color = "var(--text-muted)"; }}
                     >
-                      + Audio Track
+                      {t.templates.addAudioTrack}
                     </button>
                   </div>
                 </div>
@@ -1253,7 +1286,7 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
                     boxShadow: "0 2px 8px var(--accent-glow)",
                   }}
                 >
-                  Save Template
+                  {t.templates.saveTemplate}
                 </button>
               </div>
             </div>
@@ -1264,10 +1297,10 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
           <div style={{ padding: 12, borderRadius: 10, background: "var(--bg-tertiary)", border: "1px solid var(--border-subtle)" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
               <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", color: "var(--text-muted)" }}>
-                Track Layout
+                {t.templates.trackLayout}
               </span>
               <span style={{ fontSize: 10, color: "var(--text-muted)" }}>
-                {RESOLUTIONS.find((r) => r.value === selectedPreset.resolution)?.label ?? selectedPreset.resolution} · {selectedPreset.tracks.length} tracks
+                {RESOLUTIONS.find((r) => r.value === selectedPreset.resolution)?.label ?? selectedPreset.resolution} · {selectedPreset.tracks.length} {t.launcher.tracks}
               </span>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -1312,7 +1345,7 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
           {/* Resolution override */}
           {!creatingTemplate && (
           <div>
-            <label style={{ fontSize: 11, fontWeight: 500, marginBottom: 6, display: "block", color: "var(--text-muted)" }}>Resolution</label>
+            <label style={{ fontSize: 11, fontWeight: 500, marginBottom: 6, display: "block", color: "var(--text-muted)" }}>{t.launcher.resolution}</label>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
               {RESOLUTIONS.map((r) => (
                 <button
@@ -1332,7 +1365,7 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
                   }}
                 >
                   <span style={{ fontSize: 12, fontWeight: 500, color: !isCustomRes && resolution === r.value ? "var(--accent-hover)" : "var(--text-secondary)" }}>{r.label}</span>
-                  <span style={{ fontSize: 10, color: "var(--text-muted)" }}>{r.desc}</span>
+                  <span style={{ fontSize: 10, color: "var(--text-muted)" }}>{resDescMap[r.value] || r.desc}</span>
                 </button>
               ))}
               {/* Custom resolution */}
@@ -1354,8 +1387,8 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
                   border: `1px solid ${isCustomRes ? "var(--accent)" : "var(--border-subtle)"}`,
                 }}
               >
-                <span style={{ fontSize: 12, fontWeight: 500, color: isCustomRes ? "var(--accent-hover)" : "var(--text-secondary)" }}>Custom</span>
-                <span style={{ fontSize: 10, color: "var(--text-muted)" }}>Enter your own size</span>
+                <span style={{ fontSize: 12, fontWeight: 500, color: isCustomRes ? "var(--accent-hover)" : "var(--text-secondary)" }}>{t.launcher.customResolution}</span>
+                <span style={{ fontSize: 10, color: "var(--text-muted)" }}>{t.launcher.enterYourOwnSize}</span>
               </button>
             </div>
 
@@ -1363,7 +1396,7 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
             {isCustomRes && (
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10 }}>
                 <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: 10, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Width</label>
+                  <label style={{ fontSize: 10, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>{t.launcher.width}</label>
                   <div style={{ display: "flex", alignItems: "center", borderRadius: 8, border: "1px solid var(--border-default)", background: "var(--bg-tertiary)", overflow: "hidden" }}>
                     <button
                       onClick={() => handleCustomWidth(customWidth - 10)}
@@ -1393,7 +1426,7 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
                 </div>
                 <span style={{ fontSize: 16, color: "var(--text-muted)", marginTop: 18 }}>×</span>
                 <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: 10, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Height</label>
+                  <label style={{ fontSize: 10, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>{t.launcher.height}</label>
                   <div style={{ display: "flex", alignItems: "center", borderRadius: 8, border: "1px solid var(--border-default)", background: "var(--bg-tertiary)", overflow: "hidden" }}>
                     <button
                       onClick={() => handleCustomHeight(customHeight - 10)}
@@ -1436,7 +1469,7 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
             onMouseEnter={(e) => { e.currentTarget.style.background = "var(--hover-overlay)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
           >
-            Cancel
+            {t.launcher.cancel}
           </button>
           <button
             onClick={() => name.trim() && onCreate(name.trim(), resolution, selectedPreset.id === "blank" ? undefined : selectedPreset)}
@@ -1455,7 +1488,7 @@ function NewProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate:
               boxShadow: "0 2px 12px var(--accent-glow)",
             }}
           >
-            Create Project
+            {t.launcher.createProject}
           </button>
         </div>
       </div>
@@ -1477,6 +1510,8 @@ interface DiskProject {
 }
 
 export default function ProjectLauncher({ onOpenProject, onCreateProject, onOpenFromDisk }: ProjectLauncherProps) {
+  const [settings] = useSettings();
+  const t = getTranslations(settings.language);
   const [projects, setProjects] = useState<ProjectMeta[]>([]);
   const [showSettings, setShowSettings] = useState(false);
   const [showNewProject, setShowNewProject] = useState(false);
@@ -1549,7 +1584,7 @@ export default function ProjectLauncher({ onOpenProject, onCreateProject, onOpen
           <div style={{ width: 20, height: 20, borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--accent-gradient-vibrant)" }}>
             <Scissors size={10} className="text-white" />
           </div>
-          <span style={{ fontSize: 12, fontWeight: 500, color: "var(--text-muted)" }}>Cuttamaran</span>
+          <span style={{ fontSize: 12, fontWeight: 500, color: "var(--text-muted)" }}>{t.launcher.appName}</span>
         </div>
 
         {typeof window !== "undefined" && window.electronAPI && (
@@ -1615,7 +1650,7 @@ export default function ProjectLauncher({ onOpenProject, onCreateProject, onOpen
             }}
           >
             <Plus size={15} style={{ flexShrink: 0 }} />
-            New Project
+            {t.launcher.newProject}
           </button>
 
           {onOpenFromDisk && (
@@ -1639,16 +1674,16 @@ export default function ProjectLauncher({ onOpenProject, onCreateProject, onOpen
               }}
             >
               <FolderOpen size={15} style={{ flexShrink: 0 }} />
-              Open File
+              {t.launcher.openFile}
             </button>
           )}
 
-          <NavItem icon={<Clock size={16} />} label="Recent" active={view === "recent"} onClick={() => setView("recent")} />
-          <NavItem icon={<FolderOpen size={16} />} label="All Projects" active={view === "all"} onClick={() => setView("all")} />
+          <NavItem icon={<Clock size={16} />} label={t.launcher.recent} active={view === "recent"} onClick={() => setView("recent")} />
+          <NavItem icon={<FolderOpen size={16} />} label={t.launcher.allProjects} active={view === "all"} onClick={() => setView("all")} />
 
           <div style={{ flex: 1 }} />
 
-          <NavItem icon={<Settings size={16} />} label="Settings" onClick={() => setShowSettings(true)} />
+          <NavItem icon={<Settings size={16} />} label={t.launcher.settings} onClick={() => setShowSettings(true)} />
         </div>
 
         {/* Main area */}
@@ -1658,12 +1693,12 @@ export default function ProjectLauncher({ onOpenProject, onCreateProject, onOpen
               {/* Hero section */}
               <div style={{ marginBottom: 20 }}>
                 <h1 style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.01em", marginBottom: 4, color: "var(--text-primary)" }}>
-                  Welcome back
+                  {t.launcher.welcomeBack}
                 </h1>
                 <p style={{ fontSize: 13, margin: 0, color: "var(--text-muted)" }}>
                   {recentProjects.length > 0
-                    ? `You have ${recentProjects.length} project${recentProjects.length === 1 ? "" : "s"}. Pick up where you left off.`
-                    : "Create your first project to get started."}
+                    ? t.launcher.welcomeBackProject.replace("{n}", String(recentProjects.length))
+                    : t.launcher.welcomeBackNoProjects}
                 </p>
               </div>
 
@@ -1709,13 +1744,13 @@ export default function ProjectLauncher({ onOpenProject, onCreateProject, onOpen
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <h3 style={{ fontSize: 13, fontWeight: 500, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--text-primary)" }}>{project.name}</h3>
                           <p style={{ fontSize: 11, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--text-muted)" }}>
-                            {project.resolution} · {project.trackCount} tracks · {project.clipCount} clips
+                            {project.resolution} · {project.trackCount} {t.launcher.tracks} · {project.clipCount} {t.launcher.clips}
                           </p>
                         </div>
 
                         {/* Time + actions */}
                         <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                          <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{formatDate(project.updatedAt)}</span>
+                          <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{formatDate(project.updatedAt, t.launcher)}</span>
                           {hoveredId === project.id && (
                             <button
                               onClick={(e) => { e.stopPropagation(); handleDelete(project.id); }}
@@ -1750,9 +1785,9 @@ export default function ProjectLauncher({ onOpenProject, onCreateProject, onOpen
                   >
                     <Film size={28} style={{ color: "var(--text-muted)" }} />
                   </div>
-                  <h2 style={{ fontSize: 15, fontWeight: 600, marginBottom: 6, color: "var(--text-primary)" }}>No projects yet</h2>
+                  <h2 style={{ fontSize: 15, fontWeight: 600, marginBottom: 6, color: "var(--text-primary)" }}>{t.launcher.createFirstProject}</h2>
                   <p style={{ fontSize: 13, marginBottom: 20, textAlign: "center", maxWidth: 280, color: "var(--text-muted)" }}>
-                    Create your first project and start editing amazing videos.
+                    {t.launcher.createFirstProjectDesc}
                   </p>
                   <button
                     onClick={() => setShowNewProject(true)}
@@ -1773,7 +1808,7 @@ export default function ProjectLauncher({ onOpenProject, onCreateProject, onOpen
                     }}
                   >
                     <Plus size={15} style={{ flexShrink: 0 }} />
-                    Create Project
+                    {t.launcher.createProject}
                   </button>
                 </div>
               )}
@@ -1783,14 +1818,14 @@ export default function ProjectLauncher({ onOpenProject, onCreateProject, onOpen
             <>
               <div style={{ marginBottom: 20 }}>
                 <h1 style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.01em", marginBottom: 4, color: "var(--text-primary)" }}>
-                  All Projects
+                  {t.launcher.allProjects}
                 </h1>
                 <p style={{ fontSize: 13, margin: 0, color: "var(--text-muted)" }}>
                   {loadingDisk
-                    ? "Scanning for projects…"
+                    ? t.launcher.scanningForProjects
                     : diskProjects.length > 0
-                      ? `Found ${diskProjects.length} project${diskProjects.length === 1 ? "" : "s"} on disk.`
-                      : "No .cmp files found in your projects folder."}
+                      ? t.launcher.foundProjects.replace("{n}", String(diskProjects.length))
+                      : t.launcher.noCmpFilesFound}
                 </p>
               </div>
 
@@ -1802,7 +1837,7 @@ export default function ProjectLauncher({ onOpenProject, onCreateProject, onOpen
                       borderTopColor: "var(--accent)", borderRadius: "50%",
                       animation: "spin 0.8s linear infinite",
                     }} />
-                    <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Scanning…</span>
+                    <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{t.launcher.scanning}</span>
                     <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
                   </div>
                 </div>
@@ -1852,11 +1887,11 @@ export default function ProjectLauncher({ onOpenProject, onCreateProject, onOpen
                             {dp.projectName}
                           </h3>
                           <p style={{ fontSize: 11, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--text-muted)" }}>
-                            {dp.resolution} · {dp.trackCount} tracks · {dp.clipCount} clips
+                            {dp.resolution} · {dp.trackCount} {t.launcher.tracks} · {dp.clipCount} {t.launcher.clips}
                           </p>
                         </div>
                         <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                          <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{formatDate(dp.updatedAt)}</span>
+                          <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{formatDate(dp.updatedAt, t.launcher)}</span>
                           <ChevronRight size={14} style={{ color: "var(--accent)", opacity: hoveredId === dp.filePath ? 1 : 0, transition: "opacity 0.15s" }} />
                         </div>
                       </div>
@@ -1875,9 +1910,9 @@ export default function ProjectLauncher({ onOpenProject, onCreateProject, onOpen
                   >
                     <FolderOpen size={28} style={{ color: "var(--text-muted)" }} />
                   </div>
-                  <h2 style={{ fontSize: 15, fontWeight: 600, marginBottom: 6, color: "var(--text-primary)" }}>No projects found</h2>
+                  <h2 style={{ fontSize: 15, fontWeight: 600, marginBottom: 6, color: "var(--text-primary)" }}>{t.launcher.noProjectsOnDisk}</h2>
                   <p style={{ fontSize: 13, marginBottom: 20, textAlign: "center", maxWidth: 280, color: "var(--text-muted)" }}>
-                    Make sure your projects folder is set correctly in Settings.
+                    {t.launcher.noProjectsOnDiskDesc}
                   </p>
                   <button
                     onClick={() => setShowSettings(true)}
@@ -1890,7 +1925,7 @@ export default function ProjectLauncher({ onOpenProject, onCreateProject, onOpen
                     }}
                   >
                     <Settings size={15} style={{ flexShrink: 0 }} />
-                    Open Settings
+                    {t.launcher.openSettings}
                   </button>
                 </div>
               )}

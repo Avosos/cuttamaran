@@ -14,6 +14,7 @@ import {
 import { formatTime } from "@/lib/utils";
 import { useMediaManager } from "@/hooks/use-media-manager";
 import { useSettings } from "@/hooks/use-settings";
+import { getTranslations } from "@/lib/i18n";
 
 export default function PreviewPanel() {
   const {
@@ -36,6 +37,7 @@ export default function PreviewPanel() {
   const [volume, setVolume] = useState(80);
   const { getVideoElement, getImageElement } = useMediaManager(volume / 100);
   const [settings] = useSettings();
+  const t = getTranslations(settings.language);
 
   // Scale the internal canvas resolution based on preview quality setting.
   // Lower quality = smaller canvas = faster rendering (CSS auto-scales it up).
@@ -125,7 +127,7 @@ export default function PreviewPanel() {
       ctx.fillStyle = cs.getPropertyValue("--text-muted").trim();
       ctx.font = "14px Inter, sans-serif";
       ctx.textAlign = "center";
-      ctx.fillText("Drop media to get started", cx, cy + 50);
+      ctx.fillText(t.preview.dropMediaToStart, cx, cy + 50);
       return;
     }
 
@@ -561,7 +563,7 @@ export default function PreviewPanel() {
               }}
               onMouseEnter={(e) => { e.currentTarget.style.background = "var(--hover-overlay)"; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-              title="Go to start"
+              title={t.preview.goToStart}
             >
               <SkipBack
                 size={16}
@@ -584,7 +586,7 @@ export default function PreviewPanel() {
                   ? "none"
                   : "0 4px 16px var(--accent-glow)",
               }}
-              title={isPlaying ? "Pause (Space)" : "Play (Space)"}
+              title={isPlaying ? t.preview.pause : t.preview.play}
             >
               {isPlaying ? (
                 <Pause size={18} style={{ color: "#ffffff" }} />
@@ -608,7 +610,7 @@ export default function PreviewPanel() {
               }}
               onMouseEnter={(e) => { e.currentTarget.style.background = "var(--hover-overlay)"; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-              title="Go to end"
+              title={t.preview.goToEnd}
             >
               <SkipForward
                 size={16}
@@ -640,7 +642,7 @@ export default function PreviewPanel() {
               }}
               onMouseEnter={(e) => { e.currentTarget.style.background = "var(--hover-overlay)"; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-              title="Fullscreen"
+              title={t.preview.fullscreen}
             >
               <Maximize
                 size={14}

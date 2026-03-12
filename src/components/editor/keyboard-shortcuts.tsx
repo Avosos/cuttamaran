@@ -11,11 +11,15 @@ import {
   type ShortcutAction,
   type ShortcutBinding,
 } from "@/stores/shortcut-store";
+import { useSettings } from "@/hooks/use-settings";
+import { getTranslations } from "@/lib/i18n";
 
 // Group metadata by category (stable order)
 const CATEGORIES = ["Playback", "Editing", "File", "Navigation", "View", "General"] as const;
 
 export default function KeyboardShortcuts() {
+  const [settings] = useSettings();
+  const t = getTranslations(settings.language);
   const [isOpen, setIsOpen] = useState(false);
   const [btnHovered, setBtnHovered] = useState(false);
   const [closeBtnHovered, setCloseBtnHovered] = useState(false);
@@ -105,7 +109,7 @@ export default function KeyboardShortcuts() {
           color: "var(--text-muted)",
           transition: "background 0.15s",
         }}
-        title="Keyboard shortcuts (?)"
+        title={t.shortcuts.title}
       >
         <Keyboard size={16} />
       </button>
@@ -142,7 +146,7 @@ export default function KeyboardShortcuts() {
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <Keyboard size={18} style={{ color: "var(--accent)" }} />
             <h2 style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", margin: 0 }}>
-              Keyboard Shortcuts
+              {t.shortcuts.title}
             </h2>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -163,10 +167,10 @@ export default function KeyboardShortcuts() {
                 cursor: "pointer",
                 transition: "background 0.15s",
               }}
-              title="Reset all shortcuts to defaults"
+              title={t.shortcuts.resetToDefault}
             >
               <RotateCcw size={12} />
-              Reset All
+              {t.shortcuts.resetAll}
             </button>
             <button
               onClick={() => { setIsOpen(false); setRecording(null); }}
@@ -188,7 +192,7 @@ export default function KeyboardShortcuts() {
 
         {/* Hint */}
         <p style={{ fontSize: 11, color: "var(--text-muted)", margin: "0 0 12px 0", flexShrink: 0 }}>
-          Click a shortcut to reassign it. Press a new key combination, or <kbd style={{ padding: "1px 4px", borderRadius: 3, fontSize: 10, fontFamily: "monospace", background: "var(--bg-surface)", border: "1px solid var(--border-default)" }}>Esc</kbd> to cancel.
+          {t.shortcuts.hint} <kbd style={{ padding: "1px 4px", borderRadius: 3, fontSize: 10, fontFamily: "monospace", background: "var(--bg-surface)", border: "1px solid var(--border-default)" }}>Esc</kbd> to cancel.
         </p>
 
         {/* Body — scrollable */}
@@ -196,6 +200,15 @@ export default function KeyboardShortcuts() {
           {CATEGORIES.map((category) => {
             const items = SHORTCUT_META.filter((m) => m.category === category);
             if (items.length === 0) return null;
+
+            const categoryLabels: Record<string, string> = {
+              Playback: t.shortcuts.categoryPlayback,
+              Editing: t.shortcuts.categoryEditing,
+              File: t.shortcuts.categoryFile,
+              Navigation: t.shortcuts.categoryNavigation,
+              View: t.shortcuts.categoryView,
+              General: t.shortcuts.categoryGeneral,
+            };
 
             return (
               <div key={category}>
@@ -209,7 +222,7 @@ export default function KeyboardShortcuts() {
                     color: "var(--text-muted)",
                   }}
                 >
-                  {category}
+                  {categoryLabels[category] || category}
                 </h3>
                 <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
                   {items.map((meta) => {
@@ -255,6 +268,8 @@ function ShortcutRow({
   onStartRecord: () => void;
   onReset: () => void;
 }) {
+  const [settings] = useSettings();
+  const t = getTranslations(settings.language);
   const [hovered, setHovered] = useState(false);
   const [resetHovered, setResetHovered] = useState(false);
 
@@ -300,7 +315,7 @@ function ShortcutRow({
               alignItems: "center",
               transition: "background 0.1s",
             }}
-            title="Reset to default"
+            title={t.shortcuts.resetToDefault}
           >
             <RotateCcw size={11} />
           </button>
@@ -324,7 +339,7 @@ function ShortcutRow({
             cursor: "pointer",
             transition: "all 0.15s",
           }}
-          title={isRecording ? "Press a key combo…" : "Click to reassign"}
+          title={isRecording ? t.shortcuts.pressKeyCombo : t.shortcuts.clickToReassign}
         >
           {isRecording ? (
             <span
@@ -335,7 +350,7 @@ function ShortcutRow({
                 padding: "1px 4px",
               }}
             >
-              Press keys…
+              {t.common.pressKeys}
             </span>
           ) : (
             keys.map((key, i) => (

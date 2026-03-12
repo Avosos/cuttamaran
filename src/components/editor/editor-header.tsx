@@ -21,8 +21,11 @@ import {
 } from "lucide-react";
 import WindowControls from "./window-controls";
 import MenuBar from "./menu-bar";
+import { getTranslations } from "@/lib/i18n";
 
 export default function EditorHeader() {
+  const [settings] = useSettings();
+  const t = getTranslations(settings.language);
   const {
     projectName,
     setProjectName,
@@ -251,7 +254,7 @@ export default function EditorHeader() {
           onMouseEnter={() => setHoveredBtn("undo")}
           onMouseLeave={() => setHoveredBtn(null)}
           style={iconBtnStyle("undo", past.length === 0)}
-          title="Undo (Ctrl+Z)"
+          title={`${t.header.undo} (Ctrl+Z)`}
         >
           <Undo2 size={16} style={{ color: "var(--text-secondary)" }} />
         </button>
@@ -261,7 +264,7 @@ export default function EditorHeader() {
           onMouseEnter={() => setHoveredBtn("redo")}
           onMouseLeave={() => setHoveredBtn(null)}
           style={iconBtnStyle("redo", future.length === 0)}
-          title="Redo (Ctrl+Shift+Z)"
+          title={`${t.header.redo} (Ctrl+Shift+Z)`}
         >
           <Redo2 size={16} style={{ color: "var(--text-secondary)" }} />
         </button>
@@ -274,7 +277,7 @@ export default function EditorHeader() {
             onMouseEnter={() => setHoveredBtn("save")}
             onMouseLeave={() => setHoveredBtn(null)}
             style={iconBtnStyle("save")}
-            title="Save Project (Ctrl+S)"
+            title={`${t.header.save} (Ctrl+S)`}
           >
             {saveFlash ? (
               <Check size={16} style={{ color: "var(--success)" }} />
@@ -301,7 +304,7 @@ export default function EditorHeader() {
                 pointerEvents: "none",
               }}
             >
-              Saved!
+              {t.header.saved}
             </span>
           )}
         </div>
@@ -332,7 +335,7 @@ export default function EditorHeader() {
           }}
         >
           <Download size={14} />
-          Export
+          {t.header.export}
         </button>
 
         <div style={{ width: 1, height: 20, margin: "0 4px", background: "var(--border-default)" }} />
@@ -351,9 +354,11 @@ export default function EditorHeader() {
 
 // ─── Settings Modal (Editor) ────────────────────────────
 import { useSettings, type AppSettings, updateSetting as updateSettingGlobal } from "@/hooks/use-settings";
+// NOTE: getTranslations is imported at the top of the file
 
 function EditorSettingsModal({ onClose }: { onClose: () => void }) {
   const [settings] = useSettings();
+  const t = getTranslations(settings.language);
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
   const [closeBtnHovered, setCloseBtnHovered] = useState(false);
 
@@ -363,7 +368,7 @@ function EditorSettingsModal({ onClose }: { onClose: () => void }) {
 
   const handleBrowseFolder = async () => {
     const result = await (window as Window & { electronAPI?: { openFolderDialog?: (opts: { title: string }) => Promise<{ canceled: boolean; filePaths: string[] }> } }).electronAPI?.openFolderDialog({
-      title: "Choose Projects Folder",
+      title: t.settings.chooseFolder,
     });
     if (result && !result.canceled && result.filePaths[0]) {
       updateSetting("projectsPath", result.filePaths[0]);
@@ -413,7 +418,7 @@ function EditorSettingsModal({ onClose }: { onClose: () => void }) {
       >
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px", borderBottom: "1px solid var(--border-subtle)" }}>
-          <h2 style={{ fontSize: 16, fontWeight: 600, margin: 0, color: "var(--text-primary)" }}>Settings</h2>
+          <h2 style={{ fontSize: 16, fontWeight: 600, margin: 0, color: "var(--text-primary)" }}>{t.settings.title}</h2>
           <button
             onClick={onClose}
             onMouseEnter={() => setCloseBtnHovered(true)}
@@ -428,14 +433,14 @@ function EditorSettingsModal({ onClose }: { onClose: () => void }) {
         <div style={{ padding: "20px 24px", maxHeight: 420, overflowY: "auto", display: "flex", flexDirection: "column", gap: 20 }}>
           {/* Storage */}
           <div>
-            <h3 style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 12, color: "var(--text-muted)" }}>Storage</h3>
+            <h3 style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 12, color: "var(--text-muted)" }}>{t.settings.storage}</h3>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", borderRadius: 8, background: "var(--bg-tertiary)" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, flex: 1 }}>
                 <FolderOpen size={15} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
                 <div style={{ minWidth: 0, flex: 1 }}>
-                  <span style={{ fontSize: 13, display: "block", color: "var(--text-secondary)" }}>Projects Folder</span>
+                  <span style={{ fontSize: 13, display: "block", color: "var(--text-secondary)" }}>{t.settings.projectsFolder}</span>
                   <span style={{ fontSize: 11, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--text-muted)" }}>
-                    {settings.projectsPath || "Not set — click Browse to choose"}
+                    {settings.projectsPath || t.settings.notSetClickBrowse}
                   </span>
                 </div>
               </div>
@@ -445,14 +450,14 @@ function EditorSettingsModal({ onClose }: { onClose: () => void }) {
                 onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(124,92,252,0.2)"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = "var(--accent-muted)"; }}
               >
-                Browse
+                {t.settings.browse}
               </button>
             </div>
           </div>
 
           {/* General */}
           <div>
-            <h3 style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 12, color: "var(--text-muted)" }}>General</h3>
+            <h3 style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 12, color: "var(--text-muted)" }}>{t.settings.general}</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               {/* Auto-Save */}
               <div
@@ -462,7 +467,7 @@ function EditorSettingsModal({ onClose }: { onClose: () => void }) {
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <HardDrive size={15} style={{ color: "var(--text-muted)" }} />
-                  <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>Auto-Save</span>
+                  <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>{t.settings.autoSave}</span>
                 </div>
                 <button
                   onClick={() => updateSetting("autoSave", !settings.autoSave)}
@@ -498,11 +503,11 @@ function EditorSettingsModal({ onClose }: { onClose: () => void }) {
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <Moon size={15} style={{ color: "var(--text-muted)" }} />
-                  <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>Theme</span>
+                  <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>{t.settings.theme}</span>
                 </div>
                 <SettingsDropdown
                   value={settings.theme}
-                  options={[{ label: "Dark", value: "dark" }, { label: "Light", value: "light" }]}
+                  options={[{ label: t.settings.dark, value: "dark" }, { label: t.settings.light, value: "light" }]}
                   onChange={(v) => updateSetting("theme", v as "dark" | "light")}
                 />
               </div>
@@ -515,7 +520,7 @@ function EditorSettingsModal({ onClose }: { onClose: () => void }) {
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <Palette size={15} style={{ color: "var(--text-muted)" }} />
-                  <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>Accent Color</span>
+                  <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>{t.settings.accentColor}</span>
                 </div>
                 <div style={{ display: "flex", gap: 6 }}>
                   {([
@@ -547,7 +552,7 @@ function EditorSettingsModal({ onClose }: { onClose: () => void }) {
 
           {/* Performance */}
           <div>
-            <h3 style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 12, color: "var(--text-muted)" }}>Performance</h3>
+            <h3 style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 12, color: "var(--text-muted)" }}>{t.settings.performance}</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               <div
                 style={rowStyle("quality")}
@@ -556,11 +561,11 @@ function EditorSettingsModal({ onClose }: { onClose: () => void }) {
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <Film size={15} style={{ color: "var(--text-muted)" }} />
-                  <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>Preview Quality</span>
+                  <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>{t.settings.previewQuality}</span>
                 </div>
                 <SettingsDropdown
                   value={settings.previewQuality}
-                  options={[{ label: "Low", value: "low" }, { label: "Medium", value: "medium" }, { label: "High", value: "high" }]}
+                  options={[{ label: t.settings.low, value: "low" }, { label: t.settings.medium, value: "medium" }, { label: t.settings.high, value: "high" }]}
                   onChange={(v) => updateSetting("previewQuality", v as "low" | "medium" | "high")}
                 />
               </div>
@@ -574,8 +579,8 @@ function EditorSettingsModal({ onClose }: { onClose: () => void }) {
                 <Scissors size={14} style={{ color: "#ffffff" }} />
               </div>
               <div>
-                <p style={{ fontSize: 13, fontWeight: 500, margin: 0, color: "var(--text-primary)" }}>Cuttamaran v0.1.0</p>
-                <p style={{ fontSize: 12, margin: 0, color: "var(--text-muted)" }}>Open-source desktop video editor</p>
+                <p style={{ fontSize: 13, fontWeight: 500, margin: 0, color: "var(--text-primary)" }}>{t.settings.aboutHeading} v0.1.0</p>
+                <p style={{ fontSize: 12, margin: 0, color: "var(--text-muted)" }}>{t.settings.aboutDescription}</p>
               </div>
             </div>
           </div>
@@ -669,32 +674,12 @@ function SettingsDropdown({ value, options, onChange }: { value: string; options
 }
 
 // ─── Export Modal ────────────────────────────────────────
-const EXPORT_FORMATS = [
-  { value: "mp4", label: "MP4", desc: "H.264 — best compatibility" },
-  { value: "webm", label: "WebM", desc: "VP9 — smaller file size" },
-  { value: "mov", label: "MOV", desc: "ProRes — editing & Apple" },
-  { value: "gif", label: "GIF", desc: "Animated — social media" },
-];
-
-const AUDIO_FORMATS = [
-  { value: "mp3", label: "MP3", desc: "Wide compatibility" },
-  { value: "wav", label: "WAV", desc: "Lossless — highest quality" },
-  { value: "aac", label: "AAC", desc: "Apple / streaming" },
-];
-
-const EXPORT_MODES = [
-  { value: "both", label: "Video + Audio", desc: "Full project" },
-  { value: "video", label: "Video Only", desc: "No audio track" },
-  { value: "audio", label: "Audio Only", desc: "Sound only — no video" },
-] as const;
+const EXPORT_FORMAT_IDS = ["mp4", "webm", "mov", "gif"] as const;
+const AUDIO_FORMAT_IDS = ["mp3", "wav", "aac"] as const;
+const EXPORT_MODE_IDS = ["both", "video", "audio"] as const;
+const EXPORT_QUALITY_IDS = ["low", "medium", "high"] as const;
 
 type ExportMode = "both" | "video" | "audio";
-
-const EXPORT_QUALITY = [
-  { value: "low", label: "Draft", desc: "720p — fast render" },
-  { value: "medium", label: "Standard", desc: "1080p — balanced" },
-  { value: "high", label: "High", desc: "Original — best quality" },
-];
 
 /** Map quality preset → resolution scale & fps */
 function resolveExportSettings(
@@ -713,7 +698,37 @@ function resolveExportSettings(
 }
 
 function ExportModal({ onClose }: { onClose: () => void }) {
+  const [settings] = useSettings();
+  const t = getTranslations(settings.language);
   const { projectName, canvasSize, tracks, duration, mediaFiles } = useEditorStore();
+
+  // Build translated lookup arrays inside the component
+  const EXPORT_FORMATS = EXPORT_FORMAT_IDS.map((id) => ({
+    value: id,
+    label: t.exportModal[id as keyof typeof t.exportModal] as string,
+    desc: t.exportModal[`${id}Desc` as keyof typeof t.exportModal] as string,
+  }));
+  const AUDIO_FORMATS = AUDIO_FORMAT_IDS.map((id) => ({
+    value: id,
+    label: t.exportModal[id as keyof typeof t.exportModal] as string,
+    desc: t.exportModal[`${id}Desc` as keyof typeof t.exportModal] as string,
+  }));
+  const EXPORT_MODES = EXPORT_MODE_IDS.map((id) => {
+    const labels: Record<string, { label: string; desc: string }> = {
+      both: { label: t.exportModal.videoAndAudio, desc: t.exportModal.fullProject },
+      video: { label: t.exportModal.videoOnlyMuted, desc: t.exportModal.noAudioTrack },
+      audio: { label: t.exportModal.audioOnly, desc: t.exportModal.soundOnly },
+    };
+    return { value: id, ...labels[id] };
+  });
+  const EXPORT_QUALITY = EXPORT_QUALITY_IDS.map((id) => {
+    const labels: Record<string, { label: string; desc: string }> = {
+      low: { label: t.exportModal.quality720, desc: t.exportModal.quality720Desc },
+      medium: { label: t.exportModal.quality1080, desc: t.exportModal.quality1080Desc },
+      high: { label: t.exportModal.qualityOriginal, desc: t.exportModal.qualityOriginalDesc },
+    };
+    return { value: id, ...labels[id] };
+  });
   const [format, setFormat] = useState("mp4");
   const [quality, setQuality] = useState("high");
   const [exportMode, setExportMode] = useState<ExportMode>("both");
@@ -762,7 +777,7 @@ function ExportModal({ onClose }: { onClose: () => void }) {
   const handleExport = useCallback(async () => {
     const api = window.electronAPI;
     if (!api) {
-      setErrorMsg("Export requires the Electron desktop app.");
+      setErrorMsg(t.exportModal.exportRequiresElectron);
       return;
     }
 
@@ -786,7 +801,7 @@ function ExportModal({ onClose }: { onClose: () => void }) {
     setProgress(0);
     setDone(false);
     setErrorMsg(null);
-    setStatusText("Preparing…");
+    setStatusText(t.exportModal.preparing);
 
     const { width, height, fps } = resolveExportSettings(
       quality,
@@ -875,7 +890,7 @@ function ExportModal({ onClose }: { onClose: () => void }) {
         }
       }
     }
-    setStatusText("Loading media…");
+    setStatusText(t.exportModal.loadingMedia);
     await Promise.all(loadPromises);
 
     // Helper: seek a video and wait for it to be ready
@@ -886,7 +901,7 @@ function ExportModal({ onClose }: { onClose: () => void }) {
         video.currentTime = time;
       });
 
-    setStatusText("Rendering…");
+    setStatusText(t.exportModal.rendering);
 
     for (let frame = 0; frame < totalFrames; frame++) {
       if (cancelledRef.current) break;
@@ -990,7 +1005,7 @@ function ExportModal({ onClose }: { onClose: () => void }) {
     cancelledRef.current = true;
     await window.electronAPI?.exportCancel();
     setExporting(false);
-    setStatusText("Cancelled");
+    setStatusText(t.exportModal.cancelled);
   }, []);
 
   const qualityLabel = EXPORT_QUALITY.find((q) => q.value === quality);
@@ -1025,7 +1040,7 @@ function ExportModal({ onClose }: { onClose: () => void }) {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px", borderBottom: "1px solid var(--border-subtle)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <Download size={18} style={{ color: "var(--accent)" }} />
-            <h2 style={{ fontSize: 16, fontWeight: 600, margin: 0, color: "var(--text-primary)" }}>Export Project</h2>
+            <h2 style={{ fontSize: 16, fontWeight: 600, margin: 0, color: "var(--text-primary)" }}>{t.exportModal.title}</h2>
           </div>
           <button
             onClick={onClose}
@@ -1054,7 +1069,7 @@ function ExportModal({ onClose }: { onClose: () => void }) {
             <>
               {/* Export Mode */}
               <div>
-                <h3 style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10, color: "var(--text-muted)" }}>Export Mode</h3>
+                <h3 style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10, color: "var(--text-muted)" }}>{t.exportModal.mode}</h3>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
                   {EXPORT_MODES.map((m) => {
                     const active = exportMode === m.value;
@@ -1086,7 +1101,7 @@ function ExportModal({ onClose }: { onClose: () => void }) {
 
               {/* Format */}
               <div>
-                <h3 style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10, color: "var(--text-muted)" }}>Format</h3>
+                <h3 style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10, color: "var(--text-muted)" }}>{t.exportModal.format}</h3>
                 <div style={{ display: "grid", gridTemplateColumns: exportMode === "audio" ? "1fr 1fr 1fr" : "1fr 1fr", gap: 8 }}>
                   {(exportMode === "audio" ? AUDIO_FORMATS : EXPORT_FORMATS).map((f) => {
                     const active = format === f.value;
@@ -1119,7 +1134,7 @@ function ExportModal({ onClose }: { onClose: () => void }) {
               {/* Quality (hidden for audio-only) */}
               {exportMode !== "audio" && (
               <div>
-                <h3 style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10, color: "var(--text-muted)" }}>Quality</h3>
+                <h3 style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10, color: "var(--text-muted)" }}>{t.exportModal.quality}</h3>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
                   {EXPORT_QUALITY.map((q) => {
                     const active = quality === q.value;
@@ -1157,7 +1172,7 @@ function ExportModal({ onClose }: { onClose: () => void }) {
             <div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
                 <span style={{ fontSize: 12, color: errorMsg ? "#ef4444" : "var(--text-secondary)" }}>
-                  {errorMsg ? "Export failed" : done ? "Export complete!" : `Exporting ${formatLabel?.label ?? format.toUpperCase()}…`}
+                  {errorMsg ? t.exportModal.exportFailed : done ? t.exportModal.exportComplete : t.exportModal.exportingFormat.replace("{format}", formatLabel?.label ?? format.toUpperCase())}
                 </span>
                 <span style={{ fontSize: 11, fontWeight: 500, color: done ? "var(--success)" : errorMsg ? "#ef4444" : "var(--text-muted)" }}>
                   {errorMsg ? "!" : `${Math.min(Math.round(progress), 100)}%`}
@@ -1215,7 +1230,7 @@ function ExportModal({ onClose }: { onClose: () => void }) {
             >
               <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <Check size={14} />
-                Done
+                {t.exportModal.done}
               </span>
             </button>
           ) : (
@@ -1234,7 +1249,7 @@ function ExportModal({ onClose }: { onClose: () => void }) {
                 onMouseEnter={(e) => { e.currentTarget.style.background = "var(--hover-overlay)"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
               >
-                {exporting ? "Cancel" : "Close"}
+                {exporting ? t.exportModal.cancel : t.exportModal.close}
               </button>
               <button
                 onClick={handleExport}
@@ -1257,7 +1272,7 @@ function ExportModal({ onClose }: { onClose: () => void }) {
               >
                 <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <Download size={14} />
-                  {exporting ? "Exporting…" : "Export"}
+                  {exporting ? t.exportModal.exporting : t.exportModal.export}
                 </span>
               </button>
             </>

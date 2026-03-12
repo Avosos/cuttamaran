@@ -25,6 +25,8 @@ import {
 } from "lucide-react";
 import type { ClipType, MediaFile, PanelTab, LibraryItem } from "@/types/editor";
 import { formatFileSize, formatDuration } from "@/lib/utils";
+import { useSettings } from "@/hooks/use-settings";
+import { getTranslations } from "@/lib/i18n";
 
 const TABS: { id: PanelTab; label: string; icon: React.ReactNode }[] = [
   { id: "assets", label: "Assets", icon: <FolderOpen size={18} /> },
@@ -46,6 +48,18 @@ export default function AssetsPanel() {
     addClipToTrack,
     projectFilePath,
   } = useEditorStore();
+
+  const settings = useSettings();
+  const t = getTranslations(settings.language);
+
+  const tabLabels: Record<string, string> = {
+    assets: t.assets.assets,
+    text: t.assets.text,
+    audio: t.assets.audio,
+    effects: t.assets.effects,
+    stickers: t.assets.stickers,
+    library: t.assets.library,
+  };
 
   const [isDragging, setIsDragging] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -347,7 +361,7 @@ export default function AssetsPanel() {
             }}
           >
             {tab.icon}
-            <span style={{ fontSize: 9, fontWeight: 500 }}>{tab.label}</span>
+            <span style={{ fontSize: 9, fontWeight: 500 }}>{tabLabels[tab.id]}</span>
           </button>
         ))}
       </div>
@@ -370,7 +384,7 @@ export default function AssetsPanel() {
             <Search size={14} style={{ color: "var(--text-muted)" }} />
             <input
               type="text"
-              placeholder="Search assets..."
+              placeholder={t.assets.searchAssets}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{
@@ -445,12 +459,12 @@ export default function AssetsPanel() {
                 <p
                   style={{ fontSize: 12, fontWeight: 500, color: "var(--text-secondary)", margin: 0 }}
                 >
-                  Drop media here
+                  {t.assets.dropMediaHere}
                 </p>
                 <p
                   style={{ fontSize: 10, marginTop: 2, color: "var(--text-muted)", margin: "2px 0 0 0" }}
                 >
-                  or click to browse
+                  {t.assets.orClickToBrowse}
                 </p>
               </div>
 
@@ -461,7 +475,7 @@ export default function AssetsPanel() {
                     <span
                       style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}
                     >
-                      Media ({filteredMedia.length})
+                      {t.assets.mediaCount.replace("{n}", String(filteredMedia.length))}
                     </span>
                   </div>
 
@@ -556,7 +570,7 @@ export default function AssetsPanel() {
                             e.stopPropagation();
                             addToTimeline(media);
                           }}
-                          title="Add to timeline"
+                          title={t.assets.addToTimeline}
                         >
                           <Plus
                             size={12}
@@ -571,7 +585,7 @@ export default function AssetsPanel() {
                             e.stopPropagation();
                             removeMediaFile(media.id);
                           }}
-                          title="Remove"
+                          title={t.assets.remove}
                         >
                           <X
                             size={12}
@@ -593,7 +607,7 @@ export default function AssetsPanel() {
                   <p
                     style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}
                   >
-                    No media files yet
+                    {t.assets.noMediaFiles}
                   </p>
                 </div>
               )}
@@ -613,48 +627,50 @@ export default function AssetsPanel() {
 
 function TextPanel() {
   const { tracks, addClipToTrack, currentTime } = useEditorStore();
+  const settings = useSettings();
+  const t = getTranslations(settings.language);
 
   const textPresets = [
     {
-      label: "Title",
-      text: "Title Text",
+      label: t.assets.titlePreset,
+      text: t.assets.titleSample,
       fontSize: 64,
       fontFamily: "Inter",
       color: "#ffffff",
     },
     {
-      label: "Subtitle",
-      text: "Subtitle",
+      label: t.assets.subtitlePreset,
+      text: t.assets.subtitleSample,
       fontSize: 32,
       fontFamily: "Inter",
       color: "#cccccc",
     },
     {
-      label: "Caption",
-      text: "Caption text here",
+      label: t.assets.captionPreset,
+      text: t.assets.captionSample,
       fontSize: 24,
       fontFamily: "Inter",
       color: "#ffffff",
       backgroundColor: "rgba(0,0,0,0.7)",
     },
     {
-      label: "Lower Third",
-      text: "Name Here",
+      label: t.assets.lowerThirdPreset,
+      text: t.assets.lowerThirdSample,
       fontSize: 28,
       fontFamily: "Inter",
       color: "#ffffff",
       backgroundColor: "rgba(124, 92, 252, 0.8)",
     },
     {
-      label: "Quote",
-      text: '"Inspirational quote"',
+      label: t.assets.quotePreset,
+      text: t.assets.quoteSample,
       fontSize: 36,
       fontFamily: "Georgia",
       color: "#e2e2e2",
     },
     {
-      label: "Bold Heading",
-      text: "BOLD TEXT",
+      label: t.assets.boldHeadingPreset,
+      text: t.assets.boldHeadingSample,
       fontSize: 72,
       fontFamily: "Inter",
       color: "#ffffff",
@@ -691,7 +707,7 @@ function TextPanel() {
       <p
         style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8, color: "var(--text-muted)" }}
       >
-        Text Presets
+        {t.assets.textPresets}
       </p>
       {textPresets.map((preset) => (
         <button
@@ -741,6 +757,9 @@ function TextPanel() {
 }
 
 function AudioPanel() {
+  const settings = useSettings();
+  const t = getTranslations(settings.language);
+
   return (
     <div style={{ textAlign: "center", padding: "32px 0" }}>
       <Music
@@ -748,10 +767,10 @@ function AudioPanel() {
         style={{ color: "var(--text-muted)", opacity: 0.5, margin: "0 auto 8px auto", display: "block" }}
       />
       <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>
-        Import audio files from Assets
+        {t.assets.importAudioHint}
       </p>
       <p style={{ fontSize: 10, marginTop: 4, color: "var(--text-muted)" }}>
-        Supports MP3, WAV, AAC, OGG
+        {t.assets.supportedFormats}
       </p>
     </div>
   );
@@ -759,6 +778,8 @@ function AudioPanel() {
 
 function EffectsPanel() {
   const { selectedClipId, tracks, addEffect } = useEditorStore();
+  const settings = useSettings();
+  const t = getTranslations(settings.language);
 
   const selectedClip = selectedClipId
     ? tracks.flatMap((t) => t.clips).find((c) => c.id === selectedClipId)
@@ -766,6 +787,23 @@ function EffectsPanel() {
   const trackId = selectedClipId
     ? tracks.find((t) => t.clips.some((c) => c.id === selectedClipId))?.id
     : null;
+
+  const effectNameLabels: Record<string, string> = {
+    fade_in: t.properties.fadeIn,
+    fade_out: t.properties.fadeOut,
+    cross_dissolve: t.properties.crossDissolve,
+    blur: t.properties.blur,
+    brightness: t.properties.brightness,
+    contrast: t.properties.contrast,
+    saturation: t.properties.saturation,
+    vignette: t.properties.vignette,
+  };
+
+  const categoryLabels: Record<string, string> = {
+    Transition: t.assets.effectTransition,
+    Filter: t.assets.effectFilter,
+    Adjustment: t.assets.effectAdjustment,
+  };
 
   const effects = [
     { name: "Fade In", icon: "↗", type: "fade_in" as const, category: "Transition", defaultValue: 1, defaultDuration: 1 },
@@ -798,11 +836,11 @@ function EffectsPanel() {
       <p
         style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8, color: "var(--text-muted)" }}
       >
-        Effects & Transitions
+        {t.assets.effectsAndTransitions}
       </p>
       {!selectedClip && (
         <p style={{ fontSize: 11, color: "var(--text-muted)", textAlign: "center", padding: "12px 0" }}>
-          Select a clip on the timeline to apply effects
+          {t.assets.selectClipForEffects}
         </p>
       )}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
@@ -841,7 +879,7 @@ function EffectsPanel() {
               <span
                 style={{ fontSize: 10, display: "block", marginTop: 4, color: applied ? "var(--accent-hover)" : "var(--text-secondary)" }}
               >
-                {applied ? `✓ ${effect.name}` : effect.name}
+                {applied ? `✓ ${effectNameLabels[effect.type] ?? effect.name}` : effectNameLabels[effect.type] ?? effect.name}
               </span>
             </button>
           );
@@ -852,6 +890,9 @@ function EffectsPanel() {
 }
 
 function StickersPanel() {
+  const settings = useSettings();
+  const t = getTranslations(settings.language);
+
   return (
     <div style={{ textAlign: "center", padding: "32px 0" }}>
       <Sticker
@@ -859,7 +900,7 @@ function StickersPanel() {
         style={{ color: "var(--text-muted)", opacity: 0.5, margin: "0 auto 8px auto", display: "block" }}
       />
       <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>
-        Stickers coming soon
+        {t.assets.stickersComingSoon}
       </p>
     </div>
   );
@@ -870,6 +911,17 @@ const LIBRARY_CATEGORIES = ["All", "Clips", "Segments", "Intros", "Outros", "Cus
 
 function LibraryPanel() {
   const { tracks, addClipToTrack, addTrack, selectedClipId, currentTime } = useEditorStore();
+  const settings = useSettings();
+  const t = getTranslations(settings.language);
+
+  const libCategoryLabels: Record<string, string> = {
+    All: t.assets.all,
+    Clips: t.assets.clips,
+    Segments: t.assets.segments,
+    Intros: t.assets.intros,
+    Outros: t.assets.outros,
+    Custom: t.assets.customCategory,
+  };
   const [items, setItems] = useState<LibraryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState("All");
@@ -1026,7 +1078,7 @@ function LibraryPanel() {
             cursor: selectedClipId ? "pointer" : "default", opacity: selectedClipId ? 1 : 0.5,
           }}
         >
-          <Plus size={12} /> Save Clip
+          <Plus size={12} /> {t.assets.saveClip}
         </button>
         <button
           onClick={() => { setSaveMode("segment"); setShowSaveDialog(true); }}
@@ -1038,7 +1090,7 @@ function LibraryPanel() {
             color: "var(--text-primary)", cursor: "pointer",
           }}
         >
-          <Layers size={12} /> Save Segment
+          <Layers size={12} /> {t.assets.saveSegment}
         </button>
       </div>
 
@@ -1055,7 +1107,7 @@ function LibraryPanel() {
               color: category === cat ? "var(--accent)" : "var(--text-muted)",
             }}
           >
-            {cat}
+            {libCategoryLabels[cat] ?? cat}
           </button>
         ))}
       </div>
@@ -1063,16 +1115,16 @@ function LibraryPanel() {
       {/* Items list */}
       {loading ? (
         <div style={{ textAlign: "center", padding: "24px 0" }}>
-          <p style={{ fontSize: 11, color: "var(--text-muted)" }}>Loading…</p>
+          <p style={{ fontSize: 11, color: "var(--text-muted)" }}>{t.assets.loading}</p>
         </div>
       ) : filteredItems.length === 0 ? (
         <div style={{ textAlign: "center", padding: "24px 0" }}>
           <BookOpen size={28} style={{ color: "var(--text-muted)", opacity: 0.4, display: "block", margin: "0 auto 8px" }} />
           <p style={{ fontSize: 11, color: "var(--text-muted)", margin: 0 }}>
-            {items.length === 0 ? "No library items yet" : "No items in this category"}
+            {items.length === 0 ? t.assets.noLibraryItems : t.assets.noItemsInCategory}
           </p>
           <p style={{ fontSize: 10, color: "var(--text-muted)", margin: "4px 0 0", opacity: 0.7 }}>
-            Save clips or segments to reuse them
+            {t.assets.noLibraryItemsDesc}
           </p>
         </div>
       ) : (
@@ -1142,16 +1194,16 @@ function LibraryPanel() {
             }}
           >
             <h3 style={{ fontSize: 14, fontWeight: 600, margin: 0, color: "var(--text-primary)" }}>
-              Save to Library
+              {t.assets.saveToLibrary}
             </h3>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <label style={{ fontSize: 11, fontWeight: 500, color: "var(--text-muted)" }}>Name</label>
+              <label style={{ fontSize: 11, fontWeight: 500, color: "var(--text-muted)" }}>{t.assets.name}</label>
               <input
                 autoFocus
                 value={saveName}
                 onChange={(e) => setSaveName(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter" && saveName.trim()) handleSave(); }}
-                placeholder={saveMode === "clip" ? "My saved clip" : "My intro sequence"}
+                placeholder={saveMode === "clip" ? t.assets.savedClipPlaceholder : t.assets.savedSegmentPlaceholder}
                 style={{
                   padding: "8px 10px", borderRadius: 8, fontSize: 13,
                   border: "1px solid var(--border-subtle)", background: "var(--bg-tertiary)",
@@ -1160,7 +1212,7 @@ function LibraryPanel() {
               />
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <label style={{ fontSize: 11, fontWeight: 500, color: "var(--text-muted)" }}>Category</label>
+              <label style={{ fontSize: 11, fontWeight: 500, color: "var(--text-muted)" }}>{t.assets.category}</label>
               <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
                 {["Intros", "Outros", "Custom"].map((cat) => (
                   <button
@@ -1173,7 +1225,7 @@ function LibraryPanel() {
                       color: saveCategory === cat ? "var(--accent)" : "var(--text-muted)",
                     }}
                   >
-                    {cat}
+                    {libCategoryLabels[cat] ?? cat}
                   </button>
                 ))}
               </div>
@@ -1187,7 +1239,7 @@ function LibraryPanel() {
                   color: "var(--text-secondary)", cursor: "pointer",
                 }}
               >
-                Cancel
+                {t.assets.cancel}
               </button>
               <button
                 onClick={handleSave}
@@ -1200,7 +1252,7 @@ function LibraryPanel() {
                   boxShadow: "0 2px 8px var(--accent-glow)",
                 }}
               >
-                Save
+                {t.assets.save}
               </button>
             </div>
           </div>

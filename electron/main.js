@@ -24,6 +24,11 @@ try {
 
 const isDev = process.env.NODE_ENV === "development" || !app.isPackaged;
 
+// ─── Centralized storage under avosos ecosystem ─────────────────────────────
+const dataDir = path.join(app.getPath("appData"), "avosos", "apps", "cuttamaran");
+fs.mkdirSync(dataDir, { recursive: true });
+app.setPath("userData", dataDir);
+
 let mainWindow = null;
 
 // ─── Custom protocol for serving local media files ─────────

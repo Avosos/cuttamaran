@@ -35,12 +35,16 @@ import {
 import { formatTime, getClipGradient, getClipPrimaryColor } from "@/lib/utils";
 import type { TimelineClip, Track } from "@/types/editor";
 import { useWaveform } from "@/hooks/use-waveform";
+import { useSettings } from "@/hooks/use-settings";
+import { getTranslations } from "@/lib/i18n";
 
 const PIXELS_PER_SECOND_BASE = 80;
 const RULER_HEIGHT = 28;
 const TRACK_HEADER_WIDTH = 180;
 
 export default function TimelinePanel() {
+  const [settings] = useSettings();
+  const t = getTranslations(settings.language);
   const {
     tracks,
     currentTime,
@@ -434,10 +438,10 @@ export default function TimelinePanel() {
                 ? "var(--accent)"
                 : "var(--text-muted)",
             }}
-            title="Toggle Snapping"
+            title={t.timeline.toggleSnapping}
           >
             <Magnet size={12} />
-            Snap
+            {t.timeline.snap}
           </button>
 
           <div
@@ -465,7 +469,7 @@ export default function TimelinePanel() {
             }}
             onMouseEnter={(e) => { if (selectedClipId) e.currentTarget.style.background = "var(--hover-overlay)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-            title="Delete clip"
+            title={t.timeline.deleteClip}
           >
             <Trash2
               size={13}
@@ -498,7 +502,7 @@ export default function TimelinePanel() {
             }}
             onMouseEnter={(e) => { if (selectedClipId) e.currentTarget.style.background = "var(--hover-overlay)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-            title="Split clip (Ctrl+B)"
+            title={t.timeline.splitClip}
           >
             <Scissors
               size={13}
@@ -565,7 +569,7 @@ export default function TimelinePanel() {
             onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
           >
             <Plus size={12} />
-            Video
+            {t.timeline.video}
           </button>
           <button
             onClick={() => addTrack("audio")}
@@ -586,7 +590,7 @@ export default function TimelinePanel() {
             onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
           >
             <Plus size={12} />
-            Audio
+            {t.timeline.audio}
           </button>
         </div>
       </div>
@@ -775,6 +779,8 @@ export default function TimelinePanel() {
 
 // ─── Track Header ─────────────────────────────────────
 function TrackHeader({ track, index, totalTracks }: { track: Track; index: number; totalTracks: number }) {
+  const [settings] = useSettings();
+  const t = getTranslations(settings.language);
   const { toggleTrackMute, toggleTrackSolo, setTrackVolume, toggleTrackLock, toggleTrackVisibility, renameTrack, reorderTracks, removeTrack, updateTrackColor } =
     useEditorStore();
   const [colorPickerPos, setColorPickerPos] = useState<{ x: number; y: number } | null>(null);
@@ -862,7 +868,7 @@ function TrackHeader({ track, index, totalTracks }: { track: Track; index: numbe
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)", marginBottom: 6 }}>Track Color</div>
+            <div style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)", marginBottom: 6 }}>{t.timeline.trackColor}</div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 4, marginBottom: 8 }}>
               {[
                 "#ef4444", "#f97316", "#eab308", "#22c55e", "#06b6d4", "#3b82f6",
@@ -892,14 +898,14 @@ function TrackHeader({ track, index, totalTracks }: { track: Track; index: numbe
                 onChange={(e) => updateTrackColor(track.id, e.target.value)}
                 style={{ width: 26, height: 20, padding: 0, border: "1px solid var(--border-subtle)", borderRadius: 4, background: "transparent", cursor: "pointer" }}
               />
-              <span style={{ fontSize: 10, color: "var(--text-muted)", flex: 1 }}>Custom</span>
+              <span style={{ fontSize: 10, color: "var(--text-muted)", flex: 1 }}>{t.common.custom}</span>
               {track.color && (
                 <button
                   onClick={() => { updateTrackColor(track.id, undefined); setColorPickerPos(null); }}
                   style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, border: "1px solid var(--border-subtle)", background: "var(--bg-tertiary)", color: "var(--text-muted)", cursor: "pointer" }}
                   onMouseEnter={(e) => { e.currentTarget.style.background = "var(--hover-overlay)"; }}
                   onMouseLeave={(e) => { e.currentTarget.style.background = "var(--bg-tertiary)"; }}
-                >Reset</button>
+                >{t.common.reset}</button>
               )}
             </div>
           </div>
@@ -963,7 +969,7 @@ function TrackHeader({ track, index, totalTracks }: { track: Track; index: numbe
               ? "var(--text-secondary)"
               : "var(--text-muted)",
           }}
-          title="Double-click to rename"
+          title={t.timeline.doubleClickRename}
         >
           {track.name}
         </span>
@@ -975,7 +981,7 @@ function TrackHeader({ track, index, totalTracks }: { track: Track; index: numbe
           style={{ padding: 4, borderRadius: 4, border: "none", background: "transparent", cursor: "pointer", transition: "background 0.15s" }}
           onMouseEnter={(e) => { e.currentTarget.style.background = "var(--hover-overlay)"; }}
           onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-          title={track.visible ? "Hide track" : "Show track"}
+          title={track.visible ? t.timeline.hideTrack : t.timeline.showTrack}
         >
           {track.visible ? (
             <Eye size={11} style={{ color: "var(--text-muted)" }} />
@@ -991,7 +997,7 @@ function TrackHeader({ track, index, totalTracks }: { track: Track; index: numbe
           style={{ padding: 4, borderRadius: 4, border: "none", background: "transparent", cursor: "pointer", transition: "background 0.15s" }}
           onMouseEnter={(e) => { e.currentTarget.style.background = "var(--hover-overlay)"; }}
           onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-          title={track.muted ? "Unmute" : "Mute"}
+          title={track.muted ? t.timeline.unmute : t.timeline.mute}
         >
           {track.muted ? (
             <VolumeX
@@ -1010,7 +1016,7 @@ function TrackHeader({ track, index, totalTracks }: { track: Track; index: numbe
           style={{ padding: 4, borderRadius: 4, border: "none", background: track.solo ? "rgba(234, 179, 8, 0.15)" : "transparent", cursor: "pointer", transition: "background 0.15s" }}
           onMouseEnter={(e) => { if (!track.solo) e.currentTarget.style.background = "var(--hover-overlay)"; }}
           onMouseLeave={(e) => { if (!track.solo) e.currentTarget.style.background = track.solo ? "rgba(234, 179, 8, 0.15)" : "transparent"; }}
-          title={track.solo ? "Unsolo" : "Solo"}
+          title={track.solo ? t.timeline.unsolo : t.timeline.solo}
         >
           <Headphones
             size={11}
@@ -1022,7 +1028,7 @@ function TrackHeader({ track, index, totalTracks }: { track: Track; index: numbe
           style={{ padding: 4, borderRadius: 4, border: "none", background: "transparent", cursor: "pointer", transition: "background 0.15s" }}
           onMouseEnter={(e) => { e.currentTarget.style.background = "var(--hover-overlay)"; }}
           onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-          title={track.locked ? "Unlock" : "Lock"}
+          title={track.locked ? t.timeline.unlock : t.timeline.lock}
         >
           {track.locked ? (
             <Lock size={11} style={{ color: "var(--warning)" }} />
@@ -1044,7 +1050,7 @@ function TrackHeader({ track, index, totalTracks }: { track: Track; index: numbe
           style={{ padding: 4, borderRadius: 4, border: "none", background: confirmDelete ? "rgba(239,68,68,0.2)" : "transparent", cursor: "pointer", transition: "background 0.15s" }}
           onMouseEnter={(e) => { if (!confirmDelete) e.currentTarget.style.background = "rgba(239,68,68,0.15)"; }}
           onMouseLeave={(e) => { if (!confirmDelete) e.currentTarget.style.background = "transparent"; }}
-          title="Remove track"
+          title={t.timeline.removeTrack}
         >
           <Trash2 size={11} style={{ color: confirmDelete ? "#ef4444" : "var(--text-muted)" }} />
         </button>
@@ -1324,6 +1330,8 @@ function ClipContextMenu({
     setPropertiesPanelOpen,
     tracks,
   } = useEditorStore();
+  const settings = useSettings();
+  const t = getTranslations(settings.language);
 
   const menuRef = useRef<HTMLDivElement>(null);
   const [speedSubmenu, setSpeedSubmenu] = useState(false);
@@ -1365,7 +1373,7 @@ function ClipContextMenu({
   }[] = [
     {
       id: "split",
-      label: "Split at Playhead",
+      label: t.timeline.splitAtPlayheadCtx,
       icon: <Scissors size={14} />,
       shortcut: "Ctrl+B",
       disabled: !canSplit,
@@ -1376,7 +1384,7 @@ function ClipContextMenu({
     },
     {
       id: "duplicate",
-      label: "Duplicate",
+      label: t.timeline.duplicate,
       icon: <Copy size={14} />,
       shortcut: "Ctrl+D",
       onClick: () => {
@@ -1387,7 +1395,7 @@ function ClipContextMenu({
     { id: "sep1", label: "", icon: null, separator: true },
     {
       id: "mute",
-      label: isMuted ? "Unmute Clip" : "Mute Clip",
+      label: isMuted ? t.timeline.unmuteClip : t.timeline.muteClip,
       icon: isMuted ? <Volume2 size={14} /> : <VolumeOff size={14} />,
       onClick: () => {
         updateClip(trackId, clipId, { volume: isMuted ? 1 : 0 });
@@ -1396,7 +1404,7 @@ function ClipContextMenu({
     },
     {
       id: "speed",
-      label: "Speed",
+      label: t.timeline.speed,
       icon: <Gauge size={14} />,
       hasSubmenu: true,
       onClick: () => setSpeedSubmenu(!speedSubmenu),
@@ -1404,7 +1412,7 @@ function ClipContextMenu({
     { id: "sep2", label: "", icon: null, separator: true },
     {
       id: "properties",
-      label: "Properties",
+      label: t.timeline.properties,
       icon: <PanelRightOpen size={14} />,
       onClick: () => {
         setSelectedClipId(clipId);
@@ -1414,7 +1422,7 @@ function ClipContextMenu({
     },
     {
       id: "color",
-      label: "Clip Color",
+      label: t.timeline.clipColor,
       icon: <Palette size={14} />,
       hasSubmenu: true,
       onClick: () => setColorSubmenu(!colorSubmenu),
@@ -1422,7 +1430,7 @@ function ClipContextMenu({
     { id: "sep3", label: "", icon: null, separator: true },
     {
       id: "delete",
-      label: "Delete",
+      label: t.timeline.delete,
       icon: <Trash2 size={14} />,
       shortcut: "Del",
       danger: true,
@@ -1569,8 +1577,14 @@ function ClipContextMenu({
                 onClick={(e) => e.stopPropagation()}
               >
                 {SPEED_OPTIONS.map((opt) => {
-                  // Compute effective speed from current duration vs original
-                  const isActive = false; // could compare to stored speed
+                  const speedLabels: Record<number, string> = {
+                    0.25: t.timeline.speed025,
+                    0.5: t.timeline.speed05,
+                    1: t.timeline.speed1,
+                    1.5: t.timeline.speed15,
+                    2: t.timeline.speed2,
+                    4: t.timeline.speed4,
+                  };
                   return (
                     <button
                       key={opt.value}
@@ -1600,7 +1614,7 @@ function ClipContextMenu({
                       onMouseEnter={(e) => { e.currentTarget.style.background = "var(--hover-overlay)"; }}
                       onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
                     >
-                      {opt.label}
+                      {speedLabels[opt.value] ?? opt.label}
                     </button>
                   );
                 })}
@@ -1665,7 +1679,7 @@ function ClipContextMenu({
                       cursor: "pointer",
                     }}
                   />
-                  <span style={{ fontSize: 10, color: "var(--text-muted)", flex: 1 }}>Custom</span>
+                  <span style={{ fontSize: 10, color: "var(--text-muted)", flex: 1 }}>{t.timeline.custom}</span>
                   {clip.clipColor && (
                     <button
                       onClick={() => {
@@ -1684,7 +1698,7 @@ function ClipContextMenu({
                       onMouseEnter={(e) => { e.currentTarget.style.background = "var(--hover-overlay)"; }}
                       onMouseLeave={(e) => { e.currentTarget.style.background = "var(--bg-tertiary)"; }}
                     >
-                      Reset
+                      {t.timeline.reset}
                     </button>
                   )}
                 </div>

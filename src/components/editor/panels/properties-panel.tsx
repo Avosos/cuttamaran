@@ -19,8 +19,12 @@ import {
   Scissors,
 } from "lucide-react";
 import { formatDuration } from "@/lib/utils";
+import { useSettings } from "@/hooks/use-settings";
+import { getTranslations } from "@/lib/i18n";
 
 export default function PropertiesPanel() {
+  const [settings] = useSettings();
+  const t = getTranslations(settings.language);
   const {
     propertiesPanelOpen,
     setPropertiesPanelOpen,
@@ -153,7 +157,7 @@ export default function PropertiesPanel() {
             <p
               style={{ fontSize: 10, textTransform: "capitalize", color: "var(--text-muted)", margin: 0 }}
             >
-              {selectedClip.type} clip
+              {({video: t.properties.videoClip, audio: t.properties.audioClip, text: t.properties.textClip, image: t.properties.imageClip}[selectedClip.type] || selectedClip.type)}
             </p>
           </div>
         </div>
@@ -177,8 +181,8 @@ export default function PropertiesPanel() {
       {/* Properties */}
       <div style={{ flex: 1, overflowY: "auto", padding: 12, display: "flex", flexDirection: "column", gap: 16 }}>
         {/* Clip Color */}
-        <PropertySection icon={<Palette size={13} />} title="Clip Color">
-          <PropertyRow label="Timeline Color">
+        <PropertySection icon={<Palette size={13} />} title={t.properties.clipColor}>
+          <PropertyRow label={t.properties.timelineColor}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <input
                 type="color"
@@ -209,9 +213,9 @@ export default function PropertiesPanel() {
                   }}
                   onMouseEnter={(e) => { e.currentTarget.style.background = "var(--hover-overlay)"; }}
                   onMouseLeave={(e) => { e.currentTarget.style.background = "var(--bg-tertiary)"; }}
-                  title="Reset to default clip color"
+                  title={t.properties.reset}
                 >
-                  Reset
+                  {t.common.reset}
                 </button>
               )}
             </div>
@@ -219,8 +223,8 @@ export default function PropertiesPanel() {
         </PropertySection>
 
         {/* Timing */}
-        <PropertySection icon={<Clock size={13} />} title="Timing">
-          <PropertyRow label="Start">
+        <PropertySection icon={<Clock size={13} />} title={t.properties.timing}>
+          <PropertyRow label={t.properties.start}>
             <PropertyInput
               type="number"
               value={selectedClip.startTime.toFixed(2)}
@@ -230,7 +234,7 @@ export default function PropertiesPanel() {
               suffix="s"
             />
           </PropertyRow>
-          <PropertyRow label="Duration">
+          <PropertyRow label={t.properties.duration}>
             <PropertyInput
               type="number"
               value={selectedClip.duration.toFixed(2)}
@@ -241,7 +245,7 @@ export default function PropertiesPanel() {
             />
           </PropertyRow>
           {hasTrim && (
-            <PropertyRow label="Source">
+            <PropertyRow label={t.properties.source}>
               <span style={{ fontSize: 10, color: "var(--text-muted)" }}>
                 {sourceDuration.toFixed(2)}s
               </span>
@@ -251,8 +255,8 @@ export default function PropertiesPanel() {
 
         {/* Trim (video/audio only) */}
         {hasTrim && (
-          <PropertySection icon={<Scissors size={13} />} title="Trim">
-            <PropertyRow label="Trim Start">
+          <PropertySection icon={<Scissors size={13} />} title={t.properties.trim}>
+            <PropertyRow label={t.properties.trimStart}>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <input
                   type="range"
@@ -268,7 +272,7 @@ export default function PropertiesPanel() {
                 </span>
               </div>
             </PropertyRow>
-            <PropertyRow label="Trim End">
+            <PropertyRow label={t.properties.trimEnd}>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <input
                   type="range"
@@ -287,7 +291,7 @@ export default function PropertiesPanel() {
             {/* Visual range bar */}
             <div style={{ marginTop: 2 }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 2 }}>
-                <span style={{ fontSize: 9, color: "var(--text-muted)" }}>Source range</span>
+                <span style={{ fontSize: 9, color: "var(--text-muted)" }}>{t.properties.sourceRange}</span>
                 <span style={{ fontSize: 9, color: "var(--text-muted)" }}>
                   {selectedClip.trimStart.toFixed(1)}s – {(sourceDuration - selectedClip.trimEnd).toFixed(1)}s
                 </span>
@@ -315,8 +319,8 @@ export default function PropertiesPanel() {
         )}
 
         {/* Appearance */}
-        <PropertySection icon={<Eye size={13} />} title="Appearance">
-          <PropertyRow label="Opacity">
+        <PropertySection icon={<Eye size={13} />} title={t.properties.appearance}>
+          <PropertyRow label={t.properties.opacity}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <input
                 type="range"
@@ -340,8 +344,8 @@ export default function PropertiesPanel() {
 
         {/* Transform (visual clips only) */}
         {(selectedClip.type === "video" || selectedClip.type === "image" || selectedClip.type === "text") && (
-          <PropertySection icon={<Move size={13} />} title="Transform">
-            <PropertyRow label="Position X">
+          <PropertySection icon={<Move size={13} />} title={t.properties.transform}>
+            <PropertyRow label={t.properties.positionX}>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <input
                   type="range"
@@ -360,7 +364,7 @@ export default function PropertiesPanel() {
                 />
               </div>
             </PropertyRow>
-            <PropertyRow label="Position Y">
+            <PropertyRow label={t.properties.positionY}>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <input
                   type="range"
@@ -379,7 +383,7 @@ export default function PropertiesPanel() {
                 />
               </div>
             </PropertyRow>
-            <PropertyRow label="Scale X">
+            <PropertyRow label={t.properties.scaleX}>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <input
                   type="range"
@@ -395,7 +399,7 @@ export default function PropertiesPanel() {
                 </span>
               </div>
             </PropertyRow>
-            <PropertyRow label="Scale Y">
+            <PropertyRow label={t.properties.scaleY}>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <input
                   type="range"
@@ -411,7 +415,7 @@ export default function PropertiesPanel() {
                 </span>
               </div>
             </PropertyRow>
-            <PropertyRow label="Rotation">
+            <PropertyRow label={t.properties.rotation}>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <input
                   type="range"
@@ -451,7 +455,7 @@ export default function PropertiesPanel() {
                 onMouseEnter={(e) => { e.currentTarget.style.background = "var(--hover-overlay)"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = "var(--bg-primary)"; }}
               >
-                Reset Transform
+                {t.properties.resetTransform}
               </button>
             )}
           </PropertySection>
@@ -460,8 +464,8 @@ export default function PropertiesPanel() {
         {/* Audio */}
         {(selectedClip.type === "video" ||
           selectedClip.type === "audio") && (
-          <PropertySection icon={<Volume2 size={13} />} title="Audio">
-            <PropertyRow label="Volume">
+          <PropertySection icon={<Volume2 size={13} />} title={t.properties.audio}>
+            <PropertyRow label={t.properties.volume}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <input
                   type="range"
@@ -488,8 +492,8 @@ export default function PropertiesPanel() {
 
         {/* Text properties */}
         {selectedClip.type === "text" && (
-          <PropertySection icon={<Type size={13} />} title="Text">
-            <PropertyRow label="Content">
+          <PropertySection icon={<Type size={13} />} title={t.properties.text}>
+            <PropertyRow label={t.properties.content}>
               <input
                 type="text"
                 value={selectedClip.text || ""}
@@ -508,7 +512,7 @@ export default function PropertiesPanel() {
                 }}
               />
             </PropertyRow>
-            <PropertyRow label="Font Size">
+            <PropertyRow label={t.properties.fontSize}>
               <PropertyInput
                 type="number"
                 value={String(selectedClip.fontSize || 48)}
@@ -520,7 +524,7 @@ export default function PropertiesPanel() {
                 suffix="px"
               />
             </PropertyRow>
-            <PropertyRow label="Color">
+            <PropertyRow label={t.properties.color}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <input
                   type="color"
@@ -537,7 +541,7 @@ export default function PropertiesPanel() {
                 </span>
               </div>
             </PropertyRow>
-            <PropertyRow label="Font">
+            <PropertyRow label={t.properties.font}>
               <select
                 value={selectedClip.fontFamily || "Inter"}
                 onChange={(e) =>
@@ -569,7 +573,7 @@ export default function PropertiesPanel() {
             </PropertyRow>
 
             {/* Style row: Bold / Italic / Underline / Align */}
-            <PropertyRow label="Style">
+            <PropertyRow label={t.properties.style}>
               <div style={{ display: "flex", gap: 2 }}>
                 {([
                   { key: "fontWeight", active: (selectedClip.fontWeight || "bold") === "bold", toggle: { fontWeight: (selectedClip.fontWeight || "bold") === "bold" ? "normal" : "bold" }, label: "B", style: { fontWeight: 700 } },
@@ -602,7 +606,7 @@ export default function PropertiesPanel() {
             </PropertyRow>
 
             {/* Alignment */}
-            <PropertyRow label="Align">
+            <PropertyRow label={t.properties.align}>
               <div style={{ display: "flex", gap: 2 }}>
                 {(["left", "center", "right"] as const).map((a) => (
                   <button
@@ -633,7 +637,7 @@ export default function PropertiesPanel() {
             </PropertyRow>
 
             {/* Letter Spacing */}
-            <PropertyRow label="Spacing">
+            <PropertyRow label={t.properties.spacing}>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <input
                   type="range"
@@ -651,7 +655,7 @@ export default function PropertiesPanel() {
             </PropertyRow>
 
             {/* Line Height */}
-            <PropertyRow label="Line H.">
+            <PropertyRow label={t.properties.lineHeight}>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <input
                   type="range"
@@ -669,7 +673,7 @@ export default function PropertiesPanel() {
             </PropertyRow>
 
             {/* Background Color */}
-            <PropertyRow label="BG Color">
+            <PropertyRow label={t.properties.bgColor}>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <input
                   type="color"
@@ -689,13 +693,13 @@ export default function PropertiesPanel() {
                     color: selectedClip.backgroundColor ? "var(--accent-hover)" : "var(--text-muted)",
                   }}
                 >
-                  {selectedClip.backgroundColor ? "On" : "Off"}
+                  {selectedClip.backgroundColor ? t.common.on : t.common.off}
                 </button>
               </div>
             </PropertyRow>
 
             {/* Stroke */}
-            <PropertyRow label="Stroke">
+            <PropertyRow label={t.properties.stroke}>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <input
                   type="color"
@@ -724,10 +728,20 @@ export default function PropertiesPanel() {
         {selectedClip.effects && selectedClip.effects.length > 0 && (
           <PropertySection
             icon={<Sparkles size={12} />}
-            title="Effects"
+            title={t.properties.effects}
           >
             {selectedClip.effects.map((effect) => {
-              const label = effectLabel(effect.type);
+              const effectLabels: Record<string, string> = {
+                fade_in: t.properties.fadeIn,
+                fade_out: t.properties.fadeOut,
+                cross_dissolve: t.properties.crossDissolve,
+                blur: t.properties.blur,
+                brightness: t.properties.brightness,
+                contrast: t.properties.contrast,
+                saturation: t.properties.saturation,
+                vignette: t.properties.vignette,
+              };
+              const label = effectLabels[effect.type] || effect.type;
               const isTransition = ["fade_in", "fade_out", "cross_dissolve"].includes(effect.type);
               return (
                 <div key={effect.id} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -745,13 +759,13 @@ export default function PropertiesPanel() {
                         display: "flex",
                         alignItems: "center",
                       }}
-                      title="Remove effect"
+                      title={t.properties.removeEffect}
                     >
                       <Trash2 size={12} />
                     </button>
                   </div>
                   {/* Value slider */}
-                  <PropertyRow label="Intensity">
+                  <PropertyRow label={t.properties.intensity}>
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       <input
                         type="range"
@@ -773,7 +787,7 @@ export default function PropertiesPanel() {
                   </PropertyRow>
                   {/* Duration slider for transitions */}
                   {isTransition && (
-                    <PropertyRow label="Duration">
+                    <PropertyRow label={t.properties.duration}>
                       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                         <input
                           type="range"
@@ -808,6 +822,8 @@ export default function PropertiesPanel() {
 
 // ─── Effect label helper ────────────────────────────────
 function effectLabel(type: string): string {
+  // Note: This function doesn't have access to i18n translations
+  // Labels are used inline in the component where t is available
   const labels: Record<string, string> = {
     fade_in: "Fade In",
     fade_out: "Fade Out",
