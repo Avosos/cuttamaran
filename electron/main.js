@@ -30,6 +30,16 @@ fs.mkdirSync(dataDir, { recursive: true });
 app.setPath("userData", dataDir);
 
 let mainWindow = null;
+const handle = ipcMain.handle.bind(ipcMain);
+ipcMain.handle = (channel, handler) => handle(channel, (event, ...args) => {
+  if (!mainWindow || event.sender !== mainWindow.webContents || event.senderFrame !== mainWindow.webContents.mainFrame) throw new Error("Untrusted IPC sender");
+  return handler(event, ...args);
+});
+function openWebLink(value) {
+  const link = new URL(value);
+  if (!["https:", "http:"].includes(link.protocol) || link.username || link.password) throw new Error("Unsupported external link");
+  return shell.openExternal(link.href);
+}
 
 // ─── Custom protocol for serving local media files ─────────
 // Register the scheme as privileged before app is ready so
@@ -76,6 +86,8 @@ function createWindow() {
   });
 
   // Graceful show after ready
+  mainWindow.webContents.on("will-navigate", (event) => event.preventDefault());
+  mainWindow.webContents.on("will-attach-webview", (event) => event.preventDefault());
   mainWindow.once("ready-to-show", () => {
     mainWindow.show();
   });
@@ -92,9 +104,7 @@ function createWindow() {
 
   // Open external links in the system browser
   mainWindow.webContents.setWindowOpenHandler(({ url: linkUrl }) => {
-    if (linkUrl.startsWith("http")) {
-      shell.openExternal(linkUrl);
-    }
+    try { openWebLink(linkUrl).catch(console.error); } catch { /* Unsupported URL */ }
     return { action: "deny" };
   });
 

@@ -12,7 +12,7 @@ input[type="number"] {
 
 @theme inline {
   --color-background: #0a0a0f;
-  --color-foreground: #f0f0f5;
+  --color-foreground: #eeeeea;
   --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
@@ -29,7 +29,7 @@ input[type="number"] {
   --border-default: rgba(255, 255, 255, 0.1);
   --border-strong: rgba(255, 255, 255, 0.15);
 
-  --text-primary: #f0f0f5;
+  --text-primary: #eeeeea;
   --text-secondary: #a0a0b5;
   --text-muted: #606075;
 
@@ -332,3 +332,10 @@ input[type="range"]::-webkit-slider-thumb {
 input[type="range"]::-webkit-slider-thumb:hover {
   transform: scale(1.2);
 }
+
+/* Avosos shared interaction baseline */
+:root { --shadow-glow: none; --accent-gradient: var(--accent); --accent-gradient-subtle: var(--bg-secondary); }
+.glass-panel { backdrop-filter: none; -webkit-backdrop-filter: none; background: var(--bg-secondary); }
+.card { border-radius: 4px; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } }
